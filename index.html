@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14151a">
+<title>Croqui — 毎日3分のデッサン練習</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+
+<!-- 明暗ポスタライズ用のSVGフィルタ（ノタン練習で使う） -->
+<svg class="filter-defs" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="f-posterize3" color-interpolation-filters="sRGB">
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncR type="discrete" tableValues="0 0.55 1"/>
+        <feFuncG type="discrete" tableValues="0 0.55 1"/>
+        <feFuncB type="discrete" tableValues="0 0.55 1"/>
+      </feComponentTransfer>
+    </filter>
+    <filter id="f-posterize2" color-interpolation-filters="sRGB">
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncR type="discrete" tableValues="0 1"/>
+        <feFuncG type="discrete" tableValues="0 1"/>
+        <feFuncB type="discrete" tableValues="0 1"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+</svg>
+
+<!-- ============ ホーム ============ -->
+<main id="screen-home" class="screen is-active">
+  <header class="topbar">
+    <h1 class="brand">Croqui</h1>
+    <div class="topbar-actions">
+      <button class="icon-btn" data-nav="log" title="記録">📈</button>
+      <button class="icon-btn" data-nav="settings" title="設定">⚙️</button>
+    </div>
+  </header>
+
+  <section class="streak-card">
+    <div class="streak-main">
+      <span id="streak-count" class="streak-num">0</span>
+      <span class="streak-unit">日連続</span>
+    </div>
+    <div class="streak-sub">
+      <span id="today-status" class="pill">今日はまだ</span>
+      <span id="total-stat" class="muted">通算 0 回 / 0 分</span>
+    </div>
+    <div id="streak-dots" class="streak-dots" aria-label="直近2週間"></div>
+  </section>
+
+  <section class="focus-card">
+    <div class="label">今日の観察テーマ</div>
+    <div id="focus-title" class="focus-title">—</div>
+    <p id="focus-desc" class="focus-desc muted"></p>
+  </section>
+
+  <section class="menu-list">
+    <div class="section-head">
+      <h2>メニュー</h2>
+      <span id="level-badge" class="badge">Lv.1</span>
+    </div>
+    <div id="menu-cards"></div>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2>お題のジャンル</h2></div>
+    <div id="category-chips" class="chips"></div>
+    <p class="muted small">選んだジャンルからランダムに出題します。1つ以上選んでください。</p>
+  </section>
+
+  <footer class="home-footer muted small">
+    <span id="source-note"></span>
+  </footer>
+</main>
+
+<!-- ============ セッション ============ -->
+<main id="screen-session" class="screen session">
+  <div class="stage">
+    <div id="stage-inner" class="stage-inner">
+      <img id="ref-image" class="ref-image" alt="お題の写真">
+      <div id="grid-overlay" class="grid-overlay" hidden></div>
+      <div id="memory-cover" class="memory-cover" hidden>
+        <div class="memory-cover-inner">
+          <p>記憶で描く時間</p>
+          <button id="peek-btn" class="btn ghost small">3秒だけ見る（<span id="peek-left">2</span>）</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="stage-message" class="stage-message" hidden></div>
+
+    <div class="hud-top">
+      <button id="quit-btn" class="icon-btn" title="やめる">✕</button>
+      <div class="hud-center">
+        <div id="drill-name" class="drill-name">—</div>
+        <div id="drill-progress" class="drill-progress muted">1 / 5</div>
+      </div>
+      <button id="attr-btn" class="icon-btn" title="この写真について">ⓘ</button>
+    </div>
+
+    <div class="hud-cue">
+      <p id="drill-cue"></p>
+    </div>
+
+    <div class="hud-bottom">
+      <div class="timebar"><div id="timebar-fill" class="timebar-fill"></div></div>
+      <div class="hud-controls">
+        <button id="tool-grid" class="tool-btn" title="グリッド (G)">▦</button>
+        <button id="tool-flip" class="tool-btn" title="左右反転 (F)">⇄</button>
+        <button id="pause-btn" class="round-btn" title="一時停止 (Space)">⏸</button>
+        <button id="time-left" class="time-left" title="残り時間">30</button>
+        <button id="skip-btn" class="tool-btn" title="次へ (→)">⏭</button>
+      </div>
+    </div>
+
+    <div id="attr-box" class="attr-box" hidden></div>
+  </div>
+</main>
+
+<!-- ============ 休憩／ドリル切替 ============ -->
+<main id="screen-bridge" class="screen center">
+  <div class="bridge-card">
+    <div class="label" id="bridge-label">次のドリル</div>
+    <h2 id="bridge-title">—</h2>
+    <p id="bridge-theory" class="muted"></p>
+    <p id="bridge-cue" class="cue-text"></p>
+    <div class="bridge-meta muted small" id="bridge-meta"></div>
+    <button id="bridge-start" class="btn primary big">はじめる</button>
+    <button id="bridge-skip" class="btn ghost">このドリルを飛ばす</button>
+  </div>
+</main>
+
+<!-- ============ ふりかえり ============ -->
+<main id="screen-review" class="screen">
+  <header class="topbar"><h1 class="brand">おつかれさま</h1></header>
+  <section class="card">
+    <div id="review-summary" class="review-summary"></div>
+  </section>
+
+  <section class="card">
+    <div class="label">今日の観察テーマ</div>
+    <div id="review-focus" class="focus-title small-title">—</div>
+    <p class="muted small">意図的練習は「直後のふりかえり」で伸びます。20秒だけ。</p>
+    <div id="rating-row" class="rating-row">
+      <button class="rate-btn" data-rate="1">むずかしかった</button>
+      <button class="rate-btn" data-rate="2">まあまあ</button>
+      <button class="rate-btn" data-rate="3">つかめた</button>
+    </div>
+    <textarea id="review-note" class="note" rows="3" placeholder="気づいたことを一言（例：肩のラインをいつも水平に描いてしまう）"></textarea>
+  </section>
+
+  <section class="card">
+    <div class="label">描いたものを残す（任意）</div>
+    <p class="muted small">写真に撮っておくと、あとで成長が見えます。端末内にだけ保存されます。</p>
+    <input type="file" id="drawing-input" accept="image/*" capture="environment" hidden>
+    <button id="drawing-btn" class="btn ghost">📷 写真を追加</button>
+    <img id="drawing-preview" class="drawing-preview" hidden alt="今日の絵">
+  </section>
+
+  <div class="stack">
+    <button id="review-save" class="btn primary big">保存して終わる</button>
+    <button id="review-again" class="btn ghost">もう1セットやる</button>
+  </div>
+</main>
+
+<!-- ============ 記録 ============ -->
+<main id="screen-log" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" data-nav="home">←</button>
+    <h1 class="brand">記録</h1>
+    <span></span>
+  </header>
+
+  <section class="card">
+    <div class="stat-grid">
+      <div class="stat"><div id="st-streak" class="stat-num">0</div><div class="stat-label">連続日数</div></div>
+      <div class="stat"><div id="st-best" class="stat-num">0</div><div class="stat-label">最長記録</div></div>
+      <div class="stat"><div id="st-sessions" class="stat-num">0</div><div class="stat-label">セッション</div></div>
+      <div class="stat"><div id="st-minutes" class="stat-num">0</div><div class="stat-label">合計(分)</div></div>
+    </div>
+    <div id="heatmap" class="heatmap" aria-label="練習カレンダー"></div>
+    <div class="heat-legend muted small"><span>少</span><i class="h0"></i><i class="h1"></i><i class="h2"></i><i class="h3"></i><i class="h4"></i><span>多</span></div>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2>ドリル別の積み上げ</h2></div>
+    <div id="drill-bars" class="drill-bars"></div>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2>ふりかえりノート</h2></div>
+    <div id="note-list" class="note-list"></div>
+  </section>
+</main>
+
+<!-- ============ 設定 ============ -->
+<main id="screen-settings" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" data-nav="home">←</button>
+    <h1 class="brand">設定</h1>
+    <span></span>
+  </header>
+
+  <section class="card">
+    <div class="section-head"><h2>お題の取得元</h2></div>
+    <div id="source-radios" class="radios">
+      <label><input type="radio" name="source" value="unsplash"> Unsplash（ジャンル指定できる・キー必要）</label>
+      <label><input type="radio" name="source" value="picsum"> Lorem Picsum（キー不要・ジャンル指定なし）</label>
+      <label><input type="radio" name="source" value="local"> 端末内の画像を使う</label>
+    </div>
+
+    <div id="unsplash-config" class="subcard">
+      <label class="label" for="unsplash-key">Unsplash Access Key</label>
+      <input type="password" id="unsplash-key" class="input" placeholder="xxxxxxxx..." autocomplete="off">
+      <div class="row">
+        <button id="key-save" class="btn small">保存</button>
+        <button id="key-test" class="btn ghost small">接続テスト</button>
+        <span id="key-status" class="muted small"></span>
+      </div>
+      <p class="muted small">
+        <a href="https://unsplash.com/oauth/applications" target="_blank" rel="noopener">unsplash.com/developers</a>
+        で無料のアプリを作るとAccess Keyがもらえます。キーはこの端末のブラウザにだけ保存され、Unsplash以外には送られません。
+      </p>
+    </div>
+
+    <div id="local-config" class="subcard">
+      <input type="file" id="local-input" accept="image/*" multiple hidden>
+      <button id="local-btn" class="btn">画像を選ぶ</button>
+      <span id="local-count" class="muted small">0枚</span>
+      <p class="muted small">選んだ画像はこのセッションの間だけ使います（保存はされません）。</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2>練習の設定</h2></div>
+    <label class="switch"><input type="checkbox" id="opt-sound"> 残り3秒でカチッと鳴らす</label>
+    <label class="switch"><input type="checkbox" id="opt-autoflip"> 毎回ランダムに左右反転する</label>
+    <label class="switch"><input type="checkbox" id="opt-keepawake"> 練習中に画面を消さない</label>
+    <label class="label" for="opt-orientation">写真の向き</label>
+    <select id="opt-orientation" class="input">
+      <option value="any">おまかせ</option>
+      <option value="portrait">縦</option>
+      <option value="landscape">横</option>
+    </select>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2>データ</h2></div>
+    <div class="row">
+      <button id="export-btn" class="btn ghost small">記録を書き出す</button>
+      <button id="reset-btn" class="btn danger small">すべて消す</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2>この練習メニューの根拠</h2></div>
+    <div id="theory-list" class="theory-list"></div>
+  </section>
+</main>
+
+<div id="toast" class="toast" hidden></div>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>
