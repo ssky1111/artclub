@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS = {
   unsplashKey: '',
   categories: ['pose', 'animal', 'still', 'nature'],
   weakParts: [],             // 苦手だと申告した部位（レッスンID）
-  theme: 'paper',            // 'paper' | 'dark' | 'pop'
+  theme: 'setlog',           // 'setlog' | 'light' | 'paper'
   sound: true,
   sfx: true,
   autoFlip: false,

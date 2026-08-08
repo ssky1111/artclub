@@ -9,6 +9,9 @@ export function showScreen(name) {
   if (screen) screen.classList.add('is-active');
   window.scrollTo(0, 0);
   document.body.classList.toggle('in-session', name === 'session');
+  document.body.dataset.screen = name;          // 下のタブを出す画面を CSS 側で決める
+  document.querySelectorAll('.tabbar button')
+    .forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
 }
 
 let toastTimer = 0;

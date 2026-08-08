@@ -1,13 +1,59 @@
 /* Croqui — 配色とサイズ */
 
 /*
- * 既定は「ペーパー」。claude.ai の、紙みたいなクリーム地＋テラコッタ＋セリフ見出し、
- * という配色に寄せてある。影と彩度を落として、線は1本だけ引く。
- * 絵の練習アプリなので、画面自体が主張しないほうがいい。
+ * 既定は Setlog 風。純黒の地に、ふちの無い角丸カードを浮かべる。
+ * 色はミント（ブランド）とマゼンタ（注意を引くところ）の2つだけに絞り、
+ * それ以外は白と灰で作る。色数を増やすと、お題の写真の色と喧嘩するため。
  *
- * 練習画面（.stage）だけは常に暗い。周りが明るいとお題の明暗の判断が狂うため。
+ * 書体はシステムの丸ゴシック。Web フォントを読まないのは、
+ * オフラインでも同じ見た目で立ち上がってほしいから。
  */
-:root, body[data-theme='paper'] {
+:root, body[data-theme='setlog'] {
+  --bg: #000000;
+  --surface: #151515;
+  --surface-2: #202020;
+  --line: transparent;
+  --line-strong: transparent;
+  --text: #ffffff;
+  --text-soft: #c9c9c9;
+  --muted: #7e7e7e;
+  --accent: #f048d8;
+  --accent-ink: #000000;
+  --accent-soft: #2a1228;
+  --accent-dim: #6d2463;
+  --brand: #3ddad0;
+  --mint: #3ddad0;
+  --sun: #ffd84d;
+  --good: #3ddad0;
+  --danger: #ff6b6b;
+  --radius: 24px;
+  --radius-sm: 16px;
+  --pad: 18px;
+  --lift: none;
+  --lift-accent: none;
+  --font-display: ui-rounded, 'SF Pro Rounded', 'Hiragino Maru Gothic ProN',
+                  'Yu Gothic UI', system-ui, sans-serif;
+}
+
+/* 昼用。同じ設計のまま地と文字を入れ替える */
+body[data-theme='light'] {
+  --bg: #ffffff;
+  --surface: #f2f2f2;
+  --surface-2: #e7e7e7;
+  --text: #0d0d0d;
+  --text-soft: #3d3d3d;
+  --muted: #8a8a8a;
+  --accent: #d81ab8;
+  --accent-ink: #ffffff;
+  --accent-soft: #fbe6f7;
+  --accent-dim: #f0a8e2;
+  --brand: #14b3a6;
+  --mint: #14b3a6;
+  --good: #14b3a6;
+}
+
+/* claude.ai 寄りの紙っぽい配色も残してある */
+body[data-theme='paper'] {
   --bg: #f5f4ee;
   --surface: #fffefb;
   --surface-2: #efeee7;
@@ -20,60 +66,14 @@
   --accent-ink: #fffefb;
   --accent-soft: #f4e7e0;
   --accent-dim: #e0b9a8;
+  --brand: #c96442;
   --mint: #4f7d5e;
   --sun: #c08a2e;
   --good: #4f7d5e;
   --danger: #b3503c;
   --radius: 12px;
   --radius-sm: 9px;
-  --pad: 16px;
-  --lift: none;
-  --lift-accent: none;
   --font-display: ui-serif, Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
-}
-
-body[data-theme='dark'] {
-  --bg: #1a1917;
-  --surface: #232220;
-  --surface-2: #2c2b28;
-  --line: #38362f;
-  --line-strong: #38362f;
-  --text: #ece9e2;
-  --text-soft: #c6c2b8;
-  --muted: #918d84;
-  --accent: #d97757;
-  --accent-ink: #1a1917;
-  --accent-soft: #3a2a22;
-  --accent-dim: #7a4a37;
-  --mint: #7fb08d;
-  --sun: #d9ab5c;
-  --good: #7fb08d;
-  --danger: #d9756a;
-  --lift: none;
-  --lift-accent: none;
-}
-
-/* 前の配色も残してある（好みなので） */
-body[data-theme='pop'] {
-  --bg: #fff6f2;
-  --surface: #ffffff;
-  --surface-2: #fff0ea;
-  --line: #ffdfd4;
-  --line-strong: #f7c9b9;
-  --text: #3a2e33;
-  --text-soft: #6b5a60;
-  --muted: #a4949a;
-  --accent: #ff7a9c;
-  --accent-ink: #ffffff;
-  --accent-soft: #ffe3ea;
-  --accent-dim: #ffc2d2;
-  --good: #2fc39f;
-  --danger: #ff6b6b;
-  --radius: 20px;
-  --radius-sm: 14px;
-  --lift: 0 3px 0 var(--line-strong);
-  --lift-accent: 0 3px 0 #e05f81;
-  --font-display: inherit;
 }
 
 * { box-sizing: border-box; }
@@ -116,7 +116,13 @@ a { color: var(--accent); }
   gap: 8px; margin-bottom: 18px;
 }
 .topbar-actions { display: flex; gap: 6px; }
-.brand { font-size: 21px; margin: 0; letter-spacing: .01em; font-family: var(--font-display); font-weight: 600; }
+.brand {
+  font-size: 24px; margin: 0; letter-spacing: .02em;
+  font-family: var(--font-display); font-weight: 800; color: var(--brand);
+  display: flex; align-items: center; gap: 8px;
+}
+.brand .smiley { width: 22px; height: 22px; flex: none; }
+.brand.plain { color: var(--text); font-size: 20px; font-weight: 700; }
 
 .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .section-head h2 { font-size: 15px; margin: 0; color: var(--muted); font-weight: 600; }
@@ -141,20 +147,21 @@ a { color: var(--accent); }
   border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px;
   font-size: 12px; color: var(--muted);
 }
-.pill.done { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, transparent); }
+.pill { background: var(--surface-2); }
+.pill.done { color: var(--accent-ink); background: var(--brand); font-weight: 700; }
 
 .streak-dots { display: flex; gap: 4px; margin-top: 12px; }
 .dot { width: 100%; height: 6px; border-radius: 3px; background: var(--surface-2); }
-.dot.on { background: var(--accent); }
+.dot.on { background: var(--brand); }
 
-.focus-card { border-left: 3px solid var(--accent); }
+.focus-card { border-left: 3px solid var(--brand); }
 .focus-title { font-size: 21px; font-weight: 600; margin-top: 4px; font-family: var(--font-display); }
 .focus-title.small-title { font-size: 17px; }
 .focus-desc { margin: 6px 0 0; font-size: 14px; }
 
 .badge {
-  font-size: 12px; color: var(--accent);
-  border: 1px solid var(--accent-dim); border-radius: 999px; padding: 2px 10px;
+  font-size: 12px; color: var(--accent-ink); background: var(--accent);
+  border-radius: 999px; padding: 3px 11px; font-weight: 700;
 }
 
 .menu-card {
@@ -168,10 +175,10 @@ a { color: var(--accent); }
 }
 .menu-card:hover { border-color: var(--accent-dim); }
 .menu-card:active { transform: translateY(3px); box-shadow: none; }
-.menu-title { font-size: 17px; font-weight: 600; font-family: var(--font-display); }
+.menu-title { font-size: 17px; font-weight: 700; font-family: var(--font-display); }
 .menu-sub { font-size: 13px; margin-top: 2px; }
 .menu-steps { margin-top: 6px; }
-.menu-time { margin-top: 8px; font-size: 13px; color: var(--accent); }
+.menu-time { margin-top: 8px; font-size: 13px; color: var(--brand); }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
@@ -206,10 +213,13 @@ a { color: var(--accent); }
 .btn.small { padding: 6px 12px; font-size: 14px; }
 
 .icon-btn {
-  background: transparent; border: none; color: var(--text);
-  font-size: 20px; line-height: 1; padding: 8px; border-radius: 10px; cursor: pointer;
+  background: var(--surface); border: none; color: var(--text);
+  font-size: 18px; line-height: 1; cursor: pointer;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
 }
 .icon-btn:hover { background: var(--surface-2); }
+.icon-btn:active { transform: scale(.92); }
 
 .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
 .stack { display: flex; flex-direction: column; gap: 10px; }
@@ -352,13 +362,15 @@ a { color: var(--accent); }
 /* ---------- ホームの上段（ストリーク・XP・クエスト・バッジ） ---------- */
 
 .hero { background: var(--surface); }
+.streak-num { font-family: var(--font-display); font-weight: 800; }
+.level-chip { font-family: var(--font-display); color: var(--brand); }
 .hero-top { display: flex; align-items: center; justify-content: space-between; }
 .streak-flame { font-size: 26px; }
 .streak-num { font-size: 46px; }
 
 .level-chip {
   display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2;
-  font-weight: 700; color: var(--accent);
+  font-weight: 700; color: var(--brand); font-family: var(--font-display);
 }
 
 .xp-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
@@ -368,11 +380,11 @@ a { color: var(--accent); }
 }
 .xp-fill {
   height: 100%; width: 0;
-  background: var(--accent);
+  background: var(--brand);
   transition: width .6s cubic-bezier(.2, .8, .3, 1);
 }
 
-.quest-card { border-left: 3px solid var(--sun); }
+.quest-card { border-left: 3px solid var(--accent); }
 .quest-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .quest {
   display: flex; align-items: center; gap: 10px;
@@ -420,13 +432,18 @@ a { color: var(--accent); }
 
 /* いちばん押してほしいものだけ大きく、残りは静かに */
 .primary-card {
-  background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
-  box-shadow: var(--lift-accent); padding: 18px var(--pad);
+  position: relative; background: var(--surface-2); border-color: transparent;
+  color: var(--text); padding: 20px var(--pad); overflow: hidden;
 }
-.primary-card .menu-kicker { font-size: 12px; opacity: .85; letter-spacing: .06em; }
-.primary-card .menu-title.big { font-size: 25px; font-weight: 600; line-height: 1.3; font-family: var(--font-display); }
-.primary-card .menu-sub, .primary-card .menu-time { color: var(--accent-ink); opacity: .9; }
-.primary-card .menu-time { font-weight: 600; }
+.menu-face {
+  position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+  width: 56px; height: 56px; color: var(--brand);
+}
+.menu-face svg { width: 100%; height: 100%; display: block; }
+.primary-card .menu-kicker { font-size: 12px; letter-spacing: .06em; color: var(--brand); font-weight: 700; }
+.primary-card .menu-title.big { font-size: 26px; font-weight: 800; line-height: 1.3; font-family: var(--font-display); }
+.primary-card .menu-sub { color: var(--text-soft); max-width: calc(100% - 70px); }
+.primary-card .menu-time { color: var(--brand); font-weight: 700; }
 
 .menu-card.slim {
   display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
@@ -703,3 +720,23 @@ a { color: var(--accent); }
 @media (min-width: 720px) {
   .hud-cue p { font-size: 14px; }
 }
+
+/* ---------- 下のセグメント切替 ---------- */
+
+.tabbar {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: max(14px, env(safe-area-inset-bottom)); z-index: 40;
+  display: none; gap: 4px; padding: 4px;
+  background: var(--surface); border-radius: 999px;
+}
+body[data-screen='home'] .tabbar,
+body[data-screen='log'] .tabbar { display: flex; }
+body[data-screen='home'] #screen-home,
+body[data-screen='log'] #screen-log { padding-bottom: 90px; }
+
+.tabbar button {
+  font: inherit; font-size: 15px; font-weight: 700; font-family: var(--font-display);
+  border: none; background: transparent; color: var(--muted);
+  padding: 9px 26px; border-radius: 999px; cursor: pointer;
+}
+.tabbar button.on { background: var(--surface-2); color: var(--text); }
