@@ -11,7 +11,9 @@ const DEFAULT_SETTINGS = {
   unsplashKey: '',
   categories: ['pose', 'animal', 'still', 'nature'],
   weakParts: [],             // 苦手だと申告した部位（レッスンID）
+  theme: 'cute',            // 'cute' | 'dark'
   sound: true,
+  sfx: true,
   autoFlip: false,
   keepAwake: true,
   orientation: 'any',

@@ -3,7 +3,7 @@
  * （毎回ちがう写真が出ることに意味があるし、端末を圧迫したくないので）。
  */
 
-const CACHE = 'croqui-v1';
+const CACHE = 'croqui-v2';
 const SHELL = [
   './',
   './index.html',
@@ -19,6 +19,7 @@ const SHELL = [
   './js/anatomy.js',
   './js/commons.js',
   './js/review.js',
+  './js/game.js',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-192.png',

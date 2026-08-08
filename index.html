@@ -44,16 +44,35 @@
     </div>
   </header>
 
-  <section class="streak-card">
-    <div class="streak-main">
-      <span id="streak-count" class="streak-num">0</span>
-      <span class="streak-unit">日連続</span>
+  <section class="streak-card hero">
+    <div class="hero-top">
+      <div class="streak-main">
+        <span class="streak-flame">🔥</span>
+        <span id="streak-count" class="streak-num">0</span>
+        <span class="streak-unit">日</span>
+      </div>
+      <div class="level-chip">
+        <span id="level-num">Lv.1</span>
+        <span id="level-name" class="muted small">入口</span>
+      </div>
     </div>
+
+    <div class="xp-row">
+      <div class="xp-track"><div id="xp-fill" class="xp-fill"></div></div>
+      <span id="xp-text" class="muted small">0 XP</span>
+    </div>
+
     <div class="streak-sub">
       <span id="today-status" class="pill">今日はまだ</span>
-      <span id="total-stat" class="muted">通算 0 回 / 0 分</span>
+      <span id="total-stat" class="muted small">通算 0 回 / 0 分</span>
     </div>
     <div id="streak-dots" class="streak-dots" aria-label="直近2週間"></div>
+    <div id="rest-note" class="muted small" hidden></div>
+  </section>
+
+  <section class="card quest-card">
+    <div class="section-head"><h2>today's quest</h2></div>
+    <ul id="quest-list" class="quest-list"></ul>
   </section>
 
   <section class="focus-card">
@@ -95,6 +114,14 @@
     <div class="section-head"><h2>お題のジャンル</h2></div>
     <div id="category-chips" class="chips"></div>
     <p class="muted small">選んだジャンルからランダムに出題します。1つ以上選んでください。</p>
+  </section>
+
+  <section class="card">
+    <div class="section-head">
+      <h2>あつめたバッジ</h2>
+      <span id="badge-count" class="badge">0 / 0</span>
+    </div>
+    <div id="badge-grid" class="badge-grid"></div>
   </section>
 
   <footer class="home-footer muted small">
@@ -255,6 +282,17 @@
   </div>
 </main>
 
+<!-- カレンダーの1日 -->
+<div id="day-sheet" class="sheet" hidden>
+  <div class="sheet-inner">
+    <button id="sheet-close" class="icon-btn sheet-close">✕</button>
+    <div id="sheet-date" class="label"></div>
+    <h2 id="sheet-title">—</h2>
+    <img id="sheet-image" class="sheet-image" hidden alt="この日の絵">
+    <div id="sheet-body"></div>
+  </div>
+</div>
+
 <!-- 図版の拡大 -->
 <div id="lightbox" class="lightbox" hidden>
   <button id="lightbox-close" class="icon-btn lightbox-close">✕</button>
@@ -277,7 +315,24 @@
       <div class="stat"><div id="st-sessions" class="stat-num">0</div><div class="stat-label">セッション</div></div>
       <div class="stat"><div id="st-minutes" class="stat-num">0</div><div class="stat-label">合計(分)</div></div>
     </div>
-    <div id="heatmap" class="heatmap" aria-label="練習カレンダー"></div>
+  </section>
+
+  <section class="card">
+    <div class="section-head">
+      <button id="cal-prev" class="icon-btn">‹</button>
+      <h2 id="cal-title">—</h2>
+      <button id="cal-next" class="icon-btn">›</button>
+    </div>
+    <div class="cal-dow">
+      <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+    </div>
+    <div id="calendar" class="calendar" aria-label="練習カレンダー"></div>
+    <p class="muted small">描いた絵を撮っておくと、その日のマスに貼られます。</p>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2>この半年</h2></div>
+    <div id="heatmap" class="heatmap" aria-label="練習ヒートマップ"></div>
     <div class="heat-legend muted small"><span>少</span><i class="h0"></i><i class="h1"></i><i class="h2"></i><i class="h3"></i><i class="h4"></i><span>多</span></div>
   </section>
 
@@ -350,7 +405,13 @@
 
   <section class="card">
     <div class="section-head"><h2>練習の設定</h2></div>
+    <label class="label" for="opt-theme">見た目</label>
+    <select id="opt-theme" class="input">
+      <option value="cute">あかるい（デフォルト）</option>
+      <option value="dark">くらい（夜向け）</option>
+    </select>
     <label class="switch"><input type="checkbox" id="opt-sound"> 残り3秒でカチッと鳴らす</label>
+    <label class="switch"><input type="checkbox" id="opt-sfx"> 効果音を鳴らす（レベルアップ・バッジ）</label>
     <label class="switch"><input type="checkbox" id="opt-autoflip"> 毎回ランダムに左右反転する</label>
     <label class="switch"><input type="checkbox" id="opt-keepawake"> 練習中に画面を消さない</label>
     <label class="label" for="opt-orientation">写真の向き</label>

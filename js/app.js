@@ -19,6 +19,11 @@ import {
 } from './review.js';
 import { createSessionRunner } from './session.js';
 import { putDrawing, getDrawing, deleteAllDrawings, shrinkImage } from './db.js';
+import {
+  totalXp, levelProgress, graceStreak, bestGraceStreak, badges, takeNewBadges, primeBadges,
+  takeLevelUp, dailyQuests, resetGame,
+} from './game.js';
+import { sfx } from './timer.js';
 import { $, $$, el, showScreen, toast, fmtDuration } from './ui.js';
 
 let settings = getSettings();
@@ -32,10 +37,20 @@ function renderHome() {
   const level = levelFor(s.sessions);
   const today = dateKey();
   const focus = focusForDate(today);
+  const { streak, restDays } = graceStreak(history);
+  const xp = levelProgress(totalXp(history));
 
-  $('#streak-count').textContent = String(s.streak);
+  $('#streak-count').textContent = String(streak);
   $('#total-stat').textContent = `通算 ${s.sessions} 回 / ${s.minutes} 分`;
   $('#level-badge').textContent = `Lv.${level} ${levelLabel(level)}`;
+  $('#level-num').textContent = `Lv.${xp.level}`;
+  $('#level-name').textContent = levelLabel(Math.min(5, xp.level));
+  $('#xp-fill').style.width = `${xp.ratio * 100}%`;
+  $('#xp-text').textContent = `あと ${xp.toNext} XP`;
+
+  const restNote = $('#rest-note');
+  restNote.hidden = restDays === 0;
+  restNote.textContent = `休んだ日が ${restDays} 日ありますが、連続は続いています`;
 
   const doneToday = dailyTotals(history).has(today);
   const status = $('#today-status');
@@ -46,6 +61,8 @@ function renderHome() {
   $('#focus-desc').textContent = focus.desc;
 
   renderStreakDots(history);
+  renderQuests(history);
+  renderBadges(history);
   renderDueCards();
   renderLessonChips();
   renderMenus(level);
@@ -65,6 +82,56 @@ function renderStreakDots(history) {
     dot.title = day;
     wrap.append(dot);
   }
+}
+
+function renderQuests(history) {
+  const list = $('#quest-list');
+  list.innerHTML = '';
+  for (const quest of dailyQuests(history)) {
+    const item = el('li', `quest${quest.done ? ' done' : ''}`);
+    const main = el('div', 'quest-main');
+    main.append(el('div', 'quest-title', quest.title), el('div', 'quest-detail', quest.detail));
+    item.append(el('span', 'quest-icon', quest.icon), main,
+                el('span', 'quest-mark', quest.done ? '✓' : '○'));
+    list.append(item);
+  }
+}
+
+function renderBadges(history) {
+  const list = badges(history);
+  const earned = list.filter((b) => b.earned).length;
+  $('#badge-count').textContent = `${earned} / ${list.length}`;
+
+  const grid = $('#badge-grid');
+  grid.innerHTML = '';
+  for (const badge of list) {
+    const item = el('div', `badge-item ${badge.earned ? 'earned' : 'locked'}`);
+    item.append(el('div', 'badge-face', badge.earned ? badge.icon : '？'),
+                el('div', 'badge-name', badge.earned ? badge.name : '？？？'));
+    item.title = badge.earned ? `${badge.name} — ${badge.desc}` : badge.desc;
+    grid.append(item);
+  }
+}
+
+/** レベルアップとバッジ獲得を、順番に1つずつ見せる。 */
+function celebrate(history = getHistory()) {
+  const events = [];
+  const level = takeLevelUp(totalXp(history));
+  if (level) events.push({ big: '🎉', title: `レベル ${level} になった`, sound: 'levelUp' });
+  for (const badge of takeNewBadges(history)) {
+    events.push({ big: badge.icon, title: `${badge.name} を獲得`, sound: 'badge' });
+  }
+  if (!events.length) return;
+
+  events.forEach((event, i) => {
+    setTimeout(() => {
+      if (settings.sfx) sfx[event.sound]?.();
+      const box = el('div', 'celebrate');
+      box.append(el('div', 'big', event.big), el('div', 'title', event.title));
+      document.body.append(box);
+      setTimeout(() => box.remove(), 1800);
+    }, i * 1400);
+  });
 }
 
 function renderMenus(level) {
@@ -348,6 +415,7 @@ function saveResult(result) {
 
 function finishSession(result) {
   const entry = saveResult(result);
+  if (settings.sfx) sfx.fanfare();
   pendingDrawing = null;
   $('#drawing-preview').hidden = true;
   $('#review-note').value = '';
@@ -398,7 +466,10 @@ function renderReviewChecks(lessonId, lessonMode) {
     const li = el('li');
     const btn = el('button', 'check-btn', item.text);
     btn.dataset.cardId = item.id;
-    btn.addEventListener('click', () => btn.classList.toggle('on'));
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('on');
+      if (settings.sfx && btn.classList.contains('on')) sfx.check();
+    });
     if (item.wrong > 0) btn.append(el('span', 'card-badge', `${item.wrong}回落とした`));
     li.append(btn);
     list.append(li);
@@ -412,6 +483,7 @@ function wireReview() {
     btn.addEventListener('click', () => {
       $$('.rate-btn').forEach((b) => b.classList.remove('on'));
       btn.classList.add('on');
+      if (settings.sfx) sfx.tap();
     });
   });
 
@@ -452,6 +524,7 @@ function wireReview() {
     pendingDrawing = null;
     renderHome();
     showScreen('home');
+    celebrate();
   });
 
   $('#review-again').addEventListener('click', () => lastStart?.());
@@ -462,11 +535,12 @@ function wireReview() {
 function renderLog() {
   const history = getHistory();
   const s = stats(history);
-  $('#st-streak').textContent = String(s.streak);
-  $('#st-best').textContent = String(s.best);
+  $('#st-streak').textContent = String(graceStreak(history).streak);
+  $('#st-best').textContent = String(bestGraceStreak(history));
   $('#st-sessions').textContent = String(s.sessions);
   $('#st-minutes').textContent = String(s.minutes);
 
+  renderCalendar(history);
   renderHeatmap(history);
   renderUpcoming();
   renderDrillBars(s);
@@ -510,6 +584,103 @@ function renderUpcoming() {
   });
 }
 
+/* ---------- 絵を貼るカレンダー ---------- */
+
+let calMonth = null;   // 'YYYY-MM'
+
+function monthKey(dateStr) { return dateStr.slice(0, 7); }
+
+function shiftMonth(key, delta) {
+  const [y, m] = key.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/**
+ * 月表示のカレンダー。その日に描いた絵の写真があればマスに貼り、
+ * 無ければ練習量で色を濃くする。「過去が見える」ことが続ける理由になるので。
+ */
+function renderCalendar(history = getHistory()) {
+  calMonth ||= monthKey(dateKey());
+  const [year, month] = calMonth.split('-').map(Number);
+  $('#cal-title').textContent = `${year}年 ${month}月`;
+
+  const totals = dailyTotals(history);
+  // 1日にセッションが複数あることがあるので、絵がある方を優先して1つ選ぶ
+  const byDay = new Map();
+  for (const entry of history) {
+    const current = byDay.get(entry.date);
+    if (!current || (entry.hasDrawing && !current.hasDrawing)) byDay.set(entry.date, entry);
+  }
+
+  const grid = $('#calendar');
+  grid.innerHTML = '';
+  const first = new Date(year, month - 1, 1);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const today = dateKey();
+
+  for (let i = 0; i < first.getDay(); i++) grid.append(el('div', 'cal-cell empty'));
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dayKey = `${calMonth}-${String(day).padStart(2, '0')}`;
+    const seconds = totals.get(dayKey) || 0;
+    const entry = byDay.get(dayKey);
+
+    const cell = el('button', 'cal-cell');
+    if (seconds) cell.classList.add(`l${heatLevel(seconds)}`, 'filled');
+    if (dayKey === today) cell.classList.add('today');
+    cell.append(el('span', 'cal-num', String(day)));
+
+    if (entry?.hasDrawing) {
+      cell.classList.add('has-drawing');
+      const img = el('img');
+      getDrawing(entry.id).then((blob) => { if (blob) img.src = URL.createObjectURL(blob); }).catch(() => {});
+      cell.prepend(img);
+    } else if (entry?.lessonId) {
+      cell.append(el('span', 'cal-dot', '🦴'));
+    }
+
+    cell.title = seconds ? `${dayKey}：${fmtDuration(seconds)}` : dayKey;
+    cell.addEventListener('click', () => openDaySheet(dayKey, history));
+    grid.append(cell);
+  }
+}
+
+function openDaySheet(dayKey, history = getHistory()) {
+  const entries = history.filter((h) => h.date === dayKey);
+  $('#sheet-date').textContent = dayKey;
+
+  const seconds = entries.reduce((sum, e) => sum + (e.seconds || 0), 0);
+  $('#sheet-title').textContent = seconds ? `${fmtDuration(seconds)} 描いた` : 'この日は休み';
+
+  const image = $('#sheet-image');
+  const withDrawing = entries.find((e) => e.hasDrawing);
+  image.hidden = true;
+  if (withDrawing) {
+    getDrawing(withDrawing.id)
+      .then((blob) => { if (blob) { image.src = URL.createObjectURL(blob); image.hidden = false; } })
+      .catch(() => {});
+  }
+
+  const body = $('#sheet-body');
+  body.innerHTML = '';
+  for (const entry of entries) {
+    const block = el('div', 'note-item');
+    const head = el('div', 'note-head');
+    head.append(el('span', 'note-date', entry.menuTitle || '練習'));
+    if (entry.lessonId) head.append(el('span', 'rate-tag', lessonById(entry.lessonId)?.name || ''));
+    block.append(head);
+    const drills = Object.entries(entry.byDrill || {})
+      .map(([id, sec]) => `${DRILLS[id]?.name || id} ${fmtDuration(sec)}`).join(' / ');
+    if (drills) block.append(el('p', 'muted small', drills));
+    if (entry.note) block.append(el('p', 'note-body', entry.note));
+    body.append(block);
+  }
+  if (!entries.length) body.append(el('p', 'muted small', '記録はありません。'));
+
+  $('#day-sheet').hidden = false;
+}
+
 function heatLevel(seconds) {
   if (!seconds) return 0;
   if (seconds < 180) return 1;
@@ -523,10 +694,10 @@ function renderHeatmap(history) {
   const wrap = $('#heatmap');
   wrap.innerHTML = '';
   const today = dateKey();
-  // 今日を含む週の土曜までを埋めて、13週ぶんを縦7マスで並べる
+  // 今日を含む週の土曜までを埋めて、26週ぶんを縦7マスで並べる
   const todayDow = new Date(today + 'T00:00:00').getDay();
   const end = addDays(today, 6 - todayDow);
-  for (let i = 90; i >= 0; i--) {
+  for (let i = 181; i >= 0; i--) {
     const day = addDays(end, -i);
     const seconds = totals.get(day) || 0;
     const cell = el('i', `cell h${day > today ? 'x' : heatLevel(seconds)}`);
@@ -603,7 +774,9 @@ function renderSettings() {
   settings = getSettings();
   $$('#source-radios input').forEach((r) => { r.checked = r.value === settings.source; });
   $('#unsplash-key').value = settings.unsplashKey || '';
+  $('#opt-theme').value = settings.theme;
   $('#opt-sound').checked = settings.sound;
+  $('#opt-sfx').checked = settings.sfx;
   $('#opt-autoflip').checked = settings.autoFlip;
   $('#opt-keepawake').checked = settings.keepAwake;
   $('#opt-orientation').value = settings.orientation;
@@ -689,6 +862,11 @@ function wireSettings() {
     settings = saveSettings({ [key]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
   });
   bind('#opt-sound', 'sound');
+  bind('#opt-sfx', 'sfx');
+  $('#opt-theme').addEventListener('change', (e) => {
+    settings = saveSettings({ theme: e.target.value });
+    applyTheme();
+  });
   bind('#opt-autoflip', 'autoFlip');
   bind('#opt-keepawake', 'keepAwake');
   bind('#opt-orientation', 'orientation');
@@ -706,6 +884,7 @@ function wireSettings() {
   $('#reset-btn').addEventListener('click', async () => {
     if (!confirm('練習記録と設定をすべて消します。元に戻せません。')) return;
     clearAll();
+    resetGame();
     await deleteAllDrawings().catch(() => {});
     settings = getSettings();
     renderSettings();
@@ -728,13 +907,35 @@ function wireNav() {
   });
 }
 
+function applyTheme() {
+  document.body.dataset.theme = settings.theme;
+  // ブラウザのUI（アドレスバー）の色も合わせる
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = settings.theme === 'dark' ? '#14151a' : '#fff6f2';
+}
+
+function wireCalendar() {
+  $('#cal-prev').addEventListener('click', () => { calMonth = shiftMonth(calMonth, -1); renderCalendar(); });
+  $('#cal-next').addEventListener('click', () => { calMonth = shiftMonth(calMonth, 1); renderCalendar(); });
+  $('#sheet-close').addEventListener('click', () => { $('#day-sheet').hidden = true; });
+  $('#day-sheet').addEventListener('click', (e) => {
+    if (e.target.id === 'day-sheet') $('#day-sheet').hidden = true;
+  });
+}
+
 function init() {
+  applyTheme();
   wireNav();
   wireReview();
   wireLesson();
+  wireCalendar();
   wireSettings();
+  primeBadges();          // 初回は既存の達成を黙って既読にする
   renderHome();
   showScreen('home');
+
+  // ブラウザは操作なしに音を出せないので、最初のタップで鳴らせるようにしておく
+  document.addEventListener('pointerdown', () => { if (settings.sfx) sfx.unlock(); }, { once: true });
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});

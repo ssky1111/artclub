@@ -7,7 +7,7 @@
  */
 
 import { DRILLS } from './theory.js';
-import { createTimer, createBeeper } from './timer.js';
+import { createTimer, sfx } from './timer.js';
 import { $, showScreen, toast, fmtClock } from './ui.js';
 
 export function createSessionRunner({ onFinish, onQuit }) {
@@ -34,7 +34,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     bridgeReminder: $('#bridge-reminder'),
   };
 
-  const beeper = createBeeper();
+  const beeper = sfx;
   let state = null;
   let wakeLock = null;
   let lastBeepAt = -1;
