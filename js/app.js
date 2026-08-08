@@ -13,6 +13,10 @@ import {
 import { LESSONS, PD_BOOKS, lessonById } from './anatomy.js';
 import { createPhotoQueue, localFiles, testUnsplashKey } from './images.js';
 import { searchPlatesMulti, createPlateQueue } from './commons.js';
+import {
+  BOX_DAYS, ensureLessonCards, cardsForLesson, dueCards, dueByLesson, weakestLesson,
+  grade, reminderFor, injectWeakStep, buildReviewMenu, upcoming, cardStats, syncWeakParts,
+} from './review.js';
 import { createSessionRunner } from './session.js';
 import { putDrawing, getDrawing, deleteAllDrawings, shrinkImage } from './db.js';
 import { $, $$, el, showScreen, toast, fmtDuration } from './ui.js';
@@ -42,6 +46,7 @@ function renderHome() {
   $('#focus-desc').textContent = focus.desc;
 
   renderStreakDots(history);
+  renderDueCards();
   renderLessonChips();
   renderMenus(level);
   renderCategories(level);
@@ -100,6 +105,41 @@ function renderCategories(level) {
     });
     wrap.append(chip);
   }
+}
+
+/* ==================== 復習 ==================== */
+
+function renderDueCards() {
+  const card = $('#review-due-card');
+  const due = dueCards();
+  card.hidden = due.length === 0;
+  if (!due.length) return;
+
+  $('#due-count').textContent = `${due.length}枚`;
+
+  const list = $('#due-list');
+  list.innerHTML = '';
+  for (const item of due.slice(0, 4)) {
+    const li = el('li', 'due-item');
+    li.append(
+      el('span', 'due-part', lessonById(item.lessonId)?.name || ''),
+      el('span', 'due-text', item.text),
+    );
+    list.append(li);
+  }
+  if (due.length > 4) list.append(el('li', 'muted small', `ほか${due.length - 4}枚`));
+
+  const chips = $('#due-chips');
+  chips.innerHTML = '';
+  for (const { lesson, count } of dueByLesson()) {
+    const chip = el('button', 'chip lesson-chip', `${lesson.name}を復習（${count}）`);
+    chip.addEventListener('click', () => startReview(lesson));
+    chips.append(chip);
+  }
+}
+
+function startReview(lesson) {
+  startMenuWithLesson(buildReviewMenu(lesson), lesson, 'weak');
 }
 
 /* ==================== 解剖レッスン ==================== */
@@ -233,28 +273,68 @@ const runner = createSessionRunner({
   },
 });
 
-let lastMenu = null;
-let lastLesson = null;
+let lastStart = null;   // 「もう1セットやる」用に、直前の開始手順をそのまま覚えておく
 
+const notice = (msg) => toast(msg);
+
+/**
+ * ふだんのメニュー。期限の来た復習があれば、その部位のドリルを1本ねじ込む。
+ * 復習を別画面のタスクにすると誰もやらないので、いつもの導線に混ぜてしまう。
+ */
 function startSession(menu) {
-  lastMenu = menu;
-  lastLesson = null;
+  lastStart = () => startSession(menu);
   settings = getSettings();
-  const queues = { photo: createPhotoQueue(settings, (msg) => toast(msg)) };
-  runner.start({ menu, queues, settings, focus: focusForDate(dateKey()) });
+  const weak = weakestLesson();
+  const queues = { photo: createPhotoQueue(settings, notice) };
+  if (weak) {
+    queues[`weak:${weak.id}`] =
+      createPhotoQueue(settings, notice, { queryOverride: weak.photoQuery });
+  }
+  runner.start({
+    menu: weak ? injectWeakStep(menu, weak) : menu,
+    queues,
+    settings,
+    focus: focusForDate(dateKey()),
+    lessonId: weak?.id || null,
+    lessonMode: 'weak',
+    reminder: weak ? reminderFor(weak.id) : null,
+  });
 }
 
 /** 解剖レッスンの練習：図版の模写と、同じ部位の写真を混ぜて回す。 */
 function startLesson(lesson) {
-  const menu = { ...lesson.practice, title: lesson.practice.title };
-  lastMenu = menu;
-  lastLesson = lesson;
+  lastStart = () => startLesson(lesson);
   settings = getSettings();
-  const queues = {
-    photo: createPhotoQueue(settings, (msg) => toast(msg), { queryOverride: lesson.photoQuery }),
-    plate: createPlateQueue(lesson.refQueries, (msg) => toast(msg)),
-  };
-  runner.start({ menu, queues, settings, focus: focusForDate(dateKey()), lessonId: lesson.id });
+  const partPhotos = createPhotoQueue(settings, notice, { queryOverride: lesson.photoQuery });
+  runner.start({
+    menu: lesson.practice,
+    queues: {
+      photo: partPhotos,
+      [`weak:${lesson.id}`]: partPhotos,
+      plate: createPlateQueue(lesson.refQueries, notice),
+    },
+    settings,
+    focus: focusForDate(dateKey()),
+    lessonId: lesson.id,
+    lessonMode: 'lesson',
+    reminder: reminderFor(lesson.id),
+  });
+}
+
+/** 復習だけをやる（ホームの「◯◯を復習」から）。 */
+function startMenuWithLesson(menu, lesson, lessonMode) {
+  lastStart = () => startMenuWithLesson(menu, lesson, lessonMode);
+  settings = getSettings();
+  const partPhotos = createPhotoQueue(settings, notice, { queryOverride: lesson.photoQuery });
+  runner.start({
+    menu,
+    queues: { photo: partPhotos, [`weak:${lesson.id}`]: partPhotos },
+    settings,
+    focus: focusForDate(dateKey()),
+    lessonId: lesson.id,
+    lessonMode,
+    reminder: reminderFor(lesson.id),
+  });
 }
 
 function saveResult(result) {
@@ -275,7 +355,7 @@ function finishSession(result) {
 
   const focus = focusForDate(entry.date);
   $('#review-focus').textContent = focus.title;
-  renderReviewChecks(entry.lessonId);
+  renderReviewChecks(entry.lessonId, entry.lessonMode);
 
   const drillLines = Object.entries(entry.byDrill)
     .map(([id, sec]) => `<li><span>${DRILLS[id]?.name || id}</span><b>${fmtDuration(sec)}</b></li>`)
@@ -293,21 +373,38 @@ function finishSession(result) {
 
 /* ==================== ふりかえり ==================== */
 
-/** 解剖レッスンのあとだけ、その部位のチェック項目を出す。 */
-function renderReviewChecks(lessonId) {
+/**
+ * その部位のチェック項目を出す。ここでの ○✕ がそのまま復習カードの採点になる。
+ * レッスンをやった直後は全項目、ふだんのメニューに苦手が混ざっただけのときは
+ * 期限の来ているものだけを出す（毎回全部聞かれると答えるのが面倒になるため）。
+ */
+function renderReviewChecks(lessonId, lessonMode) {
   const card = $('#review-checks-card');
   const list = $('#review-checks');
   const lesson = lessonId ? lessonById(lessonId) : null;
   list.innerHTML = '';
+  $('#check-schedule').textContent = '';
   card.hidden = !lesson;
   if (!lesson) return;
-  for (const text of lesson.checks) {
-    const item = el('li');
-    const btn = el('button', 'check-btn', text);
+
+  ensureLessonCards(lesson.id);
+  const cards = lessonMode === 'lesson'
+    ? cardsForLesson(lesson.id)
+    : dueCards().filter((c) => c.lessonId === lesson.id).slice(0, 4);
+
+  if (!cards.length) { card.hidden = true; return; }
+
+  for (const item of cards) {
+    const li = el('li');
+    const btn = el('button', 'check-btn', item.text);
+    btn.dataset.cardId = item.id;
     btn.addEventListener('click', () => btn.classList.toggle('on'));
-    item.append(btn);
-    list.append(item);
+    if (item.wrong > 0) btn.append(el('span', 'card-badge', `${item.wrong}回落とした`));
+    li.append(btn);
+    list.append(li);
   }
+  $('#check-schedule').textContent =
+    `できた項目は ${BOX_DAYS.join('日 → ')}日 と間隔をあけて戻ってきます。押さなかった項目は翌日です。`;
 }
 
 function wireReview() {
@@ -335,9 +432,13 @@ function wireReview() {
 
   $('#review-save').addEventListener('click', async () => {
     const rated = $$('.rate-btn').find((b) => b.classList.contains('on'));
-    const missed = $$('#review-checks .check-btn')
-      .filter((b) => !b.classList.contains('on'))
-      .map((b) => b.textContent);
+    const checkBtns = $$('#review-checks .check-btn');
+    const missed = [];
+    for (const btn of checkBtns) {
+      const ok = btn.classList.contains('on');
+      grade(btn.dataset.cardId, ok);          // ここで次に出る日が決まる
+      if (!ok) missed.push(btn.firstChild.textContent);
+    }
     const entry = updateLastSession({
       rating: rated ? Number(rated.dataset.rate) : null,
       note: $('#review-note').value.trim() || null,
@@ -353,10 +454,7 @@ function wireReview() {
     showScreen('home');
   });
 
-  $('#review-again').addEventListener('click', () => {
-    if (lastLesson) startLesson(lastLesson);
-    else if (lastMenu) startSession(lastMenu);
-  });
+  $('#review-again').addEventListener('click', () => lastStart?.());
 }
 
 /* ==================== 記録 ==================== */
@@ -370,8 +468,46 @@ function renderLog() {
   $('#st-minutes').textContent = String(s.minutes);
 
   renderHeatmap(history);
+  renderUpcoming();
   renderDrillBars(s);
   renderNotes(history);
+}
+
+/** 復習が今後どの日に何枚出るか。溜まり具合が見えないと放置されるので。 */
+function renderUpcoming() {
+  const stats = cardStats();
+  $('#card-summary').textContent = stats.total
+    ? `${stats.total}枚中 ${stats.due}枚が今日 / 卒業 ${stats.graduated}枚`
+    : 'まだカードがありません';
+
+  const wrap = $('#upcoming');
+  wrap.innerHTML = '';
+  const rows = upcoming(14);
+  const max = Math.max(1, ...rows.map((r) => r.count));
+  for (const row of rows) {
+    const col = el('div', 'up-col');
+    const bar = el('div', 'up-bar');
+    bar.style.height = `${(row.count / max) * 100}%`;
+    if (!row.count) bar.classList.add('empty');
+    col.append(bar, el('div', 'up-label', row.day.slice(8)));
+    col.title = `${row.day}：${row.count}枚`;
+    wrap.append(col);
+  }
+
+  const boxes = $('#box-bars');
+  boxes.innerHTML = '';
+  if (!stats.total) return;
+  boxes.append(el('div', 'label', '箱の分布（右にいくほど間隔が長い）'));
+  BOX_DAYS.forEach((days, i) => {
+    const bar = el('div', 'bar');
+    bar.style.width = `${Math.max(3, (stats.byBox[i] / stats.total) * 100)}%`;
+    const track = el('div', 'bar-track');
+    track.append(bar);
+    const row = el('div', 'bar-row');
+    row.append(el('div', 'bar-label', `${days}日ごと`), track,
+               el('div', 'bar-value muted small', `${stats.byBox[i]}枚`));
+    boxes.append(row);
+  });
 }
 
 function heatLevel(seconds) {
@@ -473,7 +609,28 @@ function renderSettings() {
   $('#opt-orientation').value = settings.orientation;
   $('#local-count').textContent = `${localFiles.items.length}枚`;
   updateSourceVisibility();
+  renderWeakChips();
   renderTheory();
+}
+
+function renderWeakChips() {
+  const wrap = $('#weak-chips');
+  wrap.innerHTML = '';
+  for (const lesson of LESSONS) {
+    const on = settings.weakParts.includes(lesson.id);
+    const chip = el('button', `chip${on ? ' on' : ''}`, lesson.name);
+    chip.addEventListener('click', () => {
+      const next = new Set(settings.weakParts);
+      next.has(lesson.id) ? next.delete(lesson.id) : next.add(lesson.id);
+      settings = saveSettings({ weakParts: [...next] });
+      syncWeakParts(settings.weakParts);      // 選んだ瞬間から復習に出す
+      renderWeakChips();
+      toast(next.has(lesson.id)
+        ? `${lesson.name}を復習に入れました`
+        : `${lesson.name}を外しました（出ているカードは予定どおり残ります）`);
+    });
+    wrap.append(chip);
+  }
 }
 
 function updateSourceVisibility() {

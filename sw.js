@@ -18,6 +18,7 @@ const SHELL = [
   './js/ui.js',
   './js/anatomy.js',
   './js/commons.js',
+  './js/review.js',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-192.png',

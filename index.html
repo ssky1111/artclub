@@ -62,6 +62,18 @@
     <p id="focus-desc" class="focus-desc muted"></p>
   </section>
 
+  <section class="card review-card" id="review-due-card" hidden>
+    <div class="section-head">
+      <h2>今日の復習</h2>
+      <span id="due-count" class="badge good-badge">0枚</span>
+    </div>
+    <p class="muted small">
+      前にできなかった項目が、間隔をあけて戻ってきます。押すとその部位だけ練習できます。
+    </p>
+    <ul id="due-list" class="due-list"></ul>
+    <div id="due-chips" class="chips"></div>
+  </section>
+
   <section class="card lesson-cta">
     <div class="section-head"><h2>描けない部位をつぶす</h2></div>
     <p class="muted small">
@@ -141,6 +153,7 @@
     <h2 id="bridge-title">—</h2>
     <p id="bridge-theory" class="muted"></p>
     <p id="bridge-cue" class="cue-text"></p>
+    <p id="bridge-reminder" class="reminder-text" hidden></p>
     <div class="bridge-meta muted small" id="bridge-meta"></div>
     <button id="bridge-start" class="btn primary big">はじめる</button>
     <button id="bridge-skip" class="btn ghost">このドリルを飛ばす</button>
@@ -156,8 +169,11 @@
 
   <section class="card" id="review-checks-card" hidden>
     <div class="section-head"><h2>セルフチェック</h2></div>
-    <p class="muted small">描いたものを見ながら、当てはまるものだけ押す。</p>
+    <p class="muted small">
+      描いたものを見ながら、できているものだけ押す。押さなかった項目は翌日また出ます。
+    </p>
     <ul id="review-checks" class="check-list"></ul>
+    <p id="check-schedule" class="muted small"></p>
   </section>
 
   <section class="card">
@@ -266,6 +282,15 @@
   </section>
 
   <section class="card">
+    <div class="section-head">
+      <h2>復習の予定</h2>
+      <span id="card-summary" class="muted small"></span>
+    </div>
+    <div id="upcoming" class="upcoming"></div>
+    <div id="box-bars" class="box-bars"></div>
+  </section>
+
+  <section class="card">
     <div class="section-head"><h2>ドリル別の積み上げ</h2></div>
     <div id="drill-bars" class="drill-bars"></div>
   </section>
@@ -312,6 +337,15 @@
       <span id="local-count" class="muted small">0枚</span>
       <p class="muted small">選んだ画像はこのセッションの間だけ使います（保存はされません）。</p>
     </div>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2>苦手な部位</h2></div>
+    <p class="muted small">
+      選ぶと、その部位のチェック項目が今日から復習に出ます。
+      ふだんのメニューにもその部位のドリルが1本混ざります。
+    </p>
+    <div id="weak-chips" class="chips"></div>
   </section>
 
   <section class="card">

@@ -31,6 +31,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     bridgeTheory: $('#bridge-theory'),
     bridgeCue: $('#bridge-cue'),
     bridgeMeta: $('#bridge-meta'),
+    bridgeReminder: $('#bridge-reminder'),
   };
 
   const beeper = createBeeper();
@@ -137,6 +138,12 @@ export function createSessionRunner({ onFinish, onQuit }) {
     dom.bridgeCue.textContent = drill.cue;
     dom.bridgeMeta.textContent =
       `${item.countInStep}枚 × ${fmtClock(item.seconds)}${item.seconds >= 60 ? '' : '秒'}`;
+
+    // 復習対象のドリルのときだけ「前回の宿題」を1行出す
+    const reminder = item.source.startsWith('weak:') ? state.reminder : null;
+    dom.bridgeReminder.hidden = !reminder;
+    dom.bridgeReminder.textContent = reminder || '';
+
     showScreen('bridge');
     state.awaitingBridge = true;
     prefetch(item);   // 説明を読んでいる間に読み込んでおく
@@ -222,6 +229,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
       byDrill: state.byDrill,
       focusId: state.focus.id,
       lessonId: state.lessonId,
+      lessonMode: state.lessonMode,
     });
   }
 
@@ -232,7 +240,8 @@ export function createSessionRunner({ onFinish, onQuit }) {
     if (state?.current) record(state.current, Math.round(state.current.seconds - timer.remaining));
     const partial = state && state.totalSeconds > 20
       ? { menuId: state.menu.id, menuTitle: state.menu.title, seconds: state.totalSeconds,
-          byDrill: state.byDrill, focusId: state.focus.id, lessonId: state.lessonId, partial: true }
+          byDrill: state.byDrill, focusId: state.focus.id, lessonId: state.lessonId,
+          lessonMode: state.lessonMode, partial: true }
       : null;
     state = null;
     onQuit(partial);
@@ -334,7 +343,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
   });
 
   return {
-    async start({ menu, queues, settings, focus, lessonId = null }) {
+    async start({ menu, queues, settings, focus, lessonId = null, lessonMode = 'weak', reminder = null }) {
       state = {
         menu,
         plan: buildQueue(menu),
@@ -342,6 +351,8 @@ export function createSessionRunner({ onFinish, onQuit }) {
         settings,
         focus,
         lessonId,
+        lessonMode,
+        reminder,
         cursor: -1,
         byDrill: {},
         totalSeconds: 0,

@@ -274,6 +274,45 @@ a { color: var(--accent); }
 
 .drawing-preview { width: 100%; border-radius: 10px; margin-top: 10px; }
 
+/* ---------- 復習 ---------- */
+
+.review-card { border-left: 3px solid var(--good); }
+.good-badge { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, transparent); }
+
+.due-list { list-style: none; padding: 0; margin: 10px 0; }
+.due-item {
+  display: flex; gap: 8px; align-items: baseline;
+  padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px;
+}
+.due-part {
+  flex: none; font-size: 11px; color: var(--good);
+  border: 1px solid color-mix(in srgb, var(--good) 40%, transparent);
+  border-radius: 999px; padding: 1px 8px;
+}
+.due-text { color: #cfd3db; }
+
+.reminder-text {
+  margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 14px;
+  background: color-mix(in srgb, var(--good) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--good) 35%, transparent);
+  color: var(--good);
+}
+
+.card-badge {
+  display: block; margin-top: 4px; font-size: 11px; color: var(--danger);
+}
+
+.upcoming {
+  display: flex; align-items: flex-end; gap: 4px; height: 90px; margin: 12px 0 6px;
+}
+.up-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; gap: 4px; }
+.up-bar { background: var(--good); border-radius: 3px 3px 0 0; min-height: 3px; }
+.up-bar.empty { background: var(--surface-2); }
+.up-label { font-size: 10px; color: var(--muted); text-align: center; }
+
+.box-bars { margin-top: 14px; }
+.box-bars .bar { background: var(--good); }
+
 /* ---------- 解剖レッスン ---------- */
 
 .lesson-cta { border-left: 3px solid var(--good); }

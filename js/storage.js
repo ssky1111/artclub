@@ -4,11 +4,13 @@
 
 const SETTINGS_KEY = 'croqui.settings.v1';
 const HISTORY_KEY = 'croqui.history.v1';
+const CARDS_KEY = 'croqui.cards.v1';
 
 const DEFAULT_SETTINGS = {
   source: 'picsum',          // 'unsplash' | 'picsum' | 'local'
   unsplashKey: '',
   categories: ['pose', 'animal', 'still', 'nature'],
+  weakParts: [],             // 苦手だと申告した部位（レッスンID）
   sound: true,
   autoFlip: false,
   keepAwake: true,
@@ -65,9 +67,22 @@ export function updateLastSession(patch) {
   return list[list.length - 1];
 }
 
+/* ---------- 復習カード ---------- */
+
+export function getCards() {
+  const cards = read(CARDS_KEY, {});
+  return cards && typeof cards === 'object' ? cards : {};
+}
+
+export function saveCards(cards) {
+  write(CARDS_KEY, cards);
+  return cards;
+}
+
 export function clearAll() {
   localStorage.removeItem(SETTINGS_KEY);
   localStorage.removeItem(HISTORY_KEY);
+  localStorage.removeItem(CARDS_KEY);
 }
 
 /* ---------- 日付ユーティリティ ---------- */

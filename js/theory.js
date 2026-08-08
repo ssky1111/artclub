@@ -44,6 +44,14 @@ export const PRINCIPLES = [
     source: 'George B. Bridgman『Constructive Anatomy』(1920)',
   },
   {
+    id: 'spacing',
+    title: '間隔をあけて戻す',
+    body: '一度できたことは必ず抜ける。抜けかけた頃にもう一度やると、そこで初めて定着する。' +
+          'ただし復習を別のタスクにすると誰もやらないので、期限の来た項目をふだんのメニューに混ぜている。' +
+          '間隔をあける単位は「ドリル」ではなく「チェック項目」。抜けるのは手ではなく判断のルールだから。',
+    source: '間隔効果 / 分散練習・テスト効果（Ebbinghaus, Cepeda et al. 2006, Roediger & Karpicke 2006）',
+  },
+  {
     id: 'interleave',
     title: '混ぜる・少しずつ重くする',
     body: '同じドリルだけを続けると上達が頭打ちになる（ブロック練習の罠）。1セッションに性質の違うドリルを' +
