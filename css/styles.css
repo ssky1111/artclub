@@ -23,10 +23,11 @@
   --accent-dim: #c9c9c3;
   --cta-bg: #111111;
   --cta-ink: #ffffff;
-  --brand: #ff4fb8;           /* 小さく差す色 */
-  --mint: #17c79a;
+  --brand: #fca9a2;           /* 塗りに使う淡いサーモンピンク */
+  --brand-ink: #d4707a;       /* 文字に使う濃いめ。淡い方だと白地の13px文字が読めないため */
+  --mint: #52a98d;
   --sun: #ffcc3d;
-  --good: #17c79a;
+  --good: #52a98d;
   --danger: #f2544b;
   --radius: 22px;
   --radius-sm: 14px;
@@ -51,9 +52,10 @@ body[data-theme='dark'] {
   --accent-dim: #3a3a3a;
   --cta-bg: #ffffff;
   --cta-ink: #000000;
-  --brand: #ff4fb8;
-  --mint: #3ddad0;
-  --good: #3ddad0;
+  --brand: #fcaaa3;
+  --brand-ink: #fcaaa3;       /* 黒地なら淡いままで読める */
+  --mint: #5fc9a7;
+  --good: #5fc9a7;
 }
 
 /* claude.ai 寄りの紙っぽい配色も残してある */
@@ -73,6 +75,7 @@ body[data-theme='paper'] {
   --cta-bg: #c96442;
   --cta-ink: #fffefb;
   --brand: #c96442;
+  --brand-ink: #c96442;
   --mint: #4f7d5e;
   --sun: #c08a2e;
   --good: #4f7d5e;
@@ -152,11 +155,12 @@ a { color: var(--accent); }
   font-size: 12px; color: var(--muted);
 }
 .pill { background: var(--surface-2); }
-.pill.done { color: var(--accent-ink); background: var(--brand); font-weight: 700; }
+.pill.done { color: #fff; background: var(--brand-ink); font-weight: 700; }
 
 .streak-dots { display: flex; gap: 4px; margin-top: 12px; }
 .dot { width: 100%; height: 6px; border-radius: 3px; background: var(--surface-2); }
 .dot.on { background: var(--brand); }
+.streak-flame { filter: saturate(.85); }
 
 .focus-card { background: var(--surface); }
 .focus-title { font-size: 21px; font-weight: 600; margin-top: 4px; font-family: var(--font-display); }
@@ -182,7 +186,7 @@ a { color: var(--accent); }
 .menu-title { font-size: 17px; font-weight: 700; font-family: var(--font-display); }
 .menu-sub { font-size: 13px; margin-top: 2px; }
 .menu-steps { margin-top: 6px; }
-.menu-time { margin-top: 8px; font-size: 13px; color: var(--brand); }
+.menu-time { margin-top: 8px; font-size: 13px; color: var(--brand-ink); font-weight: 600; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
@@ -374,7 +378,7 @@ a { color: var(--accent); }
 
 .level-chip {
   display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2;
-  font-weight: 700; color: var(--brand); font-family: var(--font-display);
+  font-weight: 700; color: var(--brand-ink); font-family: var(--font-display);
 }
 
 .xp-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
