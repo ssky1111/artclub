@@ -83,11 +83,24 @@ export const DRILLS = {
       '頭からつま先へ1本の線',
       '肩と腰の傾きを2本',
     ],
-    name: 'ジェスチャー',
-    theory: '細部を描く時間を奪うことで、全体の流れと重心だけに注意を向けさせる。',
+    name: 'ジェスドロ',
+    theory: '細部を描く時間を奪うことで、全体の流れと重心だけに注意を向けさせる。' +
+            '完成させるためではなく、勢いと重心を掴むための1分。',
     cue: 'まず1本の線で「動きの流れ」を引く。輪郭は追わない。',
     view: {},
-    weight: 'warmup',
+  },
+  croquis: {
+    id: 'croquis',
+    steps: [
+      'あたりで全体の入る枠を取る',
+      '頭・胸・骨盤の位置を決める',
+      '手足をつないで、要所だけ描き込む',
+    ],
+    name: 'クロッキー',
+    theory: 'ジェスドロで掴んだ流れの上に、実際の形を乗せていく。' +
+            '3分は「全部は描けないが、全体は入る」ちょうどの長さ。',
+    cue: '全体が紙に入る大きさで。細部は最後の30秒だけ。',
+    view: {},
   },
   squint: {
     id: 'squint',
@@ -247,49 +260,42 @@ export const MENUS = [
   {
     id: 'quick',
     title: 'ウォームアップ',
-    subtitle: 'とにかく手を動かす日に',
+    subtitle: 'ジェスドロだけ。とにかく手を動かす日に',
     steps: [
-      { drill: 'gesture', count: 4, seconds: 30 },
-      { drill: 'squint',  count: 1, seconds: 60 },
+      { drill: 'gesture', count: 3, seconds: 60 },
     ],
   },
   {
     id: 'daily',
     title: 'デイリー',
-    subtitle: '手を温める → 箱で組む → 輪郭で仕上げる。人を描く順番そのまま',
-    // 観察ドリルを並べるのをやめて、実際に人を描くときの順番にした。
-    // 何のためにやるのか分からないドリルが並ぶと、途中で意味を見失うため。
+    subtitle: 'ジェスドロで流れを掴んでから、クロッキーで形にする',
     steps: [
-      { drill: 'gesture', count: 3, seconds: 30 },
-      { drill: 'mass',    count: 1, seconds: 180 },
-      { drill: 'contour', count: 1, seconds: 180 },
+      { drill: 'gesture', count: 3, seconds: 60 },
+      { drill: 'croquis', count: 3, seconds: 180 },
     ],
   },
   {
     id: 'deep',
     title: 'じっくり',
-    subtitle: '時間がある日に。長めの模写と、記憶で描くところまで',
+    subtitle: '時間がある日に。最後は10分の1枚まで',
     steps: [
-      { drill: 'gesture',    count: 6, seconds: 30 },
-      { drill: 'blind',      count: 1, seconds: 120 },
-      { drill: 'proportion', count: 1, seconds: 240 },
-      { drill: 'notan',      count: 1, seconds: 240 },
-      { drill: 'upsideDown', count: 1, seconds: 300 },
-      { drill: 'memory',     count: 1, seconds: 120 },
+      { drill: 'gesture', count: 5, seconds: 60 },
+      { drill: 'croquis', count: 3, seconds: 180 },
+      { drill: 'croquis', count: 1, seconds: 600 },
     ],
   },
   {
     id: 'gestureOnly',
-    title: 'クロッキー連続',
-    subtitle: '30秒を何枚も。手が温まっている日に',
+    title: 'ジェスドロ連続',
+    subtitle: '1分を10枚。手が温まっている日に',
     steps: [
-      { drill: 'gesture', count: 12, seconds: 30 },
+      { drill: 'gesture', count: 10, seconds: 60 },
     ],
   },
 ];
 
 /** 1枚あたりの時間の選択肢（秒）。 */
-export const TIME_CHOICES = [30, 60, 120, 300, 600, 1200];
+export const TIME_CHOICES = [30, 60, 120, 180, 300, 600];
 export const COUNT_CHOICES = [1, 3, 5, 10, 20];
 
 export function timeLabel(seconds) {
@@ -321,22 +327,12 @@ export function levelLabel(level) {
 }
 
 /**
- * 段階的過負荷。レベルが上がるほどジェスチャーは短く（＝判断を速く）、
- * 長時間ドリルは少しだけ長く（＝観察の解像度を上げる）。
+ * 時間はメニューに書いてあるとおりに使う。
+ * 以前はレベルで秒数を上下させていたが、「30秒のはずが25秒になる」「20分と書いてあるのに22分」
+ * と、表示と実物が食い違う原因にしかなっていなかった。長さは本人が決めるもの。
  */
-export function scaleMenu(menu, level) {
-  const gestureSeconds = [30, 30, 25, 20, 20, 15][level] ?? 30;
-  const studyScale = [1, 1, 1.1, 1.2, 1.3, 1.4][level] ?? 1;
-  const steps = menu.steps.map((step) => {
-    const drill = DRILLS[step.drill];
-    const isWarmup = drill.weight === 'warmup';
-    const seconds = isWarmup
-      ? gestureSeconds
-      : Math.round((step.seconds * studyScale) / 15) * 15;
-    const count = isWarmup && level >= 3 ? step.count + 2 : step.count;
-    return { ...step, seconds, count };
-  });
-  return { ...menu, steps };
+export function scaleMenu(menu) {
+  return menu;
 }
 
 export function menuDuration(menu) {

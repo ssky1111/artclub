@@ -29,7 +29,7 @@
   --lime-ink: #5a9c1e;        /* 黄緑。文字 */
   --mint: #8ed94b;
   --sun: #ffcc3d;
-  --good: #5a9c1e;
+  --good: #4aa80c;            /* 「できた」の緑。塗りの黄緑と同系で、白地でも読める */
   --danger: #f2544b;
   --radius: 22px;
   --radius-sm: 14px;
@@ -657,8 +657,12 @@ a { color: var(--accent); }
 /* ---------- 解剖レッスン ---------- */
 
 .lesson-cta { background: none; border: none; box-shadow: none; padding: 4px; }
-.lesson-chip { background: transparent; border-color: color-mix(in srgb, var(--good) 45%, transparent); color: var(--good); font-weight: 600; }
-.lesson-chip:hover { background: color-mix(in srgb, var(--good) 12%, transparent); }
+/* 黄緑は塗りで使う。白地に線と文字だけだと、読める濃さまで落として結局くすむため */
+.lesson-chip {
+  background: var(--lime); border-color: var(--lime);
+  color: #17330a; font-weight: 700;
+}
+.lesson-chip:hover { filter: brightness(1.05); }
 
 .lesson-problem { font-size: 14px; margin: 8px 0 0; }
 
@@ -801,14 +805,16 @@ a { color: var(--accent); }
   background: var(--surface); border-radius: 999px;
 }
 body[data-screen='home'] .tabbar,
+body[data-screen='library'] .tabbar,
 body[data-screen='log'] .tabbar { display: flex; }
 body[data-screen='home'] #screen-home,
+body[data-screen='library'] #screen-library,
 body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 
 .tabbar button {
   font: inherit; font-size: 15px; font-weight: 700; font-family: var(--font-display);
   border: none; background: transparent; color: var(--muted);
-  padding: 9px 26px; border-radius: 999px; cursor: pointer;
+  padding: 9px 20px; border-radius: 999px; cursor: pointer;
 }
 .tabbar button.on { background: var(--cta-bg); color: var(--cta-ink); }
 

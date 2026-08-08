@@ -145,15 +145,23 @@ function renderMenus(level) {
   const hero = el('button', 'menu-card primary-card');
   hero.append(
     el('div', 'menu-kicker', 'きょうの練習'),
-    el('div', 'menu-title big', 'じぶんで決めて描く'),
-    el('div', 'menu-sub', '何を・何分・何枚・どう描くかを選んでから始めます'),
-    el('div', 'menu-time', '時間はここで決められます'),
+    el('div', 'menu-title big', primary.title),
+    el('div', 'menu-sub', primary.subtitle),
+    el('div', 'menu-time', `約${fmtDuration(menuDuration(primary))}`),
   );
-  hero.addEventListener('click', openSetup);
+  hero.addEventListener('click', () => startSession(primary));
   top.append(hero);
 
   const wrap = $('#menu-cards');
   wrap.innerHTML = '';
+
+  // 時間や枚数を自分で決めたいときはこちら
+  const custom = el('button', 'menu-card slim');
+  custom.append(el('div', 'menu-title', 'じぶんで決めて描く'),
+                el('div', 'menu-time', '何分・何枚・タグ'));
+  custom.addEventListener('click', openSetup);
+  wrap.append(custom);
+
   for (const menu of menus) {
     if (menu === primary) continue;
     const card = el('button', 'menu-card slim');
@@ -187,7 +195,7 @@ function renderCategories() {
  * 「30秒固定では描けない」という声のとおり、時間は本人が決めるもの。
  * 何を・何分・何枚・どう描くか、をここで選んでから始める。
  */
-const setup = { tags: [], seconds: 120, count: 5, drill: 'gesture' };
+const setup = { tags: [], seconds: 60, count: 5, drill: 'gesture' };
 
 function openSetup() {
   renderSetupTags();
@@ -229,7 +237,10 @@ function renderSetupChips() {
 
   const drills = $('#setup-drill');
   drills.innerHTML = '';
-  for (const id of ['gesture', 'mass', 'landmark', 'contour', 'notan', 'memory']) {
+  // ネガティブスペースやシルエットは毎日やるものではないが、
+  // 詰まったときに効くので、選べるところには置いておく
+  for (const id of ['gesture', 'croquis', 'mass', 'landmark', 'contour',
+                    'negative', 'squint', 'notan', 'memory']) {
     const chip = el('button', `chip${setup.drill === id ? ' on' : ''}`, DRILLS[id].name);
     chip.addEventListener('click', () => { setup.drill = id; renderSetupChips(); });
     drills.append(chip);
@@ -516,14 +527,18 @@ const notice = (msg) => toast(msg);
  * ふだんのメニュー。期限の来た復習があれば、その部位のドリルを1本ねじ込む。
  * 復習を別画面のタスクにすると誰もやらないので、いつもの導線に混ぜてしまう。
  */
-function startSession(menu, { tags = null } = {}) {
+async function startSession(menu, { tags = null } = {}) {
   lastStart = () => startSession(menu, { tags });
   settings = getSettings();
   const weak = weakestLesson();
-  // タグが選ばれていれば自分の写真から、そうでなければ検索した写真から
+
+  // 自分の写真が1枚でも入っていればそこから出す。
+  // タグを選んだときだけ使う作りだと、入れた写真がふだんの練習に出てこない。
+  const own = await allPhotos().catch(() => []);
+  const useLibrary = tags?.length ? true : own.length > 0;
   const queues = {
-    photo: tags
-      ? createLibraryQueue(tags, notice)
+    photo: useLibrary
+      ? createLibraryQueue(tags || [], notice)
       : createPhotoQueue(settings, notice),
   };
   if (weak) {
@@ -1048,6 +1063,7 @@ function wireNav() {
       const target = btn.dataset.nav;
       if (target === 'log') renderLog();
       if (target === 'library') { openLibrary(); return; }
+      if (target === 'home') renderHome();
       if (target === 'settings') renderSettings();
       if (target === 'home') renderHome();
       showScreen(target);
