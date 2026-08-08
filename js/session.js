@@ -10,6 +10,7 @@ import { DRILLS } from './theory.js';
 import { createTimer, sfx } from './timer.js';
 import { createPad } from './draw.js';
 import { $, $$, showScreen, toast, fmtClock } from './ui.js';
+import { paintIcons } from './icons.js';
 
 export function createSessionRunner({ onFinish, onQuit }) {
   const dom = {
@@ -35,6 +36,11 @@ export function createSessionRunner({ onFinish, onQuit }) {
     bridgeReminder: $('#bridge-reminder'),
     stage: document.querySelector('.stage'),
     padWrap: $('#pad-wrap'),
+    refMini: $('#ref-mini'),
+    refMiniImg: $('#ref-mini-img'),
+    padDrill: $('#pad-drill'),
+    padProgress: $('#pad-progress'),
+    padTime: $('#pad-time'),
   };
 
   const pad = createPad($('#pad'));
@@ -48,6 +54,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     onTick(remaining, progress) {
       dom.timebar.style.transform = `scaleX(${progress})`;
       dom.timeLeft.textContent = fmtClock(remaining);
+      dom.padTime.textContent = fmtClock(remaining);
       const whole = Math.ceil(remaining);
       if (state?.settings.sound && whole <= 3 && whole > 0 && whole !== lastBeepAt) {
         lastBeepAt = whole;
@@ -183,13 +190,16 @@ export function createSessionRunner({ onFinish, onQuit }) {
 
     dom.stageMessage.hidden = true;
     dom.img.src = photo.url;
+    dom.refMiniImg.src = photo.url;
+    dom.padDrill.textContent = drill.name;
+    dom.padProgress.textContent = `${item.indexInStep} / ${item.countInStep}`;
     renderAttribution(photo);
 
     const flipped = state.flipForced || (state.settings.autoFlip && Math.random() < 0.5);
     applyView(drill, { flipped });
 
     timer.start(item.seconds);
-    dom.pauseBtn.textContent = '⏸';
+    setPauseIcon();
   }
 
   function renderAttribution(photo) {
@@ -205,12 +215,26 @@ export function createSessionRunner({ onFinish, onQuit }) {
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  /**
+   * いま描いてあるものを1枚として確定し、キャンバスを空にする。
+   * 次の写真に変わっても前の線が残っていると、どこから描き始めるのか分からなくなるため。
+   */
+  async function harvestDrawing() {
+    if (!pad.hasContent) return;
+    const blob = await pad.toBlob().catch(() => null);
+    if (blob) state.drawings.push(blob);
+    pad.clear();
+    if (state.settings.sfx) sfx.check();
+    toast(`${state.drawings.length}枚目を保存しました`, 1400);
+  }
+
   function record(item, seconds) {
     state.byDrill[item.drillId] = (state.byDrill[item.drillId] || 0) + seconds;
     state.totalSeconds += seconds;
   }
 
   async function advance(skipped = false) {
+    await harvestDrawing();          // 次の絵に移る前に、描いたものを1枚として確定する
     const done = state.current;
     if (done) {
       const spent = skipped ? Math.max(0, done.seconds - timer.remaining) : done.seconds;
@@ -227,10 +251,10 @@ export function createSessionRunner({ onFinish, onQuit }) {
   async function finish() {
     timer.stop();
     releaseWakeLock();
-    const drawn = pad.hasContent ? await pad.toBlob().catch(() => null) : null;
+    await harvestDrawing();
     closePad();
     onFinish({
-      drawing: drawn,
+      drawings: state.drawings,
       menuId: state.menu.id,
       menuTitle: state.menu.title,
       seconds: state.totalSeconds,
@@ -241,16 +265,17 @@ export function createSessionRunner({ onFinish, onQuit }) {
     });
   }
 
-  function quit() {
+  async function quit() {
     timer.stop();
     releaseWakeLock();
+    await harvestDrawing();
     closePad();
     // 途中でやめても、そこまでの分は記録する（1分でも「やった」に入れる）
     if (state?.current) record(state.current, Math.round(state.current.seconds - timer.remaining));
     const partial = state && state.totalSeconds > 20
       ? { menuId: state.menu.id, menuTitle: state.menu.title, seconds: state.totalSeconds,
           byDrill: state.byDrill, focusId: state.focus.id, lessonId: state.lessonId,
-          lessonMode: state.lessonMode, partial: true }
+          lessonMode: state.lessonMode, drawings: state.drawings, partial: true }
       : null;
     state = null;
     onQuit(partial);
@@ -271,7 +296,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && timer.running) {
       timer.pause();
-      dom.pauseBtn.textContent = '▶';
+      setPauseIcon();
     }
   });
 
@@ -279,7 +304,13 @@ export function createSessionRunner({ onFinish, onQuit }) {
 
   function togglePause() {
     timer.toggle();
-    dom.pauseBtn.textContent = timer.running ? '⏸' : '▶';
+    setPauseIcon();
+  }
+
+  function setPauseIcon() {
+    dom.pauseBtn.dataset.icon = timer.running ? 'pause' : 'play';
+    dom.padTime.classList.toggle('paused', !timer.running);
+    paintIcons(dom.pauseBtn.parentNode);
   }
 
   /** 画面内に描くモード。紙が手元にない日でも始められるように。 */
@@ -289,6 +320,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     dom.stage.classList.toggle('with-pad', open);
     $('#tool-pad').classList.toggle('on', open);
     if (open) requestAnimationFrame(() => pad.resize());
+    else dom.refMini.classList.remove('big');
   }
 
   function closePad() {
@@ -352,6 +384,11 @@ export function createSessionRunner({ onFinish, onQuit }) {
   });
 
   window.addEventListener('resize', () => { if (!dom.padWrap.hidden) pad.resize(); });
+
+  $('#pad-next').addEventListener('click', () => advance(true));
+  $('#pad-quit').addEventListener('click', quit);
+  $('#pad-time').addEventListener('click', togglePause);
+  dom.refMini.addEventListener('click', () => dom.refMini.classList.toggle('big'));
   $('#attr-btn').addEventListener('click', () => { dom.attrBox.hidden = !dom.attrBox.hidden; });
 
   $('#bridge-start').addEventListener('click', () => {
@@ -402,6 +439,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
         reminder,
         cursor: -1,
         byDrill: {},
+        drawings: [],
         totalSeconds: 0,
         gridForced: false,
         flipForced: false,

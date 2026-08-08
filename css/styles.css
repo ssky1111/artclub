@@ -87,6 +87,10 @@ body[data-theme='paper'] {
 
 * { box-sizing: border-box; }
 
+.icon { display: block; }
+.icon-wrap { display: inline-flex; }
+[data-icon] { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+
 /* display を持つクラスが hidden 属性に勝ってしまうので、ここで押さえておく */
 [hidden] { display: none !important; }
 
@@ -365,7 +369,16 @@ a { color: var(--accent); }
 }
 .rate-btn.on { border-color: var(--accent); color: var(--accent); }
 
-.drawing-preview { width: 100%; border-radius: 10px; margin-top: 10px; }
+.drawing-strip {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 8px; margin-top: 10px;
+}
+.strip-item {
+  aspect-ratio: 1; padding: 0; overflow: hidden; cursor: pointer;
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: #fffdf8;
+}
+.strip-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.strip-item:active { opacity: .6; }
 
 /* ---------- ホームの上段（ストリーク・XP・クエスト・バッジ） ---------- */
 
@@ -470,41 +483,72 @@ a { color: var(--accent); }
 
 /* ---------- 描くところ ---------- */
 
-.stage.with-pad { flex-direction: column; justify-content: flex-start; padding-top: 52px; }
-/* 操作列がキャンバスの上に載るぶん、お題はもう少し小さくして重なりを避ける */
-.stage.with-pad .stage-inner,
-.stage.with-pad .ref-image { max-height: 32dvh; }
-
+/*
+ * 描くときは、キャンバスを画面いっぱいにする。
+ * お題は左上の小窓に退避させ、見たいときだけ大きくする。
+ * 紙に描くときも、資料はふつう手元の端に置くので。
+ */
 .pad-wrap {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 50dvh; z-index: 2;
+  position: absolute; inset: 0; z-index: 2;
   display: flex; flex-direction: column; background: #fffdf8;
-  border-top: 1px solid #cfcabb;
 }
 .pad { flex: 1; width: 100%; touch-action: none; cursor: crosshair; }
 
+/* 左上のお題。押すと大きくなる */
+.ref-mini {
+  position: absolute; left: 10px; top: calc(52px + env(safe-area-inset-top));
+  width: 88px; height: 88px; padding: 0; overflow: hidden; cursor: pointer;
+  border: 2px solid #2b2a27; border-radius: 12px; background: #e9e6dd;
+  transition: width .18s ease, height .18s ease;
+}
+.ref-mini img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ref-mini.big { width: min(74vw, 320px); height: min(74vw, 320px); }
+.ref-mini.big img { object-fit: contain; background: #14130f; }
+
+/* キャンバス側の上帯。練習画面の HUD は隠れるのでここに最小限だけ置く */
+.pad-hud {
+  position: absolute; left: 0; right: 0; top: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: max(8px, env(safe-area-inset-top)) 12px 8px;
+  background: rgba(255, 253, 248, .92); border-bottom: 1px solid #e2ded1;
+  color: #2b2a27;
+}
+.pad-hud-mid { text-align: center; line-height: 1.2; }
+.pad-drill { font-size: 14px; font-weight: 700; display: block; }
+.pad-icon {
+  background: none; border: none; color: #2b2a27; cursor: pointer;
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+}
+.pad-time {
+  background: none; border: none; color: #2b2a27; cursor: pointer;
+  font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 52px;
+}
+.pad-time.paused { color: #b3503c; }
+
 .pad-tools {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
   padding: 8px 10px max(8px, env(safe-area-inset-bottom));
   background: #f1eee5; border-top: 1px solid #ddd8c9;
 }
 .pad-btn, .pad-size {
   background: #fffdf8; border: 1px solid #cfcabb; color: #2b2a27;
-  width: 40px; height: 36px; border-radius: 8px; font-size: 16px; cursor: pointer;
+  width: 42px; height: 38px; border-radius: 10px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
 .pad-btn.on { background: #2b2a27; border-color: #2b2a27; color: #fffdf8; }
 .pad-sizes { display: flex; gap: 4px; }
-.pad-size { width: 30px; }
+.pad-size { width: 32px; }
 .pad-size i { display: block; background: #2b2a27; border-radius: 50%; }
 .pad-size.on { border-color: #2b2a27; border-width: 2px; }
 
-/* キャンバスを開いている間は、操作列をキャンバスの真上に載せる。
-   z-index を上げておかないとキャンバスがタップを吸ってしまう */
-.stage.with-pad .hud-bottom {
-  top: auto; bottom: 50dvh; z-index: 3;
-  background: rgba(11, 12, 15, .82); padding-bottom: 8px;
+/* 1枚描き終えたことを、はっきり押せる場所にする */
+.pad-next {
+  display: flex; align-items: center; gap: 6px;
+  background: #2b2a27; color: #fffdf8; border: none;
+  font: inherit; font-size: 14px; font-weight: 700;
+  padding: 0 16px; height: 38px; border-radius: 999px; cursor: pointer;
 }
-.stage.with-pad .hud-cue { display: none; }
+.pad-next:active { transform: translateY(1px); }
 
 /* ---------- カレンダー ---------- */
 

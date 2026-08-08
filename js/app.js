@@ -25,9 +25,10 @@ import {
 } from './game.js';
 import { sfx } from './timer.js';
 import { $, $$, el, showScreen, toast, fmtDuration } from './ui.js';
+import { icon, paintIcons } from './icons.js';
 
 let settings = getSettings();
-let pendingDrawing = null;   // ふりかえり画面で選ばれた画像（保存前）
+let pendingDrawings = [];    // その回に描いた絵（保存前）
 
 
 /* ==================== ホーム ==================== */
@@ -80,8 +81,11 @@ function renderQuests(history) {
     const item = el('li', `quest${quest.done ? ' done' : ''}`);
     const main = el('div', 'quest-main');
     main.append(el('div', 'quest-title', quest.title), el('div', 'quest-detail', quest.detail));
-    item.append(el('span', 'quest-icon', quest.icon), main,
-                el('span', 'quest-mark', quest.done ? '✓' : '○'));
+    const mark = el('span', 'quest-mark');
+    mark.innerHTML = quest.done ? icon('check', 20) : '';
+    const ico = el('span', 'quest-icon');
+    ico.innerHTML = icon(quest.icon, 20);
+    item.append(ico, main, mark);
     list.append(item);
   }
 }
@@ -378,7 +382,7 @@ function startMenuWithLesson(menu, lesson, lessonMode) {
 }
 
 function saveResult(result) {
-  const { drawing, ...rest } = result;      // 画像そのものは履歴（localStorage）に入れない
+  const { drawings, ...rest } = result;     // 画像そのものは履歴（localStorage）に入れない
   return addSession({
     id: `s${Date.now()}`,
     date: dateKey(),
@@ -392,10 +396,8 @@ function finishSession(result) {
   if (settings.sfx) sfx.fanfare();
 
   // 画面内のキャンバスに描いていたら、撮り直さなくていいように引き継ぐ
-  pendingDrawing = result.drawing || null;
-  const preview = $('#drawing-preview');
-  preview.hidden = !pendingDrawing;
-  if (pendingDrawing) preview.src = URL.createObjectURL(pendingDrawing);
+  pendingDrawings = result.drawings || [];
+  renderDrawingStrip();
   $('#review-note').value = '';
   $$('.rate-btn').forEach((b) => b.classList.remove('on'));
 
@@ -452,6 +454,28 @@ function renderReviewChecks(lessonId, lessonMode) {
   }
 }
 
+/** その回に描いた絵をならべる。押すと外せる。 */
+function renderDrawingStrip() {
+  const strip = $('#drawing-strip');
+  strip.innerHTML = '';
+  strip.hidden = pendingDrawings.length === 0;
+  $('#drawing-count').textContent = pendingDrawings.length
+    ? `${pendingDrawings.length}枚`
+    : '';
+  pendingDrawings.forEach((blob, i) => {
+    const item = el('button', 'strip-item');
+    const img = el('img');
+    img.src = URL.createObjectURL(blob);
+    item.append(img);
+    item.title = '押すと外す';
+    item.addEventListener('click', () => {
+      pendingDrawings.splice(i, 1);
+      renderDrawingStrip();
+    });
+    strip.append(item);
+  });
+}
+
 function wireReview() {
   $$('.rate-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -463,16 +487,12 @@ function wireReview() {
 
   $('#drawing-btn').addEventListener('click', () => $('#drawing-input').click());
   $('#drawing-input').addEventListener('change', async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      pendingDrawing = await shrinkImage(file);
-      const preview = $('#drawing-preview');
-      preview.src = URL.createObjectURL(pendingDrawing);
-      preview.hidden = false;
-    } catch {
-      toast('画像を読み込めませんでした');
+    const files = [...(e.target.files || [])];
+    for (const file of files) {
+      try { pendingDrawings.push(await shrinkImage(file)); }
+      catch { toast('画像を読み込めませんでした'); }
     }
+    renderDrawingStrip();
     e.target.value = '';
   });
 
@@ -488,14 +508,17 @@ function wireReview() {
     const entry = updateLastSession({
       rating: rated ? Number(rated.dataset.rate) : null,
       note: $('#review-note').value.trim() || null,
-      hasDrawing: !!pendingDrawing,
+      hasDrawing: pendingDrawings.length > 0,
+      drawingCount: pendingDrawings.length || null,
       missed: missed.length ? missed : null,   // 次回の宿題になる
     });
-    if (pendingDrawing && entry) {
-      try { await putDrawing(entry.id, pendingDrawing); }
-      catch { toast('絵の保存に失敗しました（記録は残ります）'); }
+    if (entry) {
+      try {
+        // 1枚目がカレンダーの顔になる
+        await Promise.all(pendingDrawings.map((blob, i) => putDrawing(`${entry.id}#${i}`, blob)));
+      } catch { toast('絵の保存に失敗しました（記録は残ります）'); }
     }
-    pendingDrawing = null;
+    pendingDrawings = [];
     renderHome();
     showScreen('home');
     celebrate();
@@ -521,6 +544,11 @@ function renderLog() {
 /* ---------- 絵を貼るカレンダー ---------- */
 
 let calMonth = null;   // 'YYYY-MM'
+
+/** 1枚目の絵。古い記録は連番なしのキーで入っているので、そちらも見る。 */
+async function loadDrawing(entryId) {
+  return (await getDrawing(`${entryId}#0`)) || (await getDrawing(entryId));
+}
 
 function monthKey(dateStr) { return dateStr.slice(0, 7); }
 
@@ -568,7 +596,7 @@ function renderCalendar(history = getHistory()) {
     if (entry?.hasDrawing) {
       cell.classList.add('has-drawing');
       const img = el('img');
-      getDrawing(entry.id).then((blob) => { if (blob) img.src = URL.createObjectURL(blob); }).catch(() => {});
+      loadDrawing(entry.id).then((blob) => { if (blob) img.src = URL.createObjectURL(blob); }).catch(() => {});
       cell.prepend(img);
     } else if (entry?.lessonId) {
       cell.append(el('span', 'cal-dot', '🦴'));
@@ -591,7 +619,7 @@ function openDaySheet(dayKey, history = getHistory()) {
   const withDrawing = entries.find((e) => e.hasDrawing);
   image.hidden = true;
   if (withDrawing) {
-    getDrawing(withDrawing.id)
+    loadDrawing(withDrawing.id)
       .then((blob) => { if (blob) { image.src = URL.createObjectURL(blob); image.hidden = false; } })
       .catch(() => {});
   }
@@ -676,7 +704,7 @@ function renderNotes(history) {
     }
     if (entry.hasDrawing) {
       const img = el('img', 'note-thumb');
-      getDrawing(entry.id)
+      loadDrawing(entry.id)
         .then((blob) => { if (blob) img.src = URL.createObjectURL(blob); })
         .catch(() => {});
       item.append(img);
@@ -845,6 +873,7 @@ function wireCalendar() {
 
 function init() {
   applyTheme();
+  paintIcons();
   wireNav();
   wireReview();
   wireLesson();

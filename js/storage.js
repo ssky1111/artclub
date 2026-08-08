@@ -9,7 +9,7 @@ const CARDS_KEY = 'croqui.cards.v1';
 const DEFAULT_SETTINGS = {
   source: 'picsum',          // 'unsplash' | 'picsum' | 'local'
   unsplashKey: '',
-  categories: ['pose', 'animal', 'still', 'nature'],
+  categories: ['pose', 'dance', 'sitting', 'hands'],   // 人物を描きたい人が大半なので
   weakParts: [],             // 苦手だと申告した部位（レッスンID）
   theme: 'light',            // 'light' | 'dark' | 'paper'
   sound: true,

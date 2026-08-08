@@ -160,14 +160,29 @@ export const DRILLS = {
 
 /** 出題ジャンル → Unsplash 検索クエリ */
 export const CATEGORIES = [
-  { id: 'pose',      label: '人物ポーズ', query: 'dancer pose full body',       levelMin: 1 },
-  { id: 'portrait',  label: '顔・頭部',   query: 'portrait face closeup',       levelMin: 2 },
-  { id: 'hands',     label: '手',         query: 'hands gesture',               levelMin: 2 },
-  { id: 'animal',    label: '動物',       query: 'animal wildlife',             levelMin: 1 },
-  { id: 'still',     label: '静物',       query: 'still life objects table',    levelMin: 1 },
-  { id: 'drapery',   label: '布・しわ',   query: 'fabric drapery cloth folds',  levelMin: 3 },
-  { id: 'nature',    label: '風景・植物', query: 'tree landscape plant',        levelMin: 1 },
-  { id: 'city',      label: '建築・街',   query: 'architecture street building', levelMin: 3 },
+  // 人物を描きたい人がほとんどなので、人体を最初に置き、最初から全部ひらいてある。
+  // 検索語に full body / standing などを混ぜているのは、
+  // ただ 'person' で引くと顔のアップや後ろ姿ばかりになって、形が取れないため。
+  { id: 'pose',      label: '全身ポーズ', levelMin: 1,
+    query: 'full body standing pose studio portrait' },
+  { id: 'dance',     label: '動き・ダンス', levelMin: 1,
+    query: 'dancer mid movement full body' },
+  { id: 'sitting',   label: '座り・寝そべり', levelMin: 1,
+    query: 'person sitting floor full body' },
+  { id: 'portrait',  label: '顔・頭部',   levelMin: 1,
+    query: 'portrait head shoulders natural light' },
+  { id: 'hands',     label: '手',         levelMin: 1,
+    query: 'hands close up gesture' },
+  { id: 'feet',      label: '足',         levelMin: 1,
+    query: 'bare feet legs close up' },
+  { id: 'drapery',   label: '服のしわ',   levelMin: 1,
+    query: 'fabric drapery cloth folds' },
+  { id: 'animal',    label: '動物',       levelMin: 2,
+    query: 'animal wildlife full body' },
+  { id: 'still',     label: '静物',       levelMin: 2,
+    query: 'still life objects table' },
+  { id: 'nature',    label: '風景・植物', levelMin: 3,
+    query: 'tree landscape plant' },
 ];
 
 /**

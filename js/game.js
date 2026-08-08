@@ -247,14 +247,14 @@ export function dailyQuests(history = getHistory()) {
   return [
     {
       id: 'practice',
-      icon: '✏️',
+      icon: 'pencil',
       title: '今日ひとセット',
       detail: '3分でもいい',
       done: todaySeconds > 0,
     },
     {
       id: 'ten',
-      icon: '⏱',
+      icon: 'timer',
       title: '10分ためる',
       detail: `${Math.min(10, Math.floor(todaySeconds / 60))} / 10 分`,
       done: todaySeconds >= 600,
@@ -263,7 +263,7 @@ export function dailyQuests(history = getHistory()) {
     {
       // 中の仕組み（間隔をあけた再出題）は見せず、「にがてを直す」とだけ言う
       id: 'review',
-      icon: '🎯',
+      icon: 'target',
       title: cards.length ? 'にがてに手をつける' : 'にがてな部位をえらぶ',
       detail: cards.length ? (due ? `あと ${due} か所` : 'きょうのぶんは完了') : '設定からえらべます',
       done: cards.length > 0 && due === 0,

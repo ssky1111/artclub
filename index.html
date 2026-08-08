@@ -39,14 +39,14 @@
   <header class="topbar">
     <h1 class="brand">CROQUI</h1>
     <div class="topbar-actions">
-      <button class="icon-btn" data-nav="settings" title="設定">&#9881;&#65039;</button>
+      <button class="icon-btn" data-nav="settings" data-icon="settings" title="設定"></button>
     </div>
   </header>
 
   <section class="streak-card hero">
     <div class="hero-top">
       <div class="streak-main">
-        <span class="streak-flame">🔥</span>
+        <span class="streak-flame" data-icon="flame" data-icon-size="26"></span>
         <span id="streak-count" class="streak-num">0</span>
         <span class="streak-unit">日</span>
       </div>
@@ -117,12 +117,12 @@
     <div id="stage-message" class="stage-message" hidden></div>
 
     <div class="hud-top">
-      <button id="quit-btn" class="icon-btn" title="やめる">✕</button>
+      <button id="quit-btn" class="icon-btn" data-icon="close" title="やめる"></button>
       <div class="hud-center">
         <div id="drill-name" class="drill-name">—</div>
         <div id="drill-progress" class="drill-progress muted">1 / 5</div>
       </div>
-      <button id="attr-btn" class="icon-btn" title="この写真について">ⓘ</button>
+      <button id="attr-btn" class="icon-btn" data-icon="info" title="この写真について"></button>
     </div>
 
     <div class="hud-cue">
@@ -132,27 +132,42 @@
     <div class="hud-bottom">
       <div class="timebar"><div id="timebar-fill" class="timebar-fill"></div></div>
       <div class="hud-controls">
-        <button id="tool-pad" class="tool-btn" title="ここに描く (D)">&#9999;&#65039;</button>
-        <button id="tool-grid" class="tool-btn" title="グリッド (G)">▦</button>
-        <button id="tool-flip" class="tool-btn" title="左右反転 (F)">⇄</button>
-        <button id="pause-btn" class="round-btn" title="一時停止 (Space)">⏸</button>
+        <button id="tool-pad" class="tool-btn" data-icon="pencil" title="ここに描く (D)"></button>
+        <button id="tool-grid" class="tool-btn" data-icon="grid" title="グリッド (G)"></button>
+        <button id="tool-flip" class="tool-btn" data-icon="flip" title="左右反転 (F)"></button>
+        <button id="pause-btn" class="round-btn" data-icon="pause" title="一時停止 (Space)"></button>
         <button id="time-left" class="time-left" title="残り時間">30</button>
-        <button id="skip-btn" class="tool-btn" title="次へ (→)">⏭</button>
+        <button id="skip-btn" class="tool-btn" data-icon="next" title="次へ (→)"></button>
       </div>
     </div>
 
     <div id="pad-wrap" class="pad-wrap" hidden>
       <canvas id="pad" class="pad"></canvas>
+
+      <button id="ref-mini" class="ref-mini" title="お題を大きく見る">
+        <img id="ref-mini-img" alt="お題">
+      </button>
+
+      <div class="pad-hud">
+        <button id="pad-quit" class="pad-icon" data-icon="close" title="やめる"></button>
+        <div class="pad-hud-mid">
+          <span id="pad-drill" class="pad-drill">—</span>
+          <span id="pad-progress" class="muted small">1 / 5</span>
+        </div>
+        <button id="pad-time" class="pad-time" title="一時停止">30</button>
+      </div>
+
       <div class="pad-tools">
-        <button class="pad-btn on" data-pad="pen" title="ペン">&#9999;&#65039;</button>
-        <button class="pad-btn" data-pad="eraser" title="消しゴム">&#129529;</button>
+        <button class="pad-btn on" data-pad="pen" data-icon="pencil" title="ペン"></button>
+        <button class="pad-btn" data-pad="eraser" data-icon="eraser" title="消しゴム"></button>
         <div class="pad-sizes">
           <button class="pad-size" data-size="2" title="細い"><i style="width:3px;height:3px"></i></button>
-          <button class="pad-size on" data-size="4" title="ふつう"><i style="width:6px;height:6px"></i></button>
-          <button class="pad-size" data-size="9" title="太い"><i style="width:11px;height:11px"></i></button>
+          <button class="pad-size on" data-size="5" title="ふつう"><i style="width:6px;height:6px"></i></button>
+          <button class="pad-size" data-size="10" title="太い"><i style="width:11px;height:11px"></i></button>
         </div>
-        <button class="pad-btn" data-pad="undo" title="元に戻す">&#8617;&#65038;</button>
-        <button class="pad-btn" data-pad="clear" title="全部消す">&#128465;</button>
+        <button class="pad-btn" data-pad="undo" data-icon="undo" title="元に戻す"></button>
+        <button class="pad-btn" data-pad="clear" data-icon="trash" title="全部消す"></button>
+        <button id="pad-next" class="pad-next" data-icon="check" data-icon-label="保存してつぎへ"></button>
       </div>
     </div>
 
@@ -203,11 +218,12 @@
   </section>
 
   <section class="card">
-    <div class="label">描いたものを残す（任意）</div>
-    <p class="muted small">写真に撮っておくと、あとで成長が見えます。端末内にだけ保存されます。</p>
-    <input type="file" id="drawing-input" accept="image/*" capture="environment" hidden>
-    <button id="drawing-btn" class="btn ghost">📷 写真を追加</button>
-    <img id="drawing-preview" class="drawing-preview" hidden alt="今日の絵">
+    <div class="label">きょう描いたもの</div>
+    <p class="muted small">画面で描いた分はここに入っています。紙に描いたものは写真で足せます。端末内にだけ保存されます。</p>
+    <input type="file" id="drawing-input" accept="image/*" multiple hidden>
+    <button id="drawing-btn" class="btn ghost" data-icon="camera" data-icon-label="写真を追加"></button>
+    <span id="drawing-count" class="muted small"></span>
+    <div id="drawing-strip" class="drawing-strip" hidden></div>
   </section>
 
   <div class="stack">
@@ -219,7 +235,7 @@
 <!-- ============ 解剖レッスン ============ -->
 <main id="screen-lesson" class="screen">
   <header class="topbar">
-    <button class="icon-btn" data-nav="home">←</button>
+    <button class="icon-btn" data-nav="home" data-icon="back"></button>
     <h1 id="lesson-name" class="brand">—</h1>
     <span></span>
   </header>
@@ -273,7 +289,7 @@
 <!-- カレンダーの1日 -->
 <div id="day-sheet" class="sheet" hidden>
   <div class="sheet-inner">
-    <button id="sheet-close" class="icon-btn sheet-close">✕</button>
+    <button id="sheet-close" class="icon-btn sheet-close" data-icon="close"></button>
     <div id="sheet-date" class="label"></div>
     <h2 id="sheet-title">—</h2>
     <img id="sheet-image" class="sheet-image" hidden alt="この日の絵">
@@ -283,7 +299,7 @@
 
 <!-- 図版の拡大 -->
 <div id="lightbox" class="lightbox" hidden>
-  <button id="lightbox-close" class="icon-btn lightbox-close">✕</button>
+  <button id="lightbox-close" class="icon-btn lightbox-close" data-icon="close"></button>
   <img id="lightbox-img" alt="">
   <div id="lightbox-caption" class="lightbox-caption"></div>
 </div>
@@ -292,7 +308,7 @@
 <main id="screen-log" class="screen">
   <header class="topbar">
     <h1 class="brand plain">きろく</h1>
-    <button class="icon-btn" data-nav="settings" title="設定">&#9881;&#65039;</button>
+    <button class="icon-btn" data-nav="settings" data-icon="settings" title="設定"></button>
   </header>
 
   <section class="card">
@@ -305,9 +321,9 @@
 
   <section class="card">
     <div class="section-head">
-      <button id="cal-prev" class="icon-btn">‹</button>
+      <button id="cal-prev" class="icon-btn" data-icon="back" data-icon-size="18"></button>
       <h2 id="cal-title">—</h2>
-      <button id="cal-next" class="icon-btn">›</button>
+      <button id="cal-next" class="icon-btn" data-icon="forward" data-icon-size="18"></button>
     </div>
     <div class="cal-dow">
       <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
@@ -330,7 +346,7 @@
 <!-- ============ 設定 ============ -->
 <main id="screen-settings" class="screen">
   <header class="topbar">
-    <button class="icon-btn" data-nav="home">←</button>
+    <button class="icon-btn" data-nav="home" data-icon="back"></button>
     <h1 class="brand">設定</h1>
     <span></span>
   </header>
