@@ -464,13 +464,14 @@ a { color: var(--accent); }
 /* いちばん押してほしいものだけ大きく、残りは静かに */
 .primary-card {
   position: relative; background: var(--surface); color: var(--text);
-  border: 2px solid var(--brand); padding: 20px var(--pad); overflow: hidden;
+  border: none; padding: 20px var(--pad); overflow: hidden;
 }
+.primary-card .btn.primary { margin-top: 14px; }
+/* ピンクは小さく差すだけ。面は塗らない */
 .primary-card .menu-kicker { font-size: 12px; letter-spacing: .06em; color: var(--brand-ink); font-weight: 700; }
 .primary-card .menu-title.big { color: var(--text); }
 .primary-card .menu-title.big { font-size: 26px; font-weight: 800; line-height: 1.3; font-family: var(--font-display); }
-.primary-card .menu-sub { color: var(--text-soft); }
-.primary-card .menu-time { color: var(--brand-ink); font-weight: 700; }
+.primary-card .menu-sub { color: var(--text-soft); font-size: 14px; }
 
 .menu-card.slim {
   display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
@@ -798,10 +799,15 @@ a { color: var(--accent); }
 
 /* ---------- 下のセグメント切替 ---------- */
 
+/*
+ * left:50% だけだと使える幅が画面の半分になり、タブを3つにした途端に
+ * 文字が縦に折り返した。中身の幅に合わせて、はみ出さない上限も付ける。
+ */
 .tabbar {
   position: fixed; left: 50%; transform: translateX(-50%);
   bottom: max(14px, env(safe-area-inset-bottom)); z-index: 40;
   display: none; gap: 4px; padding: 4px;
+  width: max-content; max-width: calc(100vw - 24px);
   background: var(--surface); border-radius: 999px;
 }
 body[data-screen='home'] .tabbar,
@@ -814,7 +820,8 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 .tabbar button {
   font: inherit; font-size: 15px; font-weight: 700; font-family: var(--font-display);
   border: none; background: transparent; color: var(--muted);
-  padding: 9px 20px; border-radius: 999px; cursor: pointer;
+  padding: 9px 18px; border-radius: 999px; cursor: pointer;
+  white-space: nowrap;
 }
 .tabbar button.on { background: var(--cta-bg); color: var(--cta-ink); }
 

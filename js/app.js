@@ -140,16 +140,18 @@ function renderMenus(level) {
   const menus = MENUS.map((base) => scaleMenu(base, level));
   const primary = menus.find((m) => m.id === 'daily') || menus[0];
 
+  // カードは説明、押すのは黒いピル。カードごと黒く塗ると、どこを押すのか分からなくなる
   const top = $('#menu-primary');
   top.innerHTML = '';
-  const hero = el('button', 'menu-card primary-card');
+  const hero = el('div', 'card primary-card');
+  const cta = el('button', 'btn primary big', `はじめる（約${fmtDuration(menuDuration(primary))}）`);
+  cta.addEventListener('click', () => startSession(primary));
   hero.append(
     el('div', 'menu-kicker', 'きょうの練習'),
     el('div', 'menu-title big', primary.title),
     el('div', 'menu-sub', primary.subtitle),
-    el('div', 'menu-time', `約${fmtDuration(menuDuration(primary))}`),
+    cta,
   );
-  hero.addEventListener('click', () => startSession(primary));
   top.append(hero);
 
   const wrap = $('#menu-cards');
