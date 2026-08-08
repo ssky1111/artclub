@@ -62,6 +62,15 @@
     <p id="focus-desc" class="focus-desc muted"></p>
   </section>
 
+  <section class="card lesson-cta">
+    <div class="section-head"><h2>描けない部位をつぶす</h2></div>
+    <p class="muted small">
+      手や脚が描けないのは観察力ではなく、中身を知らないから。
+      日本語の構造解説を読んでから、その部位だけを練習します。
+    </p>
+    <div id="lesson-chips" class="chips"></div>
+  </section>
+
   <section class="menu-list">
     <div class="section-head">
       <h2>メニュー</h2>
@@ -145,6 +154,12 @@
     <div id="review-summary" class="review-summary"></div>
   </section>
 
+  <section class="card" id="review-checks-card" hidden>
+    <div class="section-head"><h2>セルフチェック</h2></div>
+    <p class="muted small">描いたものを見ながら、当てはまるものだけ押す。</p>
+    <ul id="review-checks" class="check-list"></ul>
+  </section>
+
   <section class="card">
     <div class="label">今日の観察テーマ</div>
     <div id="review-focus" class="focus-title small-title">—</div>
@@ -170,6 +185,66 @@
     <button id="review-again" class="btn ghost">もう1セットやる</button>
   </div>
 </main>
+
+<!-- ============ 解剖レッスン ============ -->
+<main id="screen-lesson" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" data-nav="home">←</button>
+    <h1 id="lesson-name" class="brand">—</h1>
+    <span></span>
+  </header>
+
+  <section class="card">
+    <div id="lesson-tagline" class="focus-title"></div>
+    <p id="lesson-problem" class="lesson-problem"></p>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2>塊に置き換える順番</h2></div>
+    <div id="lesson-steps" class="lesson-steps"></div>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2>ランドマーク（骨のでっぱり）</h2></div>
+    <p class="muted small">体型や角度が変わっても位置が動かない場所。ここを先に点で打つ。</p>
+    <ul id="lesson-landmarks" class="tick-list"></ul>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2>比率</h2></div>
+    <ul id="lesson-proportions" class="tick-list"></ul>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2>よくある失敗と直し方</h2></div>
+    <div id="lesson-mistakes" class="mistake-list"></div>
+  </section>
+
+  <section class="card">
+    <div class="section-head">
+      <h2>参考図版</h2>
+      <button id="plate-reload" class="btn ghost small">読み込む</button>
+    </div>
+    <p class="muted small">
+      著作権の切れた美術解剖書から Wikimedia Commons 経由で取得します（PD / CC0 / CC BY のみ）。
+      図の中の文字は英語ですが、読む必要はありません。形だけ見てください。
+    </p>
+    <div id="plate-gallery" class="plate-gallery"></div>
+    <div id="plate-status" class="muted small"></div>
+    <div id="lesson-books" class="books"></div>
+  </section>
+
+  <div class="stack sticky-cta">
+    <button id="lesson-practice" class="btn primary big">この部位を練習する</button>
+  </div>
+</main>
+
+<!-- 図版の拡大 -->
+<div id="lightbox" class="lightbox" hidden>
+  <button id="lightbox-close" class="icon-btn lightbox-close">✕</button>
+  <img id="lightbox-img" alt="">
+  <div id="lightbox-caption" class="lightbox-caption"></div>
+</div>
 
 <!-- ============ 記録 ============ -->
 <main id="screen-log" class="screen">

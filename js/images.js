@@ -90,13 +90,16 @@ function picsumPhoto() {
  * 写真キュー。先読みしておくので、タイマーが切り替わった瞬間に白画面にならない。
  * onNotice: 取得元をやむなく切り替えたときに呼ばれる（UI にトーストを出す用）。
  */
-export function createPhotoQueue(settings, onNotice = () => {}) {
+export function createPhotoQueue(settings, onNotice = () => {}, { queryOverride = null } = {}) {
   const buffer = [];
   const seen = new Set();
   let source = settings.source;
   let filling = null;
 
-  const categories = CATEGORIES.filter((c) => settings.categories.includes(c.id));
+  // 解剖レッスン中は、選んだジャンルではなく部位（手・脚・足）で引く
+  const categories = queryOverride
+    ? [{ id: 'lesson', label: 'レッスン', query: queryOverride }]
+    : CATEGORIES.filter((c) => settings.categories.includes(c.id));
   const activeCategories = categories.length ? categories : CATEGORIES;
 
   async function fill() {

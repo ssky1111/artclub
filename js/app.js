@@ -10,7 +10,9 @@ import {
   getSettings, saveSettings, getHistory, addSession, updateLastSession, clearAll,
   dateKey, addDays, dailyTotals, stats,
 } from './storage.js';
+import { LESSONS, PD_BOOKS, lessonById } from './anatomy.js';
 import { createPhotoQueue, localFiles, testUnsplashKey } from './images.js';
+import { searchPlatesMulti, createPlateQueue } from './commons.js';
 import { createSessionRunner } from './session.js';
 import { putDrawing, getDrawing, deleteAllDrawings, shrinkImage } from './db.js';
 import { $, $$, el, showScreen, toast, fmtDuration } from './ui.js';
@@ -40,6 +42,7 @@ function renderHome() {
   $('#focus-desc').textContent = focus.desc;
 
   renderStreakDots(history);
+  renderLessonChips();
   renderMenus(level);
   renderCategories(level);
 
@@ -99,6 +102,123 @@ function renderCategories(level) {
   }
 }
 
+/* ==================== 解剖レッスン ==================== */
+
+function renderLessonChips() {
+  const wrap = $('#lesson-chips');
+  wrap.innerHTML = '';
+  for (const lesson of LESSONS) {
+    const chip = el('button', 'chip lesson-chip', lesson.name);
+    chip.addEventListener('click', () => openLesson(lesson.id));
+    wrap.append(chip);
+  }
+}
+
+let currentLesson = null;
+
+function openLesson(id) {
+  const lesson = lessonById(id);
+  if (!lesson) return;
+  currentLesson = lesson;
+
+  $('#lesson-name').textContent = lesson.name;
+  $('#lesson-tagline').textContent = lesson.tagline;
+  $('#lesson-problem').textContent = lesson.problem;
+
+  const steps = $('#lesson-steps');
+  steps.innerHTML = '';
+  for (const step of lesson.steps) {
+    const item = el('div', 'lesson-step');
+    item.append(el('h3', null, step.title), el('p', null, step.body));
+    steps.append(item);
+  }
+
+  fillList('#lesson-landmarks', lesson.landmarks);
+  fillList('#lesson-proportions', lesson.proportions);
+
+  const mistakes = $('#lesson-mistakes');
+  mistakes.innerHTML = '';
+  for (const m of lesson.mistakes) {
+    const row = el('div', 'mistake');
+    row.append(el('div', 'mistake-bad', `✕ ${m.bad}`), el('div', 'mistake-fix', `→ ${m.fix}`));
+    mistakes.append(row);
+  }
+
+  const books = $('#lesson-books');
+  books.innerHTML = '';
+  books.append(el('div', 'label', '出典（すべて著作権保護期間が満了した書籍）'));
+  for (const b of PD_BOOKS) {
+    books.append(el('p', 'muted small', `${b.author}『${b.title}』${b.year} — ${b.note}`));
+  }
+
+  $('#plate-gallery').innerHTML = '';
+  $('#plate-status').textContent = '';
+  showScreen('lesson');
+  loadPlates(lesson);
+}
+
+function fillList(sel, items) {
+  const list = $(sel);
+  list.innerHTML = '';
+  for (const text of items) list.append(el('li', null, text));
+}
+
+async function loadPlates(lesson) {
+  const gallery = $('#plate-gallery');
+  const status = $('#plate-status');
+  gallery.innerHTML = '';
+  status.textContent = '図版を探しています…';
+  try {
+    const plates = await searchPlatesMulti(lesson.refQueries, { limit: 8, width: 800 });
+    if (!plates.length) {
+      status.textContent = '図版が見つかりませんでした（通信環境かCommons側の問題かもしれません）。' +
+                           '解説と練習はこのまま使えます。';
+      return;
+    }
+    status.textContent = '';
+    for (const plate of plates.slice(0, 12)) {
+      const thumb = el('button', 'plate-thumb');
+      const img = el('img');
+      img.src = plate.url;
+      img.alt = plate.title;
+      img.loading = 'lazy';
+      thumb.append(img);
+      thumb.addEventListener('click', () => openLightbox(plate));
+      gallery.append(thumb);
+    }
+  } catch (err) {
+    status.textContent = `図版を取得できませんでした（${err.message}）。解説と練習はこのまま使えます。`;
+  }
+}
+
+function openLightbox(plate) {
+  $('#lightbox-img').src = plate.url;
+  $('#lightbox-img').alt = plate.title;
+  const caption = $('#lightbox-caption');
+  caption.innerHTML = '';
+  caption.append(el('div', null, plate.title));
+  const credit = el('div', 'muted small');
+  credit.textContent = `${plate.credit.name} / ${plate.credit.source}`;
+  caption.append(credit);
+  if (plate.credit.link) {
+    const a = el('a', 'small', 'Commons で見る');
+    a.href = plate.credit.link;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    caption.append(a);
+  }
+  $('#lightbox').hidden = false;
+}
+
+function wireLesson() {
+  $('#plate-reload').addEventListener('click', () => currentLesson && loadPlates(currentLesson));
+  $('#lesson-practice').addEventListener('click', () => currentLesson && startLesson(currentLesson));
+  $('#lightbox-close').addEventListener('click', () => { $('#lightbox').hidden = true; });
+  $('#lightbox').addEventListener('click', (e) => {
+    if (e.target.id === 'lightbox') $('#lightbox').hidden = true;
+  });
+}
+
 /* ==================== セッション ==================== */
 
 const runner = createSessionRunner({
@@ -114,12 +234,27 @@ const runner = createSessionRunner({
 });
 
 let lastMenu = null;
+let lastLesson = null;
 
 function startSession(menu) {
   lastMenu = menu;
+  lastLesson = null;
   settings = getSettings();
-  const queue = createPhotoQueue(settings, (msg) => toast(msg));
-  runner.start({ menu, queue, settings, focus: focusForDate(dateKey()) });
+  const queues = { photo: createPhotoQueue(settings, (msg) => toast(msg)) };
+  runner.start({ menu, queues, settings, focus: focusForDate(dateKey()) });
+}
+
+/** 解剖レッスンの練習：図版の模写と、同じ部位の写真を混ぜて回す。 */
+function startLesson(lesson) {
+  const menu = { ...lesson.practice, title: lesson.practice.title };
+  lastMenu = menu;
+  lastLesson = lesson;
+  settings = getSettings();
+  const queues = {
+    photo: createPhotoQueue(settings, (msg) => toast(msg), { queryOverride: lesson.photoQuery }),
+    plate: createPlateQueue(lesson.refQueries, (msg) => toast(msg)),
+  };
+  runner.start({ menu, queues, settings, focus: focusForDate(dateKey()), lessonId: lesson.id });
 }
 
 function saveResult(result) {
@@ -140,6 +275,7 @@ function finishSession(result) {
 
   const focus = focusForDate(entry.date);
   $('#review-focus').textContent = focus.title;
+  renderReviewChecks(entry.lessonId);
 
   const drillLines = Object.entries(entry.byDrill)
     .map(([id, sec]) => `<li><span>${DRILLS[id]?.name || id}</span><b>${fmtDuration(sec)}</b></li>`)
@@ -156,6 +292,23 @@ function finishSession(result) {
 }
 
 /* ==================== ふりかえり ==================== */
+
+/** 解剖レッスンのあとだけ、その部位のチェック項目を出す。 */
+function renderReviewChecks(lessonId) {
+  const card = $('#review-checks-card');
+  const list = $('#review-checks');
+  const lesson = lessonId ? lessonById(lessonId) : null;
+  list.innerHTML = '';
+  card.hidden = !lesson;
+  if (!lesson) return;
+  for (const text of lesson.checks) {
+    const item = el('li');
+    const btn = el('button', 'check-btn', text);
+    btn.addEventListener('click', () => btn.classList.toggle('on'));
+    item.append(btn);
+    list.append(item);
+  }
+}
 
 function wireReview() {
   $$('.rate-btn').forEach((btn) => {
@@ -182,10 +335,14 @@ function wireReview() {
 
   $('#review-save').addEventListener('click', async () => {
     const rated = $$('.rate-btn').find((b) => b.classList.contains('on'));
+    const missed = $$('#review-checks .check-btn')
+      .filter((b) => !b.classList.contains('on'))
+      .map((b) => b.textContent);
     const entry = updateLastSession({
       rating: rated ? Number(rated.dataset.rate) : null,
       note: $('#review-note').value.trim() || null,
       hasDrawing: !!pendingDrawing,
+      missed: missed.length ? missed : null,   // 次回の宿題になる
     });
     if (pendingDrawing && entry) {
       try { await putDrawing(entry.id, pendingDrawing); }
@@ -197,7 +354,8 @@ function wireReview() {
   });
 
   $('#review-again').addEventListener('click', () => {
-    if (lastMenu) startSession(lastMenu);
+    if (lastLesson) startLesson(lastLesson);
+    else if (lastMenu) startSession(lastMenu);
   });
 }
 
@@ -269,7 +427,7 @@ function renderDrillBars(s) {
 function renderNotes(history) {
   const wrap = $('#note-list');
   wrap.innerHTML = '';
-  const notes = history.filter((h) => h.note || h.hasDrawing).slice(-20).reverse();
+  const notes = history.filter((h) => h.note || h.hasDrawing || h.missed?.length).slice(-20).reverse();
   if (!notes.length) {
     wrap.append(el('p', 'muted small', 'ふりかえりのメモがここに並びます。'));
     return;
@@ -283,8 +441,15 @@ function renderNotes(history) {
       el('span', 'muted small', focusForDate(entry.date).title),
     );
     if (entry.rating) head.append(el('span', `rate-tag r${entry.rating}`, ratingText[entry.rating]));
+    if (entry.lessonId) head.append(el('span', 'rate-tag', lessonById(entry.lessonId)?.name || ''));
     item.append(head);
     if (entry.note) item.append(el('p', 'note-body', entry.note));
+    if (entry.missed?.length) {
+      const todo = el('div', 'todo');
+      todo.append(el('span', 'label', '次回の宿題'));
+      for (const text of entry.missed) todo.append(el('div', 'todo-item', `・${text}`));
+      item.append(todo);
+    }
     if (entry.hasDrawing) {
       const img = el('img', 'note-thumb');
       getDrawing(entry.id)
@@ -409,6 +574,7 @@ function wireNav() {
 function init() {
   wireNav();
   wireReview();
+  wireLesson();
   wireSettings();
   renderHome();
   showScreen('home');

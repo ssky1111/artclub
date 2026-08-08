@@ -16,6 +16,8 @@ const SHELL = [
   './js/timer.js',
   './js/db.js',
   './js/ui.js',
+  './js/anatomy.js',
+  './js/commons.js',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-192.png',

@@ -95,6 +95,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
         queue.push({
           drillId: step.drill,
           seconds: step.seconds,
+          source: step.source || 'photo',   // 'photo' = 写真 / 'plate' = 解剖図版
           stepIndex,
           indexInStep: i + 1,
           countInStep: step.count,
@@ -102,6 +103,29 @@ export function createSessionRunner({ onFinish, onQuit }) {
       }
     });
     return queue;
+  }
+
+  /** その項目がどのキューから絵を取るか。図版が無ければ写真で代用する。 */
+  function queueFor(item) {
+    return state.queues[item.source] || state.queues.photo;
+  }
+
+  /** 次の項目の絵を先に読み込んでおく。取得元ごとに分けて持つ。 */
+  function prefetch(item) {
+    if (!item) return;
+    if (state.pending[item.source]) return;
+    state.pending[item.source] = queueFor(item).next().catch(() => null);
+  }
+
+  async function takePhoto(item) {
+    const waiting = state.pending[item.source];
+    state.pending[item.source] = null;
+    const photo = await (waiting || queueFor(item).next().catch(() => null));
+    // 図版が取れなかったときは写真にフォールバック（練習を止めない）
+    if (!photo && item.source === 'plate') {
+      return state.queues.photo.next().catch(() => null);
+    }
+    return photo;
   }
 
   async function showBridge(item, isFirst) {
@@ -115,8 +139,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
       `${item.countInStep}枚 × ${fmtClock(item.seconds)}${item.seconds >= 60 ? '' : '秒'}`;
     showScreen('bridge');
     state.awaitingBridge = true;
-    // 待っている間に次の写真を読み込んでおく
-    state.pending = state.queue.next().catch(() => null);
+    prefetch(item);   // 説明を読んでいる間に読み込んでおく
   }
 
   async function runItem(item) {
@@ -136,13 +159,13 @@ export function createSessionRunner({ onFinish, onQuit }) {
 
     showScreen('session');
     dom.stageMessage.hidden = false;
-    dom.stageMessage.textContent = '写真を読み込み中…';
+    dom.stageMessage.textContent = item.source === 'plate' ? '図版を読み込み中…' : '写真を読み込み中…';
 
-    const photo = await (state.pending || state.queue.next().catch(() => null));
-    state.pending = state.queue.next().catch(() => null);   // 次を先読み
+    const photo = await takePhoto(item);
+    prefetch(state.plan[state.cursor + 1]);
 
     if (!photo) {
-      dom.stageMessage.textContent = '写真を取得できませんでした。設定の取得元を確認してください。';
+      dom.stageMessage.textContent = '絵を取得できませんでした。設定の取得元を確認してください。';
       return;
     }
 
@@ -158,9 +181,9 @@ export function createSessionRunner({ onFinish, onQuit }) {
   }
 
   function renderAttribution(photo) {
-    const { name, link, source, photoLink } = photo.credit;
+    const { name, link, source, photoLink, kind = '写真' } = photo.credit;
     dom.attrBox.innerHTML = link
-      ? `<a href="${photoLink || link}" target="_blank" rel="noopener">写真</a> by ` +
+      ? `<a href="${photoLink || link}" target="_blank" rel="noopener">${kind}</a> by ` +
         `<a href="${link}" target="_blank" rel="noopener">${escapeHtml(name)}</a> on ${escapeHtml(source)}`
       : `${escapeHtml(name)}（${escapeHtml(source)}）`;
   }
@@ -198,6 +221,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
       seconds: state.totalSeconds,
       byDrill: state.byDrill,
       focusId: state.focus.id,
+      lessonId: state.lessonId,
     });
   }
 
@@ -208,7 +232,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     if (state?.current) record(state.current, Math.round(state.current.seconds - timer.remaining));
     const partial = state && state.totalSeconds > 20
       ? { menuId: state.menu.id, menuTitle: state.menu.title, seconds: state.totalSeconds,
-          byDrill: state.byDrill, focusId: state.focus.id, partial: true }
+          byDrill: state.byDrill, focusId: state.focus.id, lessonId: state.lessonId, partial: true }
       : null;
     state = null;
     onQuit(partial);
@@ -310,22 +334,23 @@ export function createSessionRunner({ onFinish, onQuit }) {
   });
 
   return {
-    async start({ menu, queue, settings, focus }) {
+    async start({ menu, queues, settings, focus, lessonId = null }) {
       state = {
         menu,
         plan: buildQueue(menu),
-        queue,
+        queues,
         settings,
         focus,
+        lessonId,
         cursor: -1,
         byDrill: {},
         totalSeconds: 0,
         gridForced: false,
         flipForced: false,
-        pending: null,
+        pending: {},
         awaitingBridge: false,
       };
-      queue.prime();
+      Object.values(queues).forEach((q) => q.prime?.());
       if (settings.source === 'unsplash' && !settings.unsplashKey) {
         toast('Unsplash のキーが未設定です。設定から入れてください');
       }
