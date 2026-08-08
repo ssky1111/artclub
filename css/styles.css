@@ -1,11 +1,60 @@
 /* Croqui — 配色とサイズ */
 
 /*
- * 明るい・丸い・押したくなる、を基準にした配色。
- * 練習画面（.stage）だけは例外で暗いままにしてある。お題の写真を見るときに
- * 周りが明るいと、明暗の判断が狂うため。
+ * 既定は「ペーパー」。claude.ai の、紙みたいなクリーム地＋テラコッタ＋セリフ見出し、
+ * という配色に寄せてある。影と彩度を落として、線は1本だけ引く。
+ * 絵の練習アプリなので、画面自体が主張しないほうがいい。
+ *
+ * 練習画面（.stage）だけは常に暗い。周りが明るいとお題の明暗の判断が狂うため。
  */
-:root {
+:root, body[data-theme='paper'] {
+  --bg: #f5f4ee;
+  --surface: #fffefb;
+  --surface-2: #efeee7;
+  --line: #e4e2d8;
+  --line-strong: #d6d3c7;
+  --text: #2b2a27;
+  --text-soft: #55534d;
+  --muted: #8a8880;
+  --accent: #c96442;
+  --accent-ink: #fffefb;
+  --accent-soft: #f4e7e0;
+  --accent-dim: #e0b9a8;
+  --mint: #4f7d5e;
+  --sun: #c08a2e;
+  --good: #4f7d5e;
+  --danger: #b3503c;
+  --radius: 12px;
+  --radius-sm: 9px;
+  --pad: 16px;
+  --lift: none;
+  --lift-accent: none;
+  --font-display: ui-serif, Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+}
+
+body[data-theme='dark'] {
+  --bg: #1a1917;
+  --surface: #232220;
+  --surface-2: #2c2b28;
+  --line: #38362f;
+  --line-strong: #38362f;
+  --text: #ece9e2;
+  --text-soft: #c6c2b8;
+  --muted: #918d84;
+  --accent: #d97757;
+  --accent-ink: #1a1917;
+  --accent-soft: #3a2a22;
+  --accent-dim: #7a4a37;
+  --mint: #7fb08d;
+  --sun: #d9ab5c;
+  --good: #7fb08d;
+  --danger: #d9756a;
+  --lift: none;
+  --lift-accent: none;
+}
+
+/* 前の配色も残してある（好みなので） */
+body[data-theme='pop'] {
   --bg: #fff6f2;
   --surface: #ffffff;
   --surface-2: #fff0ea;
@@ -18,35 +67,13 @@
   --accent-ink: #ffffff;
   --accent-soft: #ffe3ea;
   --accent-dim: #ffc2d2;
-  --mint: #46cfc0;
-  --sun: #ffc94d;
   --good: #2fc39f;
   --danger: #ff6b6b;
   --radius: 20px;
   --radius-sm: 14px;
-  --pad: 16px;
-  /* 下側に影を落として厚みを出す。ゲームのボタンっぽく見えるのはこれ */
   --lift: 0 3px 0 var(--line-strong);
   --lift-accent: 0 3px 0 #e05f81;
-}
-
-/* 落ち着いて描きたい人向け。設定から切り替える */
-body[data-theme='dark'] {
-  --bg: #14151a;
-  --surface: #1c1e26;
-  --surface-2: #23262f;
-  --line: #2e323d;
-  --line-strong: #14151a;
-  --text: #e9eaee;
-  --text-soft: #cfd3db;
-  --muted: #9aa0ad;
-  --accent: #ff8a4c;
-  --accent-ink: #17130f;
-  --accent-soft: #33241c;
-  --accent-dim: #7a4529;
-  --good: #6fce8f;
-  --lift: 0 2px 0 rgba(0, 0, 0, .35);
-  --lift-accent: 0 2px 0 rgba(0, 0, 0, .35);
+  --font-display: inherit;
 }
 
 * { box-sizing: border-box; }
@@ -89,7 +116,7 @@ a { color: var(--accent); }
   gap: 8px; margin-bottom: 18px;
 }
 .topbar-actions { display: flex; gap: 6px; }
-.brand { font-size: 20px; margin: 0; letter-spacing: .02em; }
+.brand { font-size: 21px; margin: 0; letter-spacing: .01em; font-family: var(--font-display); font-weight: 600; }
 
 .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .section-head h2 { font-size: 15px; margin: 0; color: var(--muted); font-weight: 600; }
@@ -100,7 +127,7 @@ a { color: var(--accent); }
   border-radius: var(--radius);
   box-shadow: var(--lift);
   padding: var(--pad);
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 /* ---------- ホーム ---------- */
@@ -121,7 +148,7 @@ a { color: var(--accent); }
 .dot.on { background: var(--accent); }
 
 .focus-card { border-left: 3px solid var(--accent); }
-.focus-title { font-size: 20px; font-weight: 700; margin-top: 4px; }
+.focus-title { font-size: 21px; font-weight: 600; margin-top: 4px; font-family: var(--font-display); }
 .focus-title.small-title { font-size: 17px; }
 .focus-desc { margin: 6px 0 0; font-size: 14px; }
 
@@ -141,7 +168,7 @@ a { color: var(--accent); }
 }
 .menu-card:hover { border-color: var(--accent-dim); }
 .menu-card:active { transform: translateY(3px); box-shadow: none; }
-.menu-title { font-size: 17px; font-weight: 700; }
+.menu-title { font-size: 17px; font-weight: 600; font-family: var(--font-display); }
 .menu-sub { font-size: 13px; margin-top: 2px; }
 .menu-steps { margin-top: 6px; }
 .menu-time { margin-top: 8px; font-size: 13px; color: var(--accent); }
@@ -295,7 +322,7 @@ a { color: var(--accent); }
   max-width: 460px; width: 100%; padding: var(--pad);
   display: flex; flex-direction: column; gap: 10px; text-align: center;
 }
-.bridge-card h2 { font-size: 26px; margin: 0; }
+.bridge-card h2 { font-size: 27px; margin: 0; font-family: var(--font-display); font-weight: 600; }
 .cue-text {
   background: var(--surface); border: 1px solid var(--accent-dim);
   border-radius: var(--radius); padding: 12px; margin: 4px 0; color: var(--accent);
@@ -324,10 +351,7 @@ a { color: var(--accent); }
 
 /* ---------- ホームの上段（ストリーク・XP・クエスト・バッジ） ---------- */
 
-.hero {
-  background: linear-gradient(160deg, var(--accent-soft), var(--surface) 65%);
-  border-color: var(--accent-dim);
-}
+.hero { background: var(--surface); }
 .hero-top { display: flex; align-items: center; justify-content: space-between; }
 .streak-flame { font-size: 26px; }
 .streak-num { font-size: 46px; }
@@ -344,7 +368,7 @@ a { color: var(--accent); }
 }
 .xp-fill {
   height: 100%; width: 0;
-  background: linear-gradient(90deg, var(--accent), var(--sun));
+  background: var(--accent);
   transition: width .6s cubic-bezier(.2, .8, .3, 1);
 }
 
@@ -373,8 +397,7 @@ a { color: var(--accent); }
   background: var(--surface-2); border: 2px solid var(--line);
 }
 .badge-item.earned .badge-face {
-  background: linear-gradient(150deg, var(--sun), var(--accent));
-  border-color: var(--accent); box-shadow: var(--lift-accent);
+  background: var(--accent-soft); border-color: var(--accent-dim);
 }
 .badge-item.locked .badge-face { filter: grayscale(1); opacity: .35; }
 .badge-name { font-size: 11px; color: var(--text-soft); line-height: 1.3; }
@@ -397,14 +420,13 @@ a { color: var(--accent); }
 
 /* いちばん押してほしいものだけ大きく、残りは静かに */
 .primary-card {
-  background: linear-gradient(150deg, var(--accent), #ff9f7a);
-  border-color: var(--accent); color: var(--accent-ink);
+  background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
   box-shadow: var(--lift-accent); padding: 18px var(--pad);
 }
 .primary-card .menu-kicker { font-size: 12px; opacity: .85; letter-spacing: .06em; }
-.primary-card .menu-title.big { font-size: 24px; font-weight: 800; line-height: 1.3; }
-.primary-card .menu-sub { color: rgba(255, 255, 255, .9); }
-.primary-card .menu-time { color: rgba(255, 255, 255, .95); font-weight: 600; }
+.primary-card .menu-title.big { font-size: 25px; font-weight: 600; line-height: 1.3; font-family: var(--font-display); }
+.primary-card .menu-sub, .primary-card .menu-time { color: var(--accent-ink); opacity: .9; }
+.primary-card .menu-time { font-weight: 600; }
 
 .menu-card.slim {
   display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
@@ -424,6 +446,44 @@ a { color: var(--accent); }
 .why[open] > summary::before { content: '− '; }
 .why > p, .why > div { font-size: 13px; color: var(--text-soft); margin: 4px 0 0; }
 .bridge-card .why { text-align: left; }
+
+/* ---------- 描くところ ---------- */
+
+.stage.with-pad { flex-direction: column; justify-content: flex-start; padding-top: 52px; }
+/* 操作列がキャンバスの上に載るぶん、お題はもう少し小さくして重なりを避ける */
+.stage.with-pad .stage-inner,
+.stage.with-pad .ref-image { max-height: 32dvh; }
+
+.pad-wrap {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 50dvh; z-index: 2;
+  display: flex; flex-direction: column; background: #fffdf8;
+  border-top: 1px solid #cfcabb;
+}
+.pad { flex: 1; width: 100%; touch-action: none; cursor: crosshair; }
+
+.pad-tools {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 8px 10px max(8px, env(safe-area-inset-bottom));
+  background: #f1eee5; border-top: 1px solid #ddd8c9;
+}
+.pad-btn, .pad-size {
+  background: #fffdf8; border: 1px solid #cfcabb; color: #2b2a27;
+  width: 40px; height: 36px; border-radius: 8px; font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.pad-btn.on { background: #2b2a27; border-color: #2b2a27; color: #fffdf8; }
+.pad-sizes { display: flex; gap: 4px; }
+.pad-size { width: 30px; }
+.pad-size i { display: block; background: #2b2a27; border-radius: 50%; }
+.pad-size.on { border-color: #2b2a27; border-width: 2px; }
+
+/* キャンバスを開いている間は、操作列をキャンバスの真上に載せる。
+   z-index を上げておかないとキャンバスがタップを吸ってしまう */
+.stage.with-pad .hud-bottom {
+  top: auto; bottom: 50dvh; z-index: 3;
+  background: rgba(11, 12, 15, .82); padding-bottom: 8px;
+}
+.stage.with-pad .hud-cue { display: none; }
 
 /* ---------- カレンダー ---------- */
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#14151a">
+<meta name="theme-color" content="#f5f4ee">
 <title>Croqui — 毎日3分のデッサン練習</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
@@ -133,11 +133,27 @@
     <div class="hud-bottom">
       <div class="timebar"><div id="timebar-fill" class="timebar-fill"></div></div>
       <div class="hud-controls">
+        <button id="tool-pad" class="tool-btn" title="ここに描く (D)">&#9999;&#65039;</button>
         <button id="tool-grid" class="tool-btn" title="グリッド (G)">▦</button>
         <button id="tool-flip" class="tool-btn" title="左右反転 (F)">⇄</button>
         <button id="pause-btn" class="round-btn" title="一時停止 (Space)">⏸</button>
         <button id="time-left" class="time-left" title="残り時間">30</button>
         <button id="skip-btn" class="tool-btn" title="次へ (→)">⏭</button>
+      </div>
+    </div>
+
+    <div id="pad-wrap" class="pad-wrap" hidden>
+      <canvas id="pad" class="pad"></canvas>
+      <div class="pad-tools">
+        <button class="pad-btn on" data-pad="pen" title="ペン">&#9999;&#65039;</button>
+        <button class="pad-btn" data-pad="eraser" title="消しゴム">&#129529;</button>
+        <div class="pad-sizes">
+          <button class="pad-size" data-size="2" title="細い"><i style="width:3px;height:3px"></i></button>
+          <button class="pad-size on" data-size="4" title="ふつう"><i style="width:6px;height:6px"></i></button>
+          <button class="pad-size" data-size="9" title="太い"><i style="width:11px;height:11px"></i></button>
+        </div>
+        <button class="pad-btn" data-pad="undo" title="元に戻す">&#8617;&#65038;</button>
+        <button class="pad-btn" data-pad="clear" title="全部消す">&#128465;</button>
       </div>
     </div>
 
@@ -371,8 +387,9 @@
     <div class="section-head"><h2>練習の設定</h2></div>
     <label class="label" for="opt-theme">見た目</label>
     <select id="opt-theme" class="input">
-      <option value="cute">あかるい（デフォルト）</option>
-      <option value="dark">くらい（夜向け）</option>
+      <option value="paper">ペーパー（デフォルト）</option>
+      <option value="dark">ダーク（夜向け）</option>
+      <option value="pop">ポップ</option>
     </select>
     <label class="switch"><input type="checkbox" id="opt-sound"> 残り3秒でカチッと鳴らす</label>
     <label class="switch"><input type="checkbox" id="opt-sfx"> 効果音を鳴らす（レベルアップ・バッジ）</label>

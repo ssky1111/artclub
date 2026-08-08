@@ -8,7 +8,8 @@
 
 import { DRILLS } from './theory.js';
 import { createTimer, sfx } from './timer.js';
-import { $, showScreen, toast, fmtClock } from './ui.js';
+import { createPad } from './draw.js';
+import { $, $$, showScreen, toast, fmtClock } from './ui.js';
 
 export function createSessionRunner({ onFinish, onQuit }) {
   const dom = {
@@ -32,7 +33,11 @@ export function createSessionRunner({ onFinish, onQuit }) {
     bridgeCue: $('#bridge-cue'),
     bridgeMeta: $('#bridge-meta'),
     bridgeReminder: $('#bridge-reminder'),
+    stage: document.querySelector('.stage'),
+    padWrap: $('#pad-wrap'),
   };
+
+  const pad = createPad($('#pad'));
 
   const beeper = sfx;
   let state = null;
@@ -219,10 +224,13 @@ export function createSessionRunner({ onFinish, onQuit }) {
     return runItem(item);
   }
 
-  function finish() {
+  async function finish() {
     timer.stop();
     releaseWakeLock();
+    const drawn = pad.hasContent ? await pad.toBlob().catch(() => null) : null;
+    closePad();
     onFinish({
+      drawing: drawn,
       menuId: state.menu.id,
       menuTitle: state.menu.title,
       seconds: state.totalSeconds,
@@ -236,6 +244,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
   function quit() {
     timer.stop();
     releaseWakeLock();
+    closePad();
     // 途中でやめても、そこまでの分は記録する（1分でも「やった」に入れる）
     if (state?.current) record(state.current, Math.round(state.current.seconds - timer.remaining));
     const partial = state && state.totalSeconds > 20
@@ -273,6 +282,21 @@ export function createSessionRunner({ onFinish, onQuit }) {
     dom.pauseBtn.textContent = timer.running ? '⏸' : '▶';
   }
 
+  /** 画面内に描くモード。紙が手元にない日でも始められるように。 */
+  function togglePad() {
+    const open = dom.padWrap.hidden;
+    dom.padWrap.hidden = !open;
+    dom.stage.classList.toggle('with-pad', open);
+    $('#tool-pad').classList.toggle('on', open);
+    if (open) requestAnimationFrame(() => pad.resize());
+  }
+
+  function closePad() {
+    dom.padWrap.hidden = true;
+    dom.stage.classList.remove('with-pad');
+    $('#tool-pad').classList.remove('on');
+  }
+
   function toggleGrid() {
     state.gridForced = !state.gridForced;
     dom.grid.hidden = !state.gridForced && !DRILLS[state.current.drillId].view?.grid;
@@ -302,10 +326,32 @@ export function createSessionRunner({ onFinish, onQuit }) {
   $('#pause-btn').addEventListener('click', togglePause);
   $('#time-left').addEventListener('click', togglePause);
   $('#skip-btn').addEventListener('click', () => advance(true));
+  $('#tool-pad').addEventListener('click', togglePad);
   $('#tool-grid').addEventListener('click', toggleGrid);
   $('#tool-flip').addEventListener('click', toggleFlip);
   $('#quit-btn').addEventListener('click', quit);
   $('#peek-btn').addEventListener('click', peek);
+
+  $('.pad-tools').addEventListener('click', (e) => {
+    const tool = e.target.closest('[data-pad]')?.dataset.pad;
+    const size = e.target.closest('[data-size]')?.dataset.size;
+    if (size) {
+      pad.setSize(Number(size));
+      pad.setEraser(false);
+      $$('.pad-size').forEach((b) => b.classList.toggle('on', b.dataset.size === size));
+      $$('.pad-btn[data-pad="pen"], .pad-btn[data-pad="eraser"]')
+        .forEach((b) => b.classList.toggle('on', b.dataset.pad === 'pen'));
+      return;
+    }
+    if (!tool) return;
+    if (tool === 'undo') return void pad.undo();
+    if (tool === 'clear') return void pad.clear();
+    pad.setEraser(tool === 'eraser');
+    $$('.pad-btn[data-pad="pen"], .pad-btn[data-pad="eraser"]')
+      .forEach((b) => b.classList.toggle('on', b.dataset.pad === tool));
+  });
+
+  window.addEventListener('resize', () => { if (!dom.padWrap.hidden) pad.resize(); });
   $('#attr-btn').addEventListener('click', () => { dom.attrBox.hidden = !dom.attrBox.hidden; });
 
   $('#bridge-start').addEventListener('click', () => {
@@ -338,6 +384,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     if (e.code === 'Space') { e.preventDefault(); togglePause(); }
     else if (e.code === 'ArrowRight') advance(true);
     else if (e.key === 'g') toggleGrid();
+    else if (e.key === 'd') togglePad();
     else if (e.key === 'f') toggleFlip();
     else if (e.code === 'Escape') quit();
   });
@@ -361,6 +408,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
         pending: {},
         awaitingBridge: false,
       };
+      pad.clear();
       Object.values(queues).forEach((q) => q.prime?.());
       if (settings.source === 'unsplash' && !settings.unsplashKey) {
         toast('Unsplash のキーが未設定です。設定から入れてください');

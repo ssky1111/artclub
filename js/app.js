@@ -377,19 +377,24 @@ function startMenuWithLesson(menu, lesson, lessonMode) {
 }
 
 function saveResult(result) {
+  const { drawing, ...rest } = result;      // 画像そのものは履歴（localStorage）に入れない
   return addSession({
     id: `s${Date.now()}`,
     date: dateKey(),
     ts: Date.now(),
-    ...result,
+    ...rest,
   });
 }
 
 function finishSession(result) {
   const entry = saveResult(result);
   if (settings.sfx) sfx.fanfare();
-  pendingDrawing = null;
-  $('#drawing-preview').hidden = true;
+
+  // 画面内のキャンバスに描いていたら、撮り直さなくていいように引き継ぐ
+  pendingDrawing = result.drawing || null;
+  const preview = $('#drawing-preview');
+  preview.hidden = !pendingDrawing;
+  if (pendingDrawing) preview.src = URL.createObjectURL(pendingDrawing);
   $('#review-note').value = '';
   $$('.rate-btn').forEach((b) => b.classList.remove('on'));
 
@@ -819,11 +824,13 @@ function wireNav() {
   });
 }
 
+const THEME_COLORS = { paper: '#f5f4ee', dark: '#1a1917', pop: '#fff6f2' };
+
 function applyTheme() {
   document.body.dataset.theme = settings.theme;
   // ブラウザのUI（アドレスバー）の色も合わせる
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = settings.theme === 'dark' ? '#14151a' : '#fff6f2';
+  if (meta) meta.content = THEME_COLORS[settings.theme] || THEME_COLORS.paper;
 }
 
 function wireCalendar() {
@@ -848,6 +855,14 @@ function init() {
 
   // ブラウザは操作なしに音を出せないので、最初のタップで鳴らせるようにしておく
   document.addEventListener('pointerdown', () => { if (settings.sfx) sfx.unlock(); }, { once: true });
+
+  // ボタンはすべて押した瞬間に鳴らす（キャンバスの道具だけは連打するので鳴らさない）
+  document.addEventListener('pointerdown', (e) => {
+    if (!settings.sfx) return;
+    const button = e.target.closest('button');
+    if (!button || button.disabled || button.closest('.pad-wrap')) return;
+    sfx.tap();
+  });
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
