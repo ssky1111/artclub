@@ -29,12 +29,6 @@ import { $, $$, el, showScreen, toast, fmtDuration } from './ui.js';
 let settings = getSettings();
 let pendingDrawing = null;   // ふりかえり画面で選ばれた画像（保存前）
 
-const SMILEY_SVG = `<svg viewBox="0 0 40 40" aria-hidden="true">
-  <circle cx="20" cy="20" r="20" fill="currentColor"/>
-  <path d="M8 15c3-6 21-6 24 0" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round"/>
-  <ellipse cx="15" cy="25" rx="2.2" ry="3.4" fill="#000"/>
-  <ellipse cx="25" cy="25" rx="2.2" ry="3.4" fill="#000"/>
-</svg>`;
 
 /* ==================== ホーム ==================== */
 
@@ -140,10 +134,7 @@ function renderMenus(level) {
   const top = $('#menu-primary');
   top.innerHTML = '';
   const hero = el('button', 'menu-card primary-card');
-  const face = el('span', 'menu-face');
-  face.innerHTML = SMILEY_SVG;
   hero.append(
-    face,
     el('div', 'menu-kicker', 'きょうの練習'),
     el('div', 'menu-title big', primary.title),
     el('div', 'menu-sub', primary.subtitle),
@@ -834,13 +825,13 @@ function wireNav() {
   });
 }
 
-const THEME_COLORS = { setlog: '#000000', light: '#ffffff', paper: '#f5f4ee' };
+const THEME_COLORS = { light: '#f7f7f5', dark: '#000000', paper: '#f5f4ee' };
 
 function applyTheme() {
   document.body.dataset.theme = settings.theme;
   // ブラウザのUI（アドレスバー）の色も合わせる
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = THEME_COLORS[settings.theme] || THEME_COLORS.setlog;
+  if (meta) meta.content = THEME_COLORS[settings.theme] || THEME_COLORS.light;
 }
 
 function wireCalendar() {
