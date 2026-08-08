@@ -176,8 +176,8 @@ export const CATEGORIES = [
 export const MENUS = [
   {
     id: 'quick',
-    title: '3分ウォームアップ',
-    subtitle: 'とにかく手を動かす日。ここだけでも連続記録は途切れない。',
+    title: 'ウォームアップ',
+    subtitle: 'とにかく手を動かす日に',
     steps: [
       { drill: 'gesture', count: 4, seconds: 30 },
       { drill: 'squint',  count: 1, seconds: 60 },
@@ -185,8 +185,8 @@ export const MENUS = [
   },
   {
     id: 'daily',
-    title: '10分デイリー',
-    subtitle: 'ウォームアップ＋観察ドリル2種。標準メニュー。',
+    title: 'デイリー',
+    subtitle: 'まずはこれ。手を温めてから、形と明暗まで',
     steps: [
       { drill: 'gesture',    count: 4, seconds: 30 },
       { drill: 'negative',   count: 1, seconds: 150 },
@@ -196,8 +196,8 @@ export const MENUS = [
   },
   {
     id: 'deep',
-    title: '20分じっくり',
-    subtitle: '時間がある日。長い模写と記憶ドローまで。',
+    title: 'じっくり',
+    subtitle: '時間がある日に。長めの模写と、記憶で描くところまで',
     steps: [
       { drill: 'gesture',    count: 6, seconds: 30 },
       { drill: 'blind',      count: 1, seconds: 120 },
@@ -210,7 +210,7 @@ export const MENUS = [
   {
     id: 'gestureOnly',
     title: 'クロッキー連続',
-    subtitle: '30秒×12。手が温まっている日はこれだけでもいい。',
+    subtitle: '30秒を何枚も。手が温まっている日に',
     steps: [
       { drill: 'gesture', count: 12, seconds: 30 },
     ],

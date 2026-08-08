@@ -261,10 +261,11 @@ export function dailyQuests(history = getHistory()) {
       ratio: Math.min(1, todaySeconds / 600),
     },
     {
+      // 中の仕組み（間隔をあけた再出題）は見せず、「にがてを直す」とだけ言う
       id: 'review',
-      icon: '🔁',
-      title: cards.length ? '復習をぜんぶ消す' : '苦手な部位をえらぶ',
-      detail: cards.length ? `のこり ${due} 枚` : '設定から選べます',
+      icon: '🎯',
+      title: cards.length ? 'にがてに手をつける' : 'にがてな部位をえらぶ',
+      detail: cards.length ? (due ? `あと ${due} か所` : 'きょうのぶんは完了') : '設定からえらべます',
       done: cards.length > 0 && due === 0,
     },
   ];

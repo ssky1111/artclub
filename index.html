@@ -59,15 +59,12 @@
 
     <div class="xp-row">
       <div class="xp-track"><div id="xp-fill" class="xp-fill"></div></div>
-      <span id="xp-text" class="muted small">0 XP</span>
     </div>
 
     <div class="streak-sub">
       <span id="today-status" class="pill">今日はまだ</span>
-      <span id="total-stat" class="muted small">通算 0 回 / 0 分</span>
     </div>
     <div id="streak-dots" class="streak-dots" aria-label="直近2週間"></div>
-    <div id="rest-note" class="muted small" hidden></div>
   </section>
 
   <section class="card quest-card">
@@ -81,39 +78,17 @@
     <p id="focus-desc" class="focus-desc muted"></p>
   </section>
 
-  <section class="card review-card" id="review-due-card" hidden>
-    <div class="section-head">
-      <h2>今日の復習</h2>
-      <span id="due-count" class="badge good-badge">0枚</span>
-    </div>
-    <p class="muted small">
-      前にできなかった項目が、間隔をあけて戻ってきます。押すとその部位だけ練習できます。
-    </p>
-    <ul id="due-list" class="due-list"></ul>
-    <div id="due-chips" class="chips"></div>
-  </section>
-
-  <section class="card lesson-cta">
-    <div class="section-head"><h2>描けない部位をつぶす</h2></div>
-    <p class="muted small">
-      手や脚が描けないのは観察力ではなく、中身を知らないから。
-      日本語の構造解説を読んでから、その部位だけを練習します。
-    </p>
-    <div id="lesson-chips" class="chips"></div>
-  </section>
+  <div id="menu-primary"></div>
 
   <section class="menu-list">
-    <div class="section-head">
-      <h2>メニュー</h2>
-      <span id="level-badge" class="badge">Lv.1</span>
-    </div>
+    <div class="section-head"><h2>ほかのメニュー</h2></div>
     <div id="menu-cards"></div>
   </section>
 
-  <section class="card">
-    <div class="section-head"><h2>お題のジャンル</h2></div>
-    <div id="category-chips" class="chips"></div>
-    <p class="muted small">選んだジャンルからランダムに出題します。1つ以上選んでください。</p>
+  <section class="card lesson-cta">
+    <div class="section-head"><h2>苦手な部位をつぶす</h2></div>
+    <p class="muted small">手や脚は、中身を知らないと見ても描けません。</p>
+    <div id="lesson-chips" class="chips"></div>
   </section>
 
   <section class="card">
@@ -124,9 +99,6 @@
     <div id="badge-grid" class="badge-grid"></div>
   </section>
 
-  <footer class="home-footer muted small">
-    <span id="source-note"></span>
-  </footer>
 </main>
 
 <!-- ============ セッション ============ -->
@@ -176,14 +148,17 @@
 <!-- ============ 休憩／ドリル切替 ============ -->
 <main id="screen-bridge" class="screen center">
   <div class="bridge-card">
-    <div class="label" id="bridge-label">次のドリル</div>
+    <div class="label" id="bridge-label">つぎは</div>
     <h2 id="bridge-title">—</h2>
-    <p id="bridge-theory" class="muted"></p>
     <p id="bridge-cue" class="cue-text"></p>
     <p id="bridge-reminder" class="reminder-text" hidden></p>
     <div class="bridge-meta muted small" id="bridge-meta"></div>
     <button id="bridge-start" class="btn primary big">はじめる</button>
-    <button id="bridge-skip" class="btn ghost">このドリルを飛ばす</button>
+    <details class="why">
+      <summary>なぜこれをやるの？</summary>
+      <p id="bridge-theory"></p>
+    </details>
+    <button id="bridge-skip" class="btn ghost small">これは飛ばす</button>
   </div>
 </main>
 
@@ -196,11 +171,8 @@
 
   <section class="card" id="review-checks-card" hidden>
     <div class="section-head"><h2>セルフチェック</h2></div>
-    <p class="muted small">
-      描いたものを見ながら、できているものだけ押す。押さなかった項目は翌日また出ます。
-    </p>
+    <p class="muted small">描いたものを見ながら、できているものだけ押してください。</p>
     <ul id="review-checks" class="check-list"></ul>
-    <p id="check-schedule" class="muted small"></p>
   </section>
 
   <section class="card">
@@ -279,6 +251,7 @@
 
   <div class="stack sticky-cta">
     <button id="lesson-practice" class="btn primary big">この部位を練習する</button>
+    <button id="lesson-review" class="btn ghost small" hidden>前にできなかったところをやる</button>
   </div>
 </main>
 
@@ -312,7 +285,6 @@
     <div class="stat-grid">
       <div class="stat"><div id="st-streak" class="stat-num">0</div><div class="stat-label">連続日数</div></div>
       <div class="stat"><div id="st-best" class="stat-num">0</div><div class="stat-label">最長記録</div></div>
-      <div class="stat"><div id="st-sessions" class="stat-num">0</div><div class="stat-label">セッション</div></div>
       <div class="stat"><div id="st-minutes" class="stat-num">0</div><div class="stat-label">合計(分)</div></div>
     </div>
   </section>
@@ -331,22 +303,7 @@
   </section>
 
   <section class="card">
-    <div class="section-head"><h2>この半年</h2></div>
-    <div id="heatmap" class="heatmap" aria-label="練習ヒートマップ"></div>
-    <div class="heat-legend muted small"><span>少</span><i class="h0"></i><i class="h1"></i><i class="h2"></i><i class="h3"></i><i class="h4"></i><span>多</span></div>
-  </section>
-
-  <section class="card">
-    <div class="section-head">
-      <h2>復習の予定</h2>
-      <span id="card-summary" class="muted small"></span>
-    </div>
-    <div id="upcoming" class="upcoming"></div>
-    <div id="box-bars" class="box-bars"></div>
-  </section>
-
-  <section class="card">
-    <div class="section-head"><h2>ドリル別の積み上げ</h2></div>
+    <div class="section-head"><h2>なにを練習したか</h2></div>
     <div id="drill-bars" class="drill-bars"></div>
   </section>
 
@@ -365,7 +322,13 @@
   </header>
 
   <section class="card">
-    <div class="section-head"><h2>お題の取得元</h2></div>
+    <div class="section-head"><h2>お題のジャンル</h2></div>
+    <div id="category-chips" class="chips"></div>
+    <p class="muted small">選んだジャンルからランダムに出題します。</p>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2>お題をどこから持ってくるか</h2></div>
     <div id="source-radios" class="radios">
       <label><input type="radio" name="source" value="unsplash"> Unsplash（ジャンル指定できる・キー必要）</label>
       <label><input type="radio" name="source" value="picsum"> Lorem Picsum（キー不要・ジャンル指定なし）</label>
@@ -380,26 +343,27 @@
         <button id="key-test" class="btn ghost small">接続テスト</button>
         <span id="key-status" class="muted small"></span>
       </div>
-      <p class="muted small">
-        <a href="https://unsplash.com/oauth/applications" target="_blank" rel="noopener">unsplash.com/developers</a>
-        で無料のアプリを作るとAccess Keyがもらえます。キーはこの端末のブラウザにだけ保存され、Unsplash以外には送られません。
-      </p>
+      <details class="why">
+        <summary>キーの取り方</summary>
+        <p class="muted small">
+          <a href="https://unsplash.com/oauth/applications" target="_blank" rel="noopener">unsplash.com/developers</a>
+          で無料のアプリを作ると Access Key がもらえます。
+          キーはこの端末のブラウザにだけ保存され、Unsplash 以外には送られません。
+        </p>
+      </details>
     </div>
 
     <div id="local-config" class="subcard">
       <input type="file" id="local-input" accept="image/*" multiple hidden>
       <button id="local-btn" class="btn">画像を選ぶ</button>
       <span id="local-count" class="muted small">0枚</span>
-      <p class="muted small">選んだ画像はこのセッションの間だけ使います（保存はされません）。</p>
+      <p class="muted small">選んだ画像は、いま開いている間だけ使います。</p>
     </div>
   </section>
 
   <section class="card">
     <div class="section-head"><h2>苦手な部位</h2></div>
-    <p class="muted small">
-      選ぶと、その部位のチェック項目が今日から復習に出ます。
-      ふだんのメニューにもその部位のドリルが1本混ざります。
-    </p>
+    <p class="muted small">選ぶと、ふだんの練習にその部位がすこしずつ混ざります。</p>
     <div id="weak-chips" class="chips"></div>
   </section>
 
@@ -431,8 +395,10 @@
   </section>
 
   <section class="card">
-    <div class="section-head"><h2>この練習メニューの根拠</h2></div>
-    <div id="theory-list" class="theory-list"></div>
+    <details class="why">
+      <summary>この練習メニューの根拠</summary>
+      <div id="theory-list" class="theory-list"></div>
+    </details>
   </section>
 </main>
 
