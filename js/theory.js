@@ -78,6 +78,11 @@ export const FOCUSES = [
 export const DRILLS = {
   gesture: {
     id: 'gesture',
+    steps: [
+      '体重が乗っている足を決める',
+      '頭からつま先へ1本の線',
+      '肩と腰の傾きを2本',
+    ],
     name: 'ジェスチャー',
     theory: '細部を描く時間を奪うことで、全体の流れと重心だけに注意を向けさせる。',
     cue: 'まず1本の線で「動きの流れ」を引く。輪郭は追わない。',
@@ -86,6 +91,11 @@ export const DRILLS = {
   },
   squint: {
     id: 'squint',
+    steps: [
+      '外形だけをぐるっと囲む',
+      '中は一色で塗る',
+      'へこみと出っぱりを直す',
+    ],
     name: 'シルエット（目を細める）',
     theory: 'ぼかして見ると細部が消え、大きな形の塊だけが残る。画家が目を細める動作の代わり。',
     cue: '外形だけを一気に塗る。中の線は描かない。',
@@ -93,6 +103,11 @@ export const DRILLS = {
   },
   negative: {
     id: 'negative',
+    steps: [
+      'すき間を1つ選ぶ',
+      'その形だけを塗る',
+      '残りのすき間も塗る',
+    ],
     name: 'ネガティブスペース',
     theory: '「腕」だと思った瞬間、脳は記号を描き始める。すき間の形には名前が無いので、目で見たまま描くしかない。',
     cue: '物体ではなく、まわりの空いている形を描く。',
@@ -100,6 +115,11 @@ export const DRILLS = {
   },
   contour: {
     id: 'contour',
+    steps: [
+      '端から輪郭を追う',
+      'ペンを離さない',
+      '戻らずに進む',
+    ],
     name: '輪郭線（コンター）',
     theory: '輪郭を目でゆっくり追う練習。手の速度を目の速度に合わせる。',
     cue: 'ペンを紙から離さず、目と手を同じ速さで動かす。',
@@ -107,6 +127,11 @@ export const DRILLS = {
   },
   blind: {
     id: 'blind',
+    steps: [
+      '紙は見ない',
+      'ゆっくり進む',
+      '崩れても直さない',
+    ],
     name: 'ブラインド・コンター',
     theory: '紙を見ないことで「上手く描こうとする補正」を切り、純粋な観察だけを残す。形が崩れても正解。',
     cue: '紙は見ない。目は写真だけ。ゆっくり。',
@@ -114,6 +139,11 @@ export const DRILLS = {
   },
   proportion: {
     id: 'proportion',
+    steps: [
+      '頭の大きさを測る',
+      '全体が頭何個分か',
+      '肩と腰の傾きを見る',
+    ],
     name: '比率と角度',
     theory: 'グリッドは答えではなく物差し。縦横の比と傾きを「測ってから」描く癖をつける。',
     cue: '先に縦横の比率を測る。次に主要な線の傾きを鉛筆で確認。',
@@ -121,6 +151,11 @@ export const DRILLS = {
   },
   notan: {
     id: 'notan',
+    steps: [
+      'いちばん暗い所を塗る',
+      '中間の灰色を塗る',
+      '白は塗らずに残す',
+    ],
     name: '明暗3段階（ノタン）',
     theory: '写真を3階調に潰して見せる。実際の絵でも明暗を3つに整理できると、一気に立体に見える。',
     cue: '暗・中・明の3つだけ。中間を作らない。',
@@ -128,6 +163,11 @@ export const DRILLS = {
   },
   upsideDown: {
     id: 'upsideDown',
+    steps: [
+      '逆さのまま見る',
+      'いちばん長い線から',
+      '何の絵かは考えない',
+    ],
     name: '逆さ模写',
     theory: '上下逆だと「顔」「手」といった記号認識が働かなくなり、線と角度そのものを見るようになる。',
     cue: '何の絵かは考えない。線の長さと角度だけを写す。',
@@ -135,6 +175,11 @@ export const DRILLS = {
   },
   mass: {
     id: 'mass',
+    steps: [
+      '胸を箱、骨盤を箱で置く',
+      '手足を円柱でつなぐ',
+      '最後に輪郭をかぶせる',
+    ],
     name: '塊取り（構造模写）',
     theory: '見えた輪郭をなぞるのではなく、箱・円柱・くさびに置き換えてから描く。' +
             '知らない形は観察できないので、まず「何でできているか」を手に覚えさせる。',
@@ -143,6 +188,11 @@ export const DRILLS = {
   },
   landmark: {
     id: 'landmark',
+    steps: [
+      '肩・腰・膝に点を打つ',
+      '点を線でつなぐ',
+      'そのまわりに肉を付ける',
+    ],
     name: 'ランドマーク打ち',
     theory: '骨が皮膚のすぐ下にある場所（でっぱり）だけが、体型や角度に関係なく必ず同じ位置にある。' +
             'そこを先に点で押さえると、形が破綻しなくなる。',
@@ -151,6 +201,11 @@ export const DRILLS = {
   },
   memory: {
     id: 'memory',
+    steps: [
+      '10秒で覚える',
+      '隠れたら箱から描く',
+      '出てこない所は飛ばす',
+    ],
     name: '記憶ドロー',
     theory: '見ながら描くと目と手の往復だけで済む。一度隠すことで、頭の中に形を保持する力が鍛えられる。',
     cue: '最初の10秒で覚える。隠れたら記憶だけで描く。',
@@ -163,25 +218,25 @@ export const CATEGORIES = [
   // 人物を描きたい人がほとんどなので、人体を最初に置き、最初から全部ひらいてある。
   // 検索語に full body / standing などを混ぜているのは、
   // ただ 'person' で引くと顔のアップや後ろ姿ばかりになって、形が取れないため。
-  { id: 'pose',      label: '全身ポーズ', levelMin: 1,
+  { id: 'pose',      label: '全身ポーズ',
     query: 'full body standing pose studio portrait' },
-  { id: 'dance',     label: '動き・ダンス', levelMin: 1,
+  { id: 'dance',     label: '動き・ダンス',
     query: 'dancer mid movement full body' },
-  { id: 'sitting',   label: '座り・寝そべり', levelMin: 1,
+  { id: 'sitting',   label: '座り・寝そべり',
     query: 'person sitting floor full body' },
-  { id: 'portrait',  label: '顔・頭部',   levelMin: 1,
+  { id: 'portrait',  label: '顔・頭部',
     query: 'portrait head shoulders natural light' },
-  { id: 'hands',     label: '手',         levelMin: 1,
+  { id: 'hands',     label: '手',
     query: 'hands close up gesture' },
-  { id: 'feet',      label: '足',         levelMin: 1,
+  { id: 'feet',      label: '足',
     query: 'bare feet legs close up' },
-  { id: 'drapery',   label: '服のしわ',   levelMin: 1,
+  { id: 'drapery',   label: '服のしわ',
     query: 'fabric drapery cloth folds' },
-  { id: 'animal',    label: '動物',       levelMin: 2,
+  { id: 'animal',    label: '動物',
     query: 'animal wildlife full body' },
-  { id: 'still',     label: '静物',       levelMin: 2,
+  { id: 'still',     label: '静物',
     query: 'still life objects table' },
-  { id: 'nature',    label: '風景・植物', levelMin: 3,
+  { id: 'nature',    label: '風景・植物',
     query: 'tree landscape plant' },
 ];
 
@@ -201,12 +256,13 @@ export const MENUS = [
   {
     id: 'daily',
     title: 'デイリー',
-    subtitle: 'まずはこれ。手を温めてから、形と明暗まで',
+    subtitle: '手を温める → 箱で組む → 輪郭で仕上げる。人を描く順番そのまま',
+    // 観察ドリルを並べるのをやめて、実際に人を描くときの順番にした。
+    // 何のためにやるのか分からないドリルが並ぶと、途中で意味を見失うため。
     steps: [
-      { drill: 'gesture',    count: 4, seconds: 30 },
-      { drill: 'negative',   count: 1, seconds: 150 },
-      { drill: 'proportion', count: 1, seconds: 180 },
-      { drill: 'notan',      count: 1, seconds: 150 },
+      { drill: 'gesture', count: 3, seconds: 30 },
+      { drill: 'mass',    count: 1, seconds: 180 },
+      { drill: 'contour', count: 1, seconds: 180 },
     ],
   },
   {
@@ -231,6 +287,25 @@ export const MENUS = [
     ],
   },
 ];
+
+/** 1枚あたりの時間の選択肢（秒）。 */
+export const TIME_CHOICES = [30, 60, 120, 300, 600, 1200];
+export const COUNT_CHOICES = [1, 3, 5, 10, 20];
+
+export function timeLabel(seconds) {
+  return seconds < 60 ? `${seconds}秒` : `${seconds / 60}分`;
+}
+
+/** 設定シートから作る、1ドリルだけのメニュー。 */
+export function buildCustomMenu({ drill, seconds, count }) {
+  return {
+    id: 'custom',
+    title: DRILLS[drill]?.name || '練習',
+    subtitle: `${timeLabel(seconds)} × ${count}枚`,
+    steps: [{ drill, count, seconds }],
+    custom: true,
+  };
+}
 
 /** 通算セッション数からレベルを出す。 */
 export function levelFor(totalSessions) {
@@ -274,7 +349,11 @@ export function focusForDate(dateStr) {
   return FOCUSES[((days % FOCUSES.length) + FOCUSES.length) % FOCUSES.length];
 }
 
-/** そのレベルで解禁されているジャンル。 */
-export function availableCategories(level) {
-  return CATEGORIES.filter((c) => c.levelMin <= level);
+/**
+ * 出題ジャンルは最初から全部えらべる。
+ * 以前はレベルで解禁していたが、「手を描きたいのに手が選べない」という
+ * ただの邪魔にしかなっていなかった。何を練習するかは本人が決めていい。
+ */
+export function availableCategories() {
+  return CATEGORIES;
 }

@@ -1,50 +1,59 @@
 /**
- * db.js — 自分の描いた絵の写真を置くところ。
- * localStorage に入れるには大きすぎるので IndexedDB に Blob で持つ。端末の外には出ない。
+ * db.js — 端末のなかに置くもの（IndexedDB）。
+ *
+ *   drawings … 自分が描いた絵。localStorage に入れるには大きすぎるので Blob で持つ
+ *   photos   … 自分でアップロードしたお題の写真とタグ
+ *
+ * どちらも端末の外には出ない。
  */
 
 const DB_NAME = 'croqui';
-const STORE = 'drawings';
+const DB_VERSION = 2;
+const DRAWINGS = 'drawings';
+const PHOTOS = 'photos';
 
 function open() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
-      if (!req.result.objectStoreNames.contains(STORE)) {
-        req.result.createObjectStore(STORE);
-      }
+      const db = req.result;
+      if (!db.objectStoreNames.contains(DRAWINGS)) db.createObjectStore(DRAWINGS);
+      if (!db.objectStoreNames.contains(PHOTOS)) db.createObjectStore(PHOTOS, { keyPath: 'id' });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
 }
 
-async function tx(mode, fn) {
+async function tx(store, mode, fn) {
   const db = await open();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE, mode);
-    const req = fn(transaction.objectStore(STORE));
+    const transaction = db.transaction(store, mode);
+    const req = fn(transaction.objectStore(store));
     transaction.oncomplete = () => { db.close(); resolve(req?.result); };
     transaction.onerror = () => { db.close(); reject(transaction.error); };
   });
 }
 
-export async function putDrawing(id, blob) {
-  return tx('readwrite', (store) => store.put(blob, id));
-}
+/* ---------- 描いた絵 ---------- */
 
-export async function getDrawing(id) {
-  return tx('readonly', (store) => store.get(id));
-}
+export const putDrawing = (id, blob) => tx(DRAWINGS, 'readwrite', (s) => s.put(blob, id));
+export const getDrawing = (id) => tx(DRAWINGS, 'readonly', (s) => s.get(id));
+export const deleteAllDrawings = () => tx(DRAWINGS, 'readwrite', (s) => s.clear());
 
-export async function deleteAllDrawings() {
-  return tx('readwrite', (store) => store.clear());
-}
+/* ---------- お題の写真 ---------- */
+
+export const putPhoto = (photo) => tx(PHOTOS, 'readwrite', (s) => s.put(photo));
+export const getPhoto = (id) => tx(PHOTOS, 'readonly', (s) => s.get(id));
+export const listPhotos = () => tx(PHOTOS, 'readonly', (s) => s.getAll());
+export const deletePhoto = (id) => tx(PHOTOS, 'readwrite', (s) => s.delete(id));
+export const deleteAllPhotos = () => tx(PHOTOS, 'readwrite', (s) => s.clear());
 
 /**
- * カメラの写真はそのままだと数MBあるので、長辺 1000px の JPEG に落としてから保存する。
+ * カメラや一眼の写真はそのままだと数MBあるので、長辺を落としてから保存する。
+ * お題として見るだけなので、これ以上の解像度は要らない。
  */
-export function shrinkImage(file, maxSide = 1000, quality = 0.72) {
+export function shrinkImage(file, maxSide = 1400, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);

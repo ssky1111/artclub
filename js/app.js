@@ -4,6 +4,7 @@
 
 import {
   MENUS, DRILLS, PRINCIPLES, CATEGORIES,
+  TIME_CHOICES, COUNT_CHOICES, timeLabel, buildCustomMenu,
   levelFor, levelLabel, scaleMenu, menuDuration, focusForDate, availableCategories,
 } from './theory.js';
 import {
@@ -18,7 +19,10 @@ import {
   grade, reminderFor, injectWeakStep, buildReviewMenu, syncWeakParts,
 } from './review.js';
 import { createSessionRunner } from './session.js';
-import { putDrawing, getDrawing, deleteAllDrawings, shrinkImage } from './db.js';
+import { putDrawing, getDrawing, deleteAllDrawings, deleteAllPhotos, shrinkImage } from './db.js';
+import {
+  TAG_GROUPS, ALL_TAGS, allPhotos, addFiles, setTags, removePhoto, createLibraryQueue,
+} from './library.js';
 import {
   totalXp, levelProgress, graceStreak, bestGraceStreak, badges, takeNewBadges, primeBadges,
   takeLevelUp, dailyQuests, resetGame,
@@ -55,6 +59,7 @@ function renderHome() {
   $('#focus-title').textContent = focus.title;
   $('#focus-desc').textContent = focus.desc;
 
+  allPhotos().then((ps) => { $('#library-count').textContent = String(ps.length); }).catch(() => {});
   renderStreakDots(history);
   renderQuests(history);
   renderBadges(history);
@@ -140,11 +145,11 @@ function renderMenus(level) {
   const hero = el('button', 'menu-card primary-card');
   hero.append(
     el('div', 'menu-kicker', 'きょうの練習'),
-    el('div', 'menu-title big', primary.title),
-    el('div', 'menu-sub', primary.subtitle),
-    el('div', 'menu-time', `約${fmtDuration(menuDuration(primary))}`),
+    el('div', 'menu-title big', 'じぶんで決めて描く'),
+    el('div', 'menu-sub', '何を・何分・何枚・どう描くかを選んでから始めます'),
+    el('div', 'menu-time', '時間はここで決められます'),
   );
-  hero.addEventListener('click', () => startSession(primary));
+  hero.addEventListener('click', openSetup);
   top.append(hero);
 
   const wrap = $('#menu-cards');
@@ -159,26 +164,212 @@ function renderMenus(level) {
   }
 }
 
-function renderCategories(level) {
+function renderCategories() {
   const wrap = $('#category-chips');
   wrap.innerHTML = '';
-  const unlocked = new Set(availableCategories(level).map((c) => c.id));
-  for (const cat of CATEGORIES) {
-    const locked = !unlocked.has(cat.id);
+  for (const cat of availableCategories()) {
     const on = settings.categories.includes(cat.id);
-    const chip = el('button', `chip${on && !locked ? ' on' : ''}${locked ? ' locked' : ''}`);
-    chip.textContent = locked ? `${cat.label}（Lv.${cat.levelMin}〜）` : cat.label;
-    chip.disabled = locked;
-    chip.title = locked ? `レベル${cat.levelMin}で解禁されます` : '';
+    const chip = el('button', `chip${on ? ' on' : ''}`, cat.label);
     chip.addEventListener('click', () => {
       const next = new Set(settings.categories);
       next.has(cat.id) ? next.delete(cat.id) : next.add(cat.id);
       if (next.size === 0) return toast('ジャンルは1つ以上えらんでください');
       settings = saveSettings({ categories: [...next] });
-      renderCategories(level);
+      renderCategories();
     });
     wrap.append(chip);
   }
+}
+
+/* ==================== はじめる前の設定 ==================== */
+
+/*
+ * 「30秒固定では描けない」という声のとおり、時間は本人が決めるもの。
+ * 何を・何分・何枚・どう描くか、をここで選んでから始める。
+ */
+const setup = { tags: [], seconds: 120, count: 5, drill: 'gesture' };
+
+function openSetup() {
+  renderSetupTags();
+  renderSetupChips();
+  $('#setup-sheet').hidden = false;
+}
+
+function renderSetupTags() {
+  const wrap = $('#setup-tags');
+  wrap.innerHTML = '';
+  for (const tag of ALL_TAGS) {
+    const chip = el('button', `chip${setup.tags.includes(tag) ? ' on' : ''}`, tag);
+    chip.addEventListener('click', () => {
+      const next = new Set(setup.tags);
+      next.has(tag) ? next.delete(tag) : next.add(tag);
+      setup.tags = [...next];
+      renderSetupTags();
+    });
+    wrap.append(chip);
+  }
+}
+
+function renderSetupChips() {
+  const time = $('#setup-time');
+  time.innerHTML = '';
+  for (const sec of TIME_CHOICES) {
+    const chip = el('button', `chip${setup.seconds === sec ? ' on' : ''}`, timeLabel(sec));
+    chip.addEventListener('click', () => { setup.seconds = sec; renderSetupChips(); });
+    time.append(chip);
+  }
+
+  const count = $('#setup-count');
+  count.innerHTML = '';
+  for (const n of COUNT_CHOICES) {
+    const chip = el('button', `chip${setup.count === n ? ' on' : ''}`, `${n}枚`);
+    chip.addEventListener('click', () => { setup.count = n; renderSetupChips(); });
+    count.append(chip);
+  }
+
+  const drills = $('#setup-drill');
+  drills.innerHTML = '';
+  for (const id of ['gesture', 'mass', 'landmark', 'contour', 'notan', 'memory']) {
+    const chip = el('button', `chip${setup.drill === id ? ' on' : ''}`, DRILLS[id].name);
+    chip.addEventListener('click', () => { setup.drill = id; renderSetupChips(); });
+    drills.append(chip);
+  }
+  $('#setup-drill-note').textContent = (DRILLS[setup.drill].steps || []).join(' → ');
+  $('#setup-total').textContent = fmtDuration(setup.seconds * setup.count);
+}
+
+function wireSetup() {
+  $('#setup-close').addEventListener('click', () => { $('#setup-sheet').hidden = true; });
+  $('#setup-sheet').addEventListener('click', (e) => {
+    if (e.target.id === 'setup-sheet') $('#setup-sheet').hidden = true;
+  });
+  $('#setup-start').addEventListener('click', () => {
+    $('#setup-sheet').hidden = true;
+    startSession(buildCustomMenu(setup), { tags: setup.tags });
+  });
+}
+
+/* ==================== 写真の管理 ==================== */
+
+let libFilter = [];
+
+async function openLibrary() {
+  showScreen('library');
+  await renderLibrary();
+}
+
+async function renderLibrary() {
+  const photos = await allPhotos({ fresh: true });
+  $('#lib-empty').hidden = photos.length > 0;
+
+  const filter = $('#lib-filter');
+  filter.innerHTML = '';
+  for (const tag of ALL_TAGS) {
+    const chip = el('button', `chip${libFilter.includes(tag) ? ' on' : ''}`, tag);
+    chip.addEventListener('click', () => {
+      const next = new Set(libFilter);
+      next.has(tag) ? next.delete(tag) : next.add(tag);
+      libFilter = [...next];
+      renderLibrary();
+    });
+    filter.append(chip);
+  }
+
+  const shown = libFilter.length
+    ? photos.filter((p) => libFilter.every((t) => p.tags.includes(t)))
+    : photos;
+
+  const grid = $('#lib-grid');
+  grid.innerHTML = '';
+  for (const photo of shown) {
+    const item = el('button', 'lib-item');
+    const img = el('img');
+    img.src = URL.createObjectURL(photo.blob);
+    item.append(img);
+    if (photo.tags.length) item.append(el('div', 'lib-tags', photo.tags.join('・')));
+    item.addEventListener('click', () => openPhoto(photo));
+    grid.append(item);
+  }
+  $('#library-count').textContent = String(photos.length);
+}
+
+/** 写真1枚。タグを付け替えられて、これまでの記録も見られる。 */
+function openPhoto(photo) {
+  $('#photo-big').src = URL.createObjectURL(photo.blob);
+
+  const tags = $('#photo-tags');
+  tags.innerHTML = '';
+  for (const group of TAG_GROUPS) {
+    tags.append(el('div', 'label', group.name));
+    const row = el('div', 'chips');
+    for (const tag of group.tags) {
+      const chip = el('button', `chip${photo.tags.includes(tag) ? ' on' : ''}`, tag);
+      chip.addEventListener('click', async () => {
+        const next = new Set(photo.tags);
+        next.has(tag) ? next.delete(tag) : next.add(tag);
+        photo.tags = [...next];
+        await setTags(photo.id, photo.tags);
+        openPhoto(photo);
+        renderLibrary();
+      });
+      row.append(chip);
+    }
+    tags.append(row);
+  }
+
+  renderPhotoHistory(photo.id);
+
+  $('#photo-delete').onclick = async () => {
+    if (!confirm('この写真を消します。よろしいですか？')) return;
+    await removePhoto(photo.id);
+    $('#photo-sheet').hidden = true;
+    renderLibrary();
+  };
+  $('#photo-sheet').hidden = false;
+}
+
+/** 同じ写真を前にどれくらいの時間で描いたか。並べて見えると伸びが分かる。 */
+function renderPhotoHistory(photoId) {
+  const wrap = $('#photo-history');
+  wrap.innerHTML = '';
+  const attempts = [];
+  for (const entry of getHistory()) {
+    for (const shot of entry.shots || []) {
+      if (shot.photoId === photoId) attempts.push({ entry, shot });
+    }
+  }
+  if (!attempts.length) {
+    wrap.append(el('p', 'muted small', 'まだこの写真では描いていません。'));
+    return;
+  }
+  attempts.forEach(({ entry, shot }, i) => {
+    const box = el('div', `attempt${i === attempts.length - 1 ? ' latest' : ''}`);
+    const img = el('img');
+    getDrawing(`${entry.id}#${shot.index}`)
+      .then((blob) => { if (blob) img.src = URL.createObjectURL(blob); })
+      .catch(() => {});
+    box.append(img, el('div', 'attempt-meta',
+      `${entry.date}・${shot.seconds ? fmtDuration(shot.seconds) : '—'}`));
+    wrap.append(box);
+  });
+}
+
+function wireLibrary() {
+  $('#library-cta').addEventListener('click', openLibrary);
+  $('#lib-add').addEventListener('click', () => $('#lib-input').click());
+  $('#lib-input').addEventListener('change', async (e) => {
+    const files = [...(e.target.files || [])];
+    if (!files.length) return;
+    toast(`${files.length}枚を取り込んでいます…`);
+    const added = await addFiles(files, libFilter);
+    e.target.value = '';
+    await renderLibrary();
+    toast(`${added.length}枚いれました。タップしてタグを付けてください`);
+  });
+  $('#photo-close').addEventListener('click', () => { $('#photo-sheet').hidden = true; });
+  $('#photo-sheet').addEventListener('click', (e) => {
+    if (e.target.id === 'photo-sheet') $('#photo-sheet').hidden = true;
+  });
 }
 
 /* ==================== 解剖レッスン ==================== */
@@ -325,11 +516,16 @@ const notice = (msg) => toast(msg);
  * ふだんのメニュー。期限の来た復習があれば、その部位のドリルを1本ねじ込む。
  * 復習を別画面のタスクにすると誰もやらないので、いつもの導線に混ぜてしまう。
  */
-function startSession(menu) {
-  lastStart = () => startSession(menu);
+function startSession(menu, { tags = null } = {}) {
+  lastStart = () => startSession(menu, { tags });
   settings = getSettings();
   const weak = weakestLesson();
-  const queues = { photo: createPhotoQueue(settings, notice) };
+  // タグが選ばれていれば自分の写真から、そうでなければ検索した写真から
+  const queues = {
+    photo: tags
+      ? createLibraryQueue(tags, notice)
+      : createPhotoQueue(settings, notice),
+  };
   if (weak) {
     queues[`weak:${weak.id}`] =
       createPhotoQueue(settings, notice, { queryOverride: weak.photoQuery });
@@ -462,10 +658,10 @@ function renderDrawingStrip() {
   $('#drawing-count').textContent = pendingDrawings.length
     ? `${pendingDrawings.length}枚`
     : '';
-  pendingDrawings.forEach((blob, i) => {
+  pendingDrawings.forEach((shot, i) => {
     const item = el('button', 'strip-item');
     const img = el('img');
-    img.src = URL.createObjectURL(blob);
+    img.src = URL.createObjectURL(shot.blob);
     item.append(img);
     item.title = '押すと外す';
     item.addEventListener('click', () => {
@@ -489,7 +685,7 @@ function wireReview() {
   $('#drawing-input').addEventListener('change', async (e) => {
     const files = [...(e.target.files || [])];
     for (const file of files) {
-      try { pendingDrawings.push(await shrinkImage(file)); }
+      try { pendingDrawings.push({ blob: await shrinkImage(file), photoId: null, seconds: null }); }
       catch { toast('画像を読み込めませんでした'); }
     }
     renderDrawingStrip();
@@ -510,12 +706,16 @@ function wireReview() {
       note: $('#review-note').value.trim() || null,
       hasDrawing: pendingDrawings.length > 0,
       drawingCount: pendingDrawings.length || null,
+      // どの写真を何秒で描いたか。あとで「前は何分だったか」を出すのに使う
+      shots: pendingDrawings.map((shot, i) => ({
+        index: i, photoId: shot.photoId || null, seconds: shot.seconds || null,
+      })),
       missed: missed.length ? missed : null,   // 次回の宿題になる
     });
     if (entry) {
       try {
         // 1枚目がカレンダーの顔になる
-        await Promise.all(pendingDrawings.map((blob, i) => putDrawing(`${entry.id}#${i}`, blob)));
+        await Promise.all(pendingDrawings.map((shot, i) => putDrawing(`${entry.id}#${i}`, shot.blob)));
       } catch { toast('絵の保存に失敗しました（記録は残ります）'); }
     }
     pendingDrawings = [];
@@ -727,7 +927,7 @@ function renderSettings() {
   $('#opt-orientation').value = settings.orientation;
   $('#local-count').textContent = `${localFiles.items.length}枚`;
   updateSourceVisibility();
-  renderCategories(levelFor(stats().sessions));
+  renderCategories();
   renderWeakChips();
   renderTheory();
 }
@@ -832,6 +1032,7 @@ function wireSettings() {
     clearAll();
     resetGame();
     await deleteAllDrawings().catch(() => {});
+    await deleteAllPhotos().catch(() => {});
     settings = getSettings();
     renderSettings();
     renderHome();
@@ -846,6 +1047,7 @@ function wireNav() {
     btn.addEventListener('click', () => {
       const target = btn.dataset.nav;
       if (target === 'log') renderLog();
+      if (target === 'library') { openLibrary(); return; }
       if (target === 'settings') renderSettings();
       if (target === 'home') renderHome();
       showScreen(target);
@@ -877,6 +1079,8 @@ function init() {
   wireNav();
   wireReview();
   wireLesson();
+  wireSetup();
+  wireLibrary();
   wireCalendar();
   wireSettings();
   primeBadges();          // 初回は既存の達成を黙って既読にする

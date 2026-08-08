@@ -46,7 +46,7 @@ async function fetchUnsplashBatch(key, category, orientation, count) {
               `&content_filter=high${orientationParam(orientation)}`;
   const res = await fetch(url, { headers: { Authorization: `Client-ID ${key}` } });
 
-  if (res.status === 401) throw new UnsplashError('Access Key が正しくないようです', 'auth');
+  if (res.status === 401) throw new UnsplashError('キーが正しくないようです', 'auth');
   if (res.status === 403) throw new UnsplashError('Unsplash の時間あたり上限に達しました', 'rate');
   if (!res.ok) throw new UnsplashError(`Unsplash からの応答エラー (${res.status})`, 'http');
 
@@ -82,7 +82,7 @@ function picsumPhoto() {
   const seed = Math.random().toString(36).slice(2, 10);
   return {
     url: `https://picsum.photos/seed/${seed}/1200/1500`,
-    credit: { name: 'Lorem Picsum', link: 'https://picsum.photos', source: 'Lorem Picsum' },
+    credit: { name: 'おためしの写真', link: 'https://picsum.photos', source: 'Lorem Picsum' },
   };
 }
 
@@ -106,7 +106,7 @@ export function createPhotoQueue(settings, onNotice = () => {}, { queryOverride 
     if (source === 'local') {
       if (!localFiles.items.length) {
         source = 'picsum';
-        onNotice('端末内の画像が選ばれていないので Lorem Picsum を使います');
+        onNotice('端末の画像が選ばれていないので、おためしの写真を使います');
         return fill();
       }
       // ローカルは枚数が少ないので、シャッフルして詰め直す
@@ -126,7 +126,7 @@ export function createPhotoQueue(settings, onNotice = () => {}, { queryOverride 
         return;
       } catch (err) {
         source = 'picsum';
-        onNotice(`${err.message}。Lorem Picsum に切り替えます`);
+        onNotice(`${err.message}。おためしの写真に切り替えます`);
       }
     }
 

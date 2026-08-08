@@ -19,7 +19,8 @@ const PATHS = {
   close:    '<path d="M6 6l12 12M18 6L6 18"/>',
   back:     '<path d="M15 5l-7 7 7 7"/>',
   forward:  '<path d="M9 5l7 7-7 7"/>',
-  settings: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10l1.4 1.4m0-12.8l-1.4 1.4m-10 10l-1.4 1.4"/>',
+  // 歯車は小さく描くと太陽に見えるので、つまみ付きのスライダーにしてある
+  settings: '<path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/>',
   info:     '<circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8.2v.2"/>',
   check:    '<path d="M5 13l4 4L19 7"/>',
   plus:     '<path d="M12 5v14M5 12h14"/>',
@@ -44,7 +45,7 @@ const PATHS = {
   /* ホーム */
   home:     '<path d="M4 11l8-7 8 7v9H4z"/>',
   calendar: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
-  flame:    '<path d="M12 3s5 4.5 5 9a5 5 0 01-10 0c0-2 1-3.5 1-3.5S9.5 10 10 11c0-3 2-6 2-8z"/>',
+  flame:    '<path d="M13 2c.5 3 4 4.5 4 8.5A5 5 0 017 11c0-1.6.6-2.8 1.5-3.8.1 1.3.7 2.1 1.4 2.6.5-3 1.6-5.5 3.1-7.8z"/>',
   target:   '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>',
   bone:     '<path d="M7 17l10-10"/><circle cx="5.5" cy="18.5" r="2.2"/><circle cx="8" cy="16" r="2.2"/><circle cx="18.5" cy="5.5" r="2.2"/><circle cx="16" cy="8" r="2.2"/>',
   repeat:   '<path d="M4 9h13a3 3 0 013 3v1"/><path d="M8 5L4 9l4 4"/><path d="M20 15H7a3 3 0 01-3-3v-1"/><path d="M16 19l4-4-4-4"/>',

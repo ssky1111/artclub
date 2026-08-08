@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f7f7f5">
-<title>Croqui — 毎日3分のデッサン練習</title>
+<title>クロッキー — 毎日3分の絵の練習</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
@@ -37,7 +37,7 @@
 <!-- ============ ホーム ============ -->
 <main id="screen-home" class="screen is-active">
   <header class="topbar">
-    <h1 class="brand">CROQUI</h1>
+    <h1 class="brand">クロッキー</h1>
     <div class="topbar-actions">
       <button class="icon-btn" data-nav="settings" data-icon="settings" title="設定"></button>
     </div>
@@ -67,7 +67,7 @@
   </section>
 
   <section class="card quest-card">
-    <div class="section-head"><h2>today's quest</h2></div>
+    <div class="section-head"><h2>きょうのめあて</h2></div>
     <ul id="quest-list" class="quest-list"></ul>
   </section>
 
@@ -83,6 +83,11 @@
     <div class="section-head"><h2>ほかのメニュー</h2></div>
     <div id="menu-cards"></div>
   </section>
+
+  <button id="library-cta" class="menu-card slim">
+    <div class="menu-title">写真をいれる・タグをつける</div>
+    <div class="menu-time"><span id="library-count">0</span>枚</div>
+  </button>
 
   <section class="card lesson-cta">
     <div class="section-head"><h2>苦手な部位をつぶす</h2></div>
@@ -154,8 +159,14 @@
           <span id="pad-drill" class="pad-drill">—</span>
           <span id="pad-progress" class="muted small">1 / 5</span>
         </div>
-        <button id="pad-time" class="pad-time" title="一時停止">30</button>
+        <button id="pad-time" class="pad-time" title="押すと一時停止">
+          <span class="pad-time-num">30</span>
+          <span class="pad-time-unit">のこり</span>
+        </button>
       </div>
+      <div class="pad-timebar"><div id="pad-timebar-fill" class="pad-timebar-fill"></div></div>
+
+      <ol id="pad-steps" class="pad-steps"></ol>
 
       <div class="pad-tools">
         <button class="pad-btn on" data-pad="pen" data-icon="pencil" title="ペン"></button>
@@ -286,6 +297,61 @@
   </div>
 </main>
 
+<!-- 練習をはじめる前の設定 -->
+<div id="setup-sheet" class="sheet" hidden>
+  <div class="sheet-inner">
+    <button id="setup-close" class="icon-btn sheet-close" data-icon="close"></button>
+    <div class="label">なにを描く</div>
+    <div id="setup-tags" class="chips"></div>
+
+    <div class="label setup-label">1まい何分</div>
+    <div id="setup-time" class="chips"></div>
+
+    <div class="label setup-label">何まい</div>
+    <div id="setup-count" class="chips"></div>
+
+    <div class="label setup-label">描きかた</div>
+    <div id="setup-drill" class="chips"></div>
+    <p id="setup-drill-note" class="muted small"></p>
+
+    <button id="setup-start" class="btn primary big">はじめる（<span id="setup-total">約3分</span>）</button>
+  </div>
+</div>
+
+<!-- 写真の管理 -->
+<main id="screen-library" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" data-nav="home" data-icon="back"></button>
+    <h1 class="brand plain">写真</h1>
+    <button id="lib-add" class="icon-btn" data-icon="plus" title="追加"></button>
+  </header>
+  <input type="file" id="lib-input" accept="image/*" multiple hidden>
+
+  <p class="muted small">
+    アンスプラッシュなどで集めた写真をいれて、タグを付けておくと、
+    そのタグでお題を出せます。写真は端末のなかにだけ残ります。
+  </p>
+
+  <div class="section-head"><h2>しぼりこみ</h2></div>
+  <div id="lib-filter" class="chips"></div>
+
+  <div id="lib-grid" class="lib-grid"></div>
+  <p id="lib-empty" class="muted small" hidden>まだ1枚もありません。右上の＋から入れてください。</p>
+</main>
+
+<!-- 写真1枚の詳細（タグと、これまでの記録） -->
+<div id="photo-sheet" class="sheet" hidden>
+  <div class="sheet-inner">
+    <button id="photo-close" class="icon-btn sheet-close" data-icon="close"></button>
+    <img id="photo-big" class="photo-big" alt="">
+    <div class="label">タグ</div>
+    <div id="photo-tags" class="chips"></div>
+    <div class="section-head"><h2>この写真で描いたもの</h2></div>
+    <div id="photo-history" class="photo-history"></div>
+    <button id="photo-delete" class="btn danger small">この写真を消す</button>
+  </div>
+</div>
+
 <!-- カレンダーの1日 -->
 <div id="day-sheet" class="sheet" hidden>
   <div class="sheet-inner">
@@ -360,13 +426,13 @@
   <section class="card">
     <div class="section-head"><h2>お題をどこから持ってくるか</h2></div>
     <div id="source-radios" class="radios">
-      <label><input type="radio" name="source" value="unsplash"> Unsplash（ジャンル指定できる・キー必要）</label>
-      <label><input type="radio" name="source" value="picsum"> Lorem Picsum（キー不要・ジャンル指定なし）</label>
-      <label><input type="radio" name="source" value="local"> 端末内の画像を使う</label>
+      <label><input type="radio" name="source" value="unsplash"> アンスプラッシュ（ジャンルを選べる・キーが必要）</label>
+      <label><input type="radio" name="source" value="picsum"> おためし（キー不要。ただし写真はランダムで、人物は出ません）</label>
+      <label><input type="radio" name="source" value="local"> 端末のなかの画像</label>
     </div>
 
     <div id="unsplash-config" class="subcard">
-      <label class="label" for="unsplash-key">Unsplash Access Key</label>
+      <label class="label" for="unsplash-key">アンスプラッシュのキー</label>
       <input type="password" id="unsplash-key" class="input" placeholder="xxxxxxxx..." autocomplete="off">
       <div class="row">
         <button id="key-save" class="btn small">保存</button>
@@ -377,7 +443,7 @@
         <summary>キーの取り方</summary>
         <p class="muted small">
           <a href="https://unsplash.com/oauth/applications" target="_blank" rel="noopener">unsplash.com/developers</a>
-          で無料のアプリを作ると Access Key がもらえます。
+          で無料のアプリを1つ作ると、キーがもらえます。
           キーはこの端末のブラウザにだけ保存され、Unsplash 以外には送られません。
         </p>
       </details>

@@ -1,7 +1,7 @@
 {
-  "name": "Croqui — 毎日3分のデッサン練習",
-  "short_name": "Croqui",
-  "description": "Unsplash の写真をお題に、クロッキーと模写を毎日3分から続けるための練習アプリ。",
+  "name": "クロッキー — 毎日3分の絵の練習",
+  "short_name": "クロッキー",
+  "description": "写真をお題に、クロッキーと模写を毎日3分から続けるための練習アプリ。",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

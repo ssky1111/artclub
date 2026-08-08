@@ -41,6 +41,9 @@ export function createSessionRunner({ onFinish, onQuit }) {
     padDrill: $('#pad-drill'),
     padProgress: $('#pad-progress'),
     padTime: $('#pad-time'),
+    padTimeNum: $('.pad-time-num'),
+    padTimebar: $('#pad-timebar-fill'),
+    padSteps: $('#pad-steps'),
   };
 
   const pad = createPad($('#pad'));
@@ -54,7 +57,8 @@ export function createSessionRunner({ onFinish, onQuit }) {
     onTick(remaining, progress) {
       dom.timebar.style.transform = `scaleX(${progress})`;
       dom.timeLeft.textContent = fmtClock(remaining);
-      dom.padTime.textContent = fmtClock(remaining);
+      dom.padTimeNum.textContent = fmtClock(remaining);
+      dom.padTimebar.style.transform = `scaleX(${1 - progress})`;
       const whole = Math.ceil(remaining);
       if (state?.settings.sound && whole <= 3 && whole > 0 && whole !== lastBeepAt) {
         lastBeepAt = whole;
@@ -193,6 +197,8 @@ export function createSessionRunner({ onFinish, onQuit }) {
     dom.refMiniImg.src = photo.url;
     dom.padDrill.textContent = drill.name;
     dom.padProgress.textContent = `${item.indexInStep} / ${item.countInStep}`;
+    dom.padSteps.innerHTML = (drill.steps || []).map((t) => `<li>${t}</li>`).join('');
+    state.currentPhotoId = photo.photoId || null;
     renderAttribution(photo);
 
     const flipped = state.flipForced || (state.settings.autoFlip && Math.random() < 0.5);
@@ -222,7 +228,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
   async function harvestDrawing() {
     if (!pad.hasContent) return;
     const blob = await pad.toBlob().catch(() => null);
-    if (blob) state.drawings.push(blob);
+    if (blob) state.drawings.push({ blob, photoId: state.currentPhotoId, seconds: state.itemSeconds });
     pad.clear();
     if (state.settings.sfx) sfx.check();
     toast(`${state.drawings.length}枚目を保存しました`, 1400);
@@ -422,6 +428,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     else if (e.code === 'ArrowRight') advance(true);
     else if (e.key === 'g') toggleGrid();
     else if (e.key === 'd') togglePad();
+    else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); pad.undo(); }
     else if (e.key === 'f') toggleFlip();
     else if (e.code === 'Escape') quit();
   });
