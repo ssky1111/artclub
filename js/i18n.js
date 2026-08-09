@@ -44,7 +44,7 @@ const DICT = {
   'home.totalTimeLabel': { ja: '分',                     en: 'min' },
   'home.week':           { ja: 'この1週間',              en: 'This week' },
   'home.weekNote':       { ja: '1日に描いた枚数。',      en: 'Drawings per day.' },
-  'home.todayLabel':     { ja: 'DAILY',                  en: 'DAILY' },
+  'home.todayLabel':     { ja: '今日の練習',              en: "Today's Practice" },
   'home.modes':          { ja: 'モード',                 en: 'Modes' },
   'home.more':           { ja: 'そのほか',               en: 'More' },
   'home.custom':         { ja: 'じぶんで決めて描く',      en: 'Custom session' },

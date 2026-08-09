@@ -84,7 +84,7 @@ function renderHome() {
 
   $('#streak-count').textContent = String(streak);
   $('#level-num').textContent = `Lv.${xp.level}`;
-  $('#level-name').textContent = levelLabel(Math.min(5, xp.level), getLang());
+  $('#level-name').textContent = '';
   $('#xp-fill').style.width = `${xp.ratio * 100}%`;
 
   const doneToday = dailyTotals(history).has(today);
@@ -530,7 +530,7 @@ function storedPass() {
 async function openAdmin() {
   showScreen('admin');
   const hasPass = !!storedPass();
-  $('#admin-gate-note').textContent = hasPass ? t('admin.enterPass') : t('admin.setPass');
+  $('#admin-gate-note').textContent = t('admin.enterPass');
   $('#admin-pass').value = '';
   $('#admin-msg').textContent = '';
   $('#admin-gate').hidden = adminOpen;
@@ -568,10 +568,9 @@ function wireAdmin() {
   $('#admin-enter').addEventListener('click', async () => {
     const value = $('#admin-pass').value;
     if (!value) return void ($('#admin-msg').textContent = t('admin.enterPass'));
+    const fixed = await hash('admin1989');
     const digest = await hash(value);
-    if (!storedPass()) {
-      try { localStorage.setItem(PASS_KEY, digest); } catch { /* 保存できなくても開ける */ }
-    } else if (storedPass() !== digest) {
+    if (digest !== fixed) {
       $('#admin-msg').textContent = t('admin.wrong');
       return;
     }
