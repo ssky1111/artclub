@@ -916,7 +916,11 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 .count-pill { background: var(--surface-2); color: var(--text-soft); }
 
 .hero-stats {
-  display: flex; gap: 16px;
+  display: flex; gap: 16px; flex-wrap: wrap; align-items: baseline;
+}
+.hero-stat-header {
+  font-size: 11px; color: var(--muted); font-weight: 600;
+  letter-spacing: .06em; width: 100%; margin-bottom: -4px;
 }
 .hero-stat {
   display: flex; align-items: baseline; gap: 2px;

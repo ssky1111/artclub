@@ -54,7 +54,7 @@ import { uploadArtwork, fetchArtworks, deleteArtwork } from './gallery.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '14';
+const BUILD = '15';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -537,9 +537,16 @@ function storedPass() {
   try { return localStorage.getItem(PASS_KEY) || ''; } catch { return ''; }
 }
 
+const ADMIN_EMAILS = ['yuisskweb@gmail.com', 'sayu.u.u.u.u@gmail.com'];
+
+function isAdminUser() {
+  const u = getUser();
+  return u?.email && ADMIN_EMAILS.includes(u.email);
+}
+
 async function openAdmin() {
   showScreen('admin');
-  if (!adminOpen && isSessionAuth()) adminOpen = true;
+  if (!adminOpen && (isSessionAuth() || isAdminUser())) adminOpen = true;
   $('#admin-gate-note').textContent = t('admin.enterPass');
   $('#admin-pass').value = '';
   $('#admin-msg').textContent = '';
@@ -1758,9 +1765,6 @@ function renderSettings() {
   if (u) {
     $('#profile-username').value = getUsername();
   }
-  $$('#source-radios input').forEach((r) => { r.checked = r.value === settings.source; });
-  $('#unsplash-key').value = settings.unsplashKey || '';
- 
   $('#opt-theme').value = settings.theme;
   $('#opt-sound').checked = settings.sound;
   $('#opt-sfx').checked = settings.sfx;
@@ -1795,38 +1799,6 @@ function wireSettings() {
     setUsername(name);
     updateAuthUI(getUser());
     toast(t('auth.saved'));
-  });
-
-  $$('#source-radios input').forEach((radio) => {
-    radio.addEventListener('change', () => {
-      settings = saveSettings({ source: radio.value });
-      updateSourceVisibility();
-    });
-  });
-
-  $('#key-save').addEventListener('click', () => {
-    settings = saveSettings({ unsplashKey: $('#unsplash-key').value.trim() });
-    $('#key-status').textContent = t('common.save');
-  });
-
-  $('#key-test').addEventListener('click', async () => {
-    const key = $('#unsplash-key').value.trim();
-    const status = $('#key-status');
-    if (!key) return void (status.textContent = t('set.key'));
-    status.textContent = '…';
-    try {
-      const { remaining } = await testUnsplashKey(key);
-      settings = saveSettings({ unsplashKey: key });
-      status.textContent = `OK（${remaining ?? '?'}）`;
-    } catch (err) {
-      status.textContent = `NG：${err.message}`;
-    }
-  });
-
-  $('#local-btn').addEventListener('click', () => $('#local-input').click());
-  $('#local-input').addEventListener('change', (e) => {
-    const count = localFiles.set(e.target.files || []);
-    $('#local-count').textContent = fmtCount(count);
   });
 
   const bind = (sel, key) => $(sel).addEventListener('change', (e) => {

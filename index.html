@@ -17,7 +17,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="14">
+<body data-build="15">
 
 <!-- 明暗ポスタライズ用のSVGフィルタ（ノタン練習で使う） -->
 <svg class="filter-defs" aria-hidden="true" focusable="false">
@@ -76,6 +76,7 @@
         <span id="streak-unit" class="streak-unit" data-i18n="home.streakUnit">日</span>
       </div>
       <div class="hero-stats">
+        <div class="hero-stat-header" data-i18n="home.cumulative">累計</div>
         <div class="hero-stat">
           <span id="total-drawings" class="hero-stat-num">0</span>
           <span class="hero-stat-label" data-i18n="home.totalLabel">枚</span>
