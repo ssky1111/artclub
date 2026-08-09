@@ -319,7 +319,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     closePad();
     // 途中でやめても、そこまでの分は記録する（1分でも「やった」に入れる）
     if (state?.current) record(state.current, Math.round(state.current.seconds - timer.remaining));
-    const partial = state && state.totalSeconds > 20
+    const partial = state && state.drawings.length > 0
       ? { menuId: state.menu.id, menuTitle: state.menu.title, seconds: state.totalSeconds,
           byDrill: state.byDrill, focusId: state.focus.id, lessonId: state.lessonId,
           lessonMode: state.lessonMode, drawings: state.drawings, partial: true }
