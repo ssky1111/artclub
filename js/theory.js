@@ -338,12 +338,18 @@ export const PARTS = [
   { id: 'full',   label: '全身',     en: 'Full body',  tags: ['全身'], lessonId: null,        query: 'full body standing pose' },
 ];
 
-export function buildDaily() {
+export function buildDaily(part) {
   return {
     id: 'daily',
     title: 'DAILY',
+    partId: part.id,
     steps: [
       { drill: 'gesture', count: 2, seconds: 30 },
+      {
+        drill: 'croquis', count: 1, seconds: 120, source: 'part',
+        label: `部位練習：${part.label}`,
+        labelEn: `Body part: ${part.en}`,
+      },
       { drill: 'croquis', count: 3, seconds: 180 },
     ],
     en: { title: 'DAILY' },

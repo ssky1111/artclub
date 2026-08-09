@@ -3,7 +3,7 @@
  */
 
 import {
-  buildDaily, MODES, PARTS, DRILLS, PRINCIPLES, PICKABLE_DRILLS,
+  buildDaily, partForDate, MODES, PARTS, DRILLS, PRINCIPLES, PICKABLE_DRILLS,
   TIME_CHOICES, COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu,
   levelLabel, menuDuration, availableCategories,
 } from './theory.js';
@@ -144,7 +144,8 @@ function renderWeekBars(history) {
  */
 function renderDaily(history) {
   const rounds = roundsToday('daily', history);
-  const daily = buildDaily();
+  const part = partForDate(dateKey());
+  const daily = buildDaily(part);
 
   const top = $('#menu-primary');
   top.innerHTML = '';
@@ -169,7 +170,7 @@ function renderDaily(history) {
   cta.addEventListener('click', () => {
     // 2周目からは、いずれ課金の壁になるところ。いまは説明を出して素通しする
     if (rounds > 0) return openPaywall();
-    startSession(daily);
+    startSession(daily, { part });
   });
   hero.append(cta);
 
@@ -311,7 +312,8 @@ function wirePartSheet() {
   });
   $('#pay-continue').addEventListener('click', () => {
     $('#pay-sheet').hidden = true;
-    startSession(buildDaily());
+    const part = partForDate(dateKey());
+    startSession(buildDaily(part), { part });
   });
 }
 
