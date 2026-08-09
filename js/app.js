@@ -3,23 +3,23 @@
  */
 
 import {
-  buildDaily, partForDate, MODES, PARTS, DRILLS, PRINCIPLES, PICKABLE_DRILLS,
+  buildDaily, partForDate, MODES, PARTS, DRILLS, PICKABLE_DRILLS,
   TIME_CHOICES, COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu,
-  levelLabel, menuDuration, availableCategories,
+  levelLabel, menuDuration,
 } from './theory.js';
 import {
-  getSettings, saveSettings, getHistory, addSession, updateLastSession, clearAll,
+  getSettings, saveSettings, getHistory, addSession, updateLastSession,
   dateKey, addDays, dailyTotals, drawingsByDay, totalDrawings, roundsToday, stats,
 } from './storage.js';
 import { LESSONS, PD_BOOKS, lessonById } from './anatomy.js';
-import { createPhotoQueue, localFiles, testUnsplashKey } from './images.js';
+import { createPhotoQueue } from './images.js';
 import { searchPlatesMulti, createPlateQueue } from './commons.js';
 import {
   ensureLessonCards, cardsForLesson, dueCards, weakestLesson,
   grade, reminderFor, injectWeakStep, buildReviewMenu,
 } from './review.js';
 import { createSessionRunner } from './session.js';
-import { putDrawing, getDrawing, deleteAllDrawings, deleteAllPhotos } from './db.js';
+import { putDrawing, getDrawing } from './db.js';
 import {
   TAG_GROUPS, ALL_TAGS, allPhotos, everyPhoto, bundledPhotos, photoUrl,
   addFiles, setTags, removePhoto, createLibraryQueue,
@@ -35,7 +35,7 @@ import {
   removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
   saveHiddenTags, invalidateTagConfig,
 } from './supabase.js';
-import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp, resetGame } from './game.js';
+import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
@@ -259,22 +259,6 @@ function celebrate(history = getHistory()) {
   setTimeout(() => box.remove(), 1800);
 }
 
-function renderCategories() {
-  const wrap = $('#category-chips');
-  wrap.innerHTML = '';
-  for (const cat of availableCategories()) {
-    const on = settings.categories.includes(cat.id);
-    const chip = el('button', `chip${on ? ' on' : ''}`, getLang() === 'en' ? cat.en : cat.label);
-    chip.addEventListener('click', () => {
-      const next = new Set(settings.categories);
-      next.has(cat.id) ? next.delete(cat.id) : next.add(cat.id);
-      if (next.size === 0) return toast(t('toast.pickGenre'));
-      settings = saveSettings({ categories: [...next] });
-      renderCategories();
-    });
-    wrap.append(chip);
-  }
-}
 
 /* ==================== 部位練習 ==================== */
 
@@ -624,19 +608,13 @@ async function renderSupabaseGrid() {
       if (photo.tags.length) {
         btn.append(el('div', 'lib-tags', photo.tags.join(' ')));
       }
-      btn.addEventListener('click', (e) => {
-        if (e.shiftKey || grid.classList.contains('selecting')) {
-          e.preventDefault();
-          toggleSelect(btn, photo);
-        } else {
-          openSbPhoto(photo);
-        }
-      });
-      btn.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        grid.classList.add('selecting');
-        toggleSelect(btn, photo);
-      });
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'sb-check';
+      cb.addEventListener('click', (e) => e.stopPropagation());
+      cb.addEventListener('change', () => toggleSelect(btn, photo, cb.checked));
+      btn.append(cb);
+      btn.addEventListener('click', () => openSbPhoto(photo));
       grid.append(btn);
     }
   } catch (err) {
@@ -644,14 +622,18 @@ async function renderSupabaseGrid() {
   }
 }
 
-function toggleSelect(btn, photo) {
+function toggleSelect(btn, photo, force) {
   const file = photo.id.replace('sb:', '');
-  if (sbSelected.has(file)) {
-    sbSelected.delete(file);
-    btn.classList.remove('selected');
-  } else {
+  const checked = force !== undefined ? force : !sbSelected.has(file);
+  const cb = btn.querySelector('.sb-check');
+  if (checked) {
     sbSelected.add(file);
     btn.classList.add('selected');
+    if (cb) cb.checked = true;
+  } else {
+    sbSelected.delete(file);
+    btn.classList.remove('selected');
+    if (cb) cb.checked = false;
   }
   updateSelectBar();
 }
@@ -866,6 +848,8 @@ function wireAdmin() {
       if (file && !sbSelected.has(file)) {
         sbSelected.add(file);
         btn.classList.add('selected');
+        const cb = btn.querySelector('.sb-check');
+        if (cb) cb.checked = true;
       }
     }
     updateSelectBar();
@@ -873,7 +857,11 @@ function wireAdmin() {
 
   $('#sb-deselect').addEventListener('click', () => {
     sbSelected.clear();
-    for (const btn of $$('#sb-grid .lib-item')) btn.classList.remove('selected');
+    for (const btn of $$('#sb-grid .lib-item')) {
+      btn.classList.remove('selected');
+      const cb = btn.querySelector('.sb-check');
+      if (cb) cb.checked = false;
+    }
     updateSelectBar();
   });
 
@@ -912,6 +900,21 @@ function wireAdmin() {
   });
 
   $('#bulk-tag-close').addEventListener('click', () => { $('#bulk-tag-sheet').hidden = true; });
+
+  $('#sb-bulk-delete').addEventListener('click', async () => {
+    const n = sbSelected.size;
+    if (!n) return;
+    if (!confirm(`${n}枚の写真を削除しますか？`)) return;
+    const status = $('#sb-status');
+    let done = 0;
+    for (const file of [...sbSelected]) {
+      status.textContent = `削除中… ${++done}/${n}`;
+      try { await removeFromSupabase(file); } catch { /* 個別の失敗は飛ばす */ }
+    }
+    sbSelected.clear();
+    status.textContent = `${n}枚を削除しました`;
+    await renderSupabaseGrid();
+  });
 
   /* ---------- タグ管理 ---------- */
 
@@ -1184,6 +1187,16 @@ async function startSession(menu, { tags = null, part = null } = {}) {
       ? createLibraryQueue(part.tags, notice)
       : createPhotoQueue(settings, notice, { queryOverride: part.query });
   }
+  // ジェスチャードローイング → 動きタグ
+  const gesturePhotos = own.filter((p) => p.tags.includes('動き'));
+  queues.gesture = gesturePhotos.length
+    ? createLibraryQueue(['動き'], notice)
+    : (useLibrary ? createLibraryQueue(tags || [], notice) : createPhotoQueue(settings, notice));
+  // クロッキー → 全身タグ
+  const croquisPhotos = own.filter((p) => p.tags.includes('全身'));
+  queues.croquis = croquisPhotos.length
+    ? createLibraryQueue(['全身'], notice)
+    : (useLibrary ? createLibraryQueue(tags || [], notice) : createPhotoQueue(settings, notice));
   if (weak) {
     queues[`weak:${weak.id}`] =
       createPhotoQueue(settings, notice, { queryOverride: weak.photoQuery });
@@ -1738,6 +1751,7 @@ function renderNotes(history) {
 
 function renderSettings() {
   settings = getSettings();
+
   const u = getUser();
   const profileCard = $('#profile-card');
   profileCard.hidden = !u;
@@ -1746,18 +1760,15 @@ function renderSettings() {
   }
   $$('#source-radios input').forEach((r) => { r.checked = r.value === settings.source; });
   $('#unsplash-key').value = settings.unsplashKey || '';
+ 
   $('#opt-theme').value = settings.theme;
   $('#opt-sound').checked = settings.sound;
   $('#opt-sfx').checked = settings.sfx;
   $('#opt-autoflip').checked = settings.autoFlip;
   $('#opt-keepawake').checked = settings.keepAwake;
   $('#opt-orientation').value = settings.orientation;
-  $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 1) * 100));
-  $('#local-count').textContent = fmtCount(localFiles.items.length);
-  updateSourceVisibility();
+  $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 0.6) * 100));
   renderLangChips();
-  renderCategories();
-  renderTheory();
 }
 
 function renderLangChips() {
@@ -1776,24 +1787,6 @@ function switchLang(code) {
   repaint();
 }
 
-function updateSourceVisibility() {
-  $('#unsplash-config').hidden = settings.source !== 'unsplash';
-  $('#local-config').hidden = settings.source !== 'local';
-}
-
-function renderTheory() {
-  const wrap = $('#theory-list');
-  wrap.innerHTML = '';
-  for (const p of PRINCIPLES) {
-    const item = el('div', 'theory-item');
-    item.append(
-      el('h3', null, tr(p, 'title')),
-      el('p', 'muted small', tr(p, 'body')),
-      el('p', 'source muted small', p.source),
-    );
-    wrap.append(item);
-  }
-}
 
 function wireSettings() {
   $('#profile-save').addEventListener('click', () => {
@@ -1851,25 +1844,6 @@ function wireSettings() {
   bind('#opt-autoflip', 'autoFlip');
   bind('#opt-keepawake', 'keepAwake');
   bind('#opt-orientation', 'orientation');
-
-  $('#export-btn').addEventListener('click', () => {
-    const blob = new Blob(
-      [JSON.stringify({ settings: { ...settings, unsplashKey: '' }, history: getHistory() }, null, 2)],
-      { type: 'application/json' });
-    downloadBlob(blob, `artclub-${dateKey()}.json`);
-  });
-
-  $('#reset-btn').addEventListener('click', async () => {
-    if (!confirm(t('set.resetConfirm'))) return;
-    clearAll();
-    resetGame();
-    await deleteAllDrawings().catch(() => {});
-    await deleteAllPhotos().catch(() => {});
-    settings = getSettings();
-    renderSettings();
-    renderHome();
-    toast(t('set.erased'));
-  });
 }
 
 /* ==================== 起動 ==================== */
