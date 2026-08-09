@@ -48,7 +48,7 @@ function publicUrl(path) {
   return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
 }
 
-function shrinkForUpload(blob, maxSide = 1200, quality = 0.80) {
+function shrinkForUpload(blob, maxSide = 1000, quality = 0.80) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(blob);

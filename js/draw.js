@@ -162,7 +162,16 @@ export function createPad(canvas) {
         octx.fillStyle = background;
         octx.fillRect(0, 0, out.width, out.height);
         octx.drawImage(canvas, 0, 0);
-        out.toBlob((blob) => resolve(blob), 'image/jpeg', 0.8);
+        const scale = Math.min(1, 1000 / Math.max(out.width, out.height));
+        if (scale < 1) {
+          const small = document.createElement('canvas');
+          small.width = Math.round(out.width * scale);
+          small.height = Math.round(out.height * scale);
+          small.getContext('2d').drawImage(out, 0, 0, small.width, small.height);
+          small.toBlob((blob) => resolve(blob), 'image/webp', 0.8);
+        } else {
+          out.toBlob((blob) => resolve(blob), 'image/webp', 0.8);
+        }
       });
     },
   };

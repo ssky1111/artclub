@@ -66,7 +66,7 @@ export function shrinkImage(file, maxSide = 1000, quality = 0.82) {
       canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(
         (blob) => (blob ? resolve(blob) : reject(new Error('encode failed'))),
-        'image/jpeg',
+        'image/webp',
         quality,
       );
     };
