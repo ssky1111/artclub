@@ -287,6 +287,15 @@
     <p id="gallery-loading" class="muted small" hidden data-i18n="gal.loading"></p>
   </section>
 
+  <section class="card" id="publish-card" hidden>
+    <label class="toggle-row">
+      <span data-i18n="gal.public">みんなに公開する</span>
+      <input type="checkbox" id="publish-toggle" checked>
+      <span class="toggle-track"></span>
+    </label>
+    <p class="muted small" id="publish-note" data-i18n="gal.private"></p>
+  </section>
+
   <div class="stack">
     <button id="review-save" class="btn primary big" data-i18n="rev.save">保存して終わる</button>
     <button id="gallery-btn" class="btn ghost" data-i18n="gal.showAll">みんなの作品を見る</button>
@@ -409,7 +418,7 @@
   <div class="sheet-inner auth-sheet-inner">
     <button id="auth-close" class="icon-btn sheet-close" data-icon="close"></button>
     <h2 data-i18n="auth.loginTitle">ログイン</h2>
-    <p class="muted small" data-i18n="auth.loginNote">アカウントを連携すると、記録やスケッチを保存できるようになります。</p>
+    <p class="muted small" data-i18n="auth.loginNote">ログインすると、ジェスチャードローイングやクロッキーなどすべての練習メニューが使えるようになります。練習の記録やスケッチの保存もできます。</p>
     <p class="muted small" data-i18n="auth.privacyNote" style="margin-top:4px">勝手に投稿したり情報を取得したりしません。ログインのためだけに使います。</p>
     <div class="auth-buttons">
       <button id="login-x" class="auth-provider-btn x-btn">

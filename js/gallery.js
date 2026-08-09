@@ -70,7 +70,7 @@ function shrinkForUpload(blob, maxSide = 1200, quality = 0.80) {
   });
 }
 
-export async function uploadArtwork(drawingBlob, promptId) {
+export async function uploadArtwork(drawingBlob, promptId, { isPublic = true } = {}) {
   const user = getUser();
   if (!user) throw new Error('not logged in');
 
@@ -99,6 +99,7 @@ export async function uploadArtwork(drawingBlob, promptId) {
     prompt_id: promptId,
     image_url: imageUrl,
     storage_path: path,
+    is_public: isPublic,
   };
 
   const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/artworks`, {
@@ -120,13 +121,18 @@ export async function uploadArtwork(drawingBlob, promptId) {
 }
 
 export async function fetchArtworks(promptId, { limit = 50 } = {}) {
+  const user = getUser();
+  const userId = user?.id;
+  const filter = userId
+    ? `or=(is_public.eq.true,user_id.eq.${userId})`
+    : 'is_public=eq.true';
   const params = new URLSearchParams({
     prompt_id: `eq.${promptId}`,
     order: 'created_at.desc',
     limit: String(limit),
   });
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}&${filter}`, {
     headers: {
       ...authHeaders(),
       Accept: 'application/json',

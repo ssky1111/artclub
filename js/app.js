@@ -1273,6 +1273,13 @@ async function finishSession(result) {
     `<ul class="review-drills">${drillLines}</ul>` +
     `<div class="muted small">${t('rev.streakLine', { s: s.streak, n: s.sessions })}</div>`;
 
+  const hasDrawings = pendingDrawings.length > 0 && !!getUser();
+  $('#publish-card').hidden = !hasDrawings;
+  if (hasDrawings) {
+    $('#publish-toggle').checked = true;
+    updatePublishNote(true);
+  }
+
   showScreen('review');
 
   if (pendingDrawings.length > 0) {
@@ -1370,6 +1377,10 @@ function wireDrawingLightbox() {
   });
 }
 
+function updatePublishNote(isPublic) {
+  $('#publish-note').textContent = isPublic ? '' : t('gal.private');
+}
+
 function wireReview() {
   $$('.rate-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -1377,6 +1388,10 @@ function wireReview() {
       btn.classList.add('on');
       if (settings.sfx) sfx.tap();
     });
+  });
+
+  $('#publish-toggle').addEventListener('change', (e) => {
+    updatePublishNote(e.target.checked);
   });
 
   $('#dl-all').addEventListener('click', () => {
@@ -1455,11 +1470,12 @@ function wireGallery() {
     const userId = user?.id;
 
     if (pendingDrawings.length && userId) {
+      const isPublic = $('#publish-toggle').checked;
       for (const shot of pendingDrawings) {
         if (!shot.uploaded && shot.photoId) {
           try {
             shot.uploading = true;
-            await uploadArtwork(shot.blob, shot.photoId);
+            await uploadArtwork(shot.blob, shot.photoId, { isPublic });
             shot.uploaded = true;
           } catch { /* continue */ }
         }

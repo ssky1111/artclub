@@ -34,8 +34,8 @@ const DICT = {
   'auth.login':           { ja: 'ログイン',             en: 'Log in' },
   'auth.logout':          { ja: 'ログアウト',           en: 'Log out' },
   'auth.loginTitle':      { ja: 'ログイン',             en: 'Log in' },
-  'auth.loginNote':       { ja: 'アカウントを連携すると、記録やスケッチを保存できるようになります。',
-                            en: 'Link an account to save your records and sketches.' },
+  'auth.loginNote':       { ja: 'ログインすると、ジェスチャードローイングやクロッキーなどすべての練習メニューが使えるようになります。練習の記録やスケッチの保存もできます。',
+                            en: 'Log in to unlock all practice modes — gesture drawing, croquis, and more. You can also save your records and sketches.' },
   'auth.withX':           { ja: 'X（Twitter）でログイン', en: 'Log in with X (Twitter)' },
   'auth.withGoogle':      { ja: 'Google でログイン',      en: 'Log in with Google' },
   'auth.loggedIn':        { ja: 'ログイン中',            en: 'Logged in' },
@@ -63,6 +63,8 @@ const DICT = {
   'gal.close':            { ja: '閉じる',                en: 'Close' },
   'gal.count':            { ja: '{n}人が描きました',      en: '{n} people drew this' },
   'gal.loading':          { ja: '読み込み中…',           en: 'Loading…' },
+  'gal.public':           { ja: 'みんなに公開する',       en: 'Share publicly' },
+  'gal.private':          { ja: '自分だけに保存',         en: 'Keep private' },
 
   /* ---------- タブ ---------- */
   'tab.home':            { ja: 'ホーム',   en: 'Home' },
