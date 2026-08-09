@@ -331,7 +331,7 @@ export const CATEGORIES = [
  */
 export const PARTS = [
   { id: 'hand',   label: '手',       en: 'Hands',      tags: ['手'],   lessonId: 'hand',      query: 'hands close up gesture' },
-  { id: 'upper',  label: '上半身',   en: 'Upper body', tags: ['半身'], lessonId: null,        query: 'torso upper body pose' },
+  { id: 'upper',  label: '上半身',   en: 'Upper body', tags: ['上半身'], lessonId: null,        query: 'torso upper body pose' },
   { id: 'lower',  label: '下半身',   en: 'Lower body', tags: ['全身'], lessonId: 'pelvisLeg', query: 'legs walking barefoot dancer' },
   { id: 'face',   label: '顔',       en: 'Head',       tags: ['顔'],   lessonId: null,        query: 'portrait head shoulders natural light' },
   { id: 'foot',   label: '足',       en: 'Feet',       tags: ['足'],   lessonId: 'foot',      query: 'bare feet' },
@@ -344,13 +344,13 @@ export function buildDaily(part) {
     title: 'DAILY',
     partId: part.id,
     steps: [
-      { drill: 'gesture', count: 2, seconds: 30 },
+      { drill: 'gesture', count: 2, seconds: 60, source: 'gesture' },
       {
         drill: 'croquis', count: 1, seconds: 120, source: 'part',
         label: `部位練習：${part.label}`,
         labelEn: `Body part: ${part.en}`,
       },
-      { drill: 'croquis', count: 3, seconds: 180 },
+      { drill: 'croquis', count: 2, seconds: 180, source: 'croquis' },
     ],
     en: { title: 'DAILY' },
   };
@@ -389,10 +389,10 @@ export const MODES = [
   {
     id: 'croquisMode',
     title: 'クロッキー',
-    subtitle: '3分×5枚。形をきちんと乗せる',
+    subtitle: '3分×2枚。形をきちんと乗せる',
     drillId: 'croquis',
-    steps: [{ drill: 'croquis', count: 5, seconds: 180 }],
-    en: { title: 'Croquis', subtitle: '5 × 3 min. Put the shape down properly' },
+    steps: [{ drill: 'croquis', count: 2, seconds: 180 }],
+    en: { title: 'Croquis', subtitle: '2 × 3 min. Put the shape down properly' },
   },
 ];
 

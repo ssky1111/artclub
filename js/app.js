@@ -3,23 +3,23 @@
  */
 
 import {
-  buildDaily, partForDate, MODES, PARTS, DRILLS, PRINCIPLES, PICKABLE_DRILLS,
+  buildDaily, partForDate, MODES, PARTS, DRILLS, PICKABLE_DRILLS,
   TIME_CHOICES, COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu,
-  levelLabel, menuDuration, availableCategories,
+  levelLabel, menuDuration,
 } from './theory.js';
 import {
-  getSettings, saveSettings, getHistory, addSession, updateLastSession, clearAll,
+  getSettings, saveSettings, getHistory, addSession, updateLastSession,
   dateKey, addDays, dailyTotals, drawingsByDay, totalDrawings, roundsToday, stats,
 } from './storage.js';
 import { LESSONS, PD_BOOKS, lessonById } from './anatomy.js';
-import { createPhotoQueue, localFiles, testUnsplashKey } from './images.js';
+import { createPhotoQueue } from './images.js';
 import { searchPlatesMulti, createPlateQueue } from './commons.js';
 import {
   ensureLessonCards, cardsForLesson, dueCards, weakestLesson,
   grade, reminderFor, injectWeakStep, buildReviewMenu,
 } from './review.js';
 import { createSessionRunner } from './session.js';
-import { putDrawing, getDrawing, deleteAllDrawings, deleteAllPhotos } from './db.js';
+import { putDrawing, getDrawing } from './db.js';
 import {
   TAG_GROUPS, ALL_TAGS, allPhotos, everyPhoto, bundledPhotos, photoUrl,
   addFiles, setTags, removePhoto, createLibraryQueue,
@@ -35,7 +35,7 @@ import {
   removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
   saveHiddenTags, invalidateTagConfig,
 } from './supabase.js';
-import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp, resetGame } from './game.js';
+import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
@@ -257,22 +257,6 @@ function celebrate(history = getHistory()) {
   setTimeout(() => box.remove(), 1800);
 }
 
-function renderCategories() {
-  const wrap = $('#category-chips');
-  wrap.innerHTML = '';
-  for (const cat of availableCategories()) {
-    const on = settings.categories.includes(cat.id);
-    const chip = el('button', `chip${on ? ' on' : ''}`, getLang() === 'en' ? cat.en : cat.label);
-    chip.addEventListener('click', () => {
-      const next = new Set(settings.categories);
-      next.has(cat.id) ? next.delete(cat.id) : next.add(cat.id);
-      if (next.size === 0) return toast(t('toast.pickGenre'));
-      settings = saveSettings({ categories: [...next] });
-      renderCategories();
-    });
-    wrap.append(chip);
-  }
-}
 
 /* ==================== 部位練習 ==================== */
 
@@ -1189,6 +1173,16 @@ async function startSession(menu, { tags = null, part = null } = {}) {
       ? createLibraryQueue(part.tags, notice)
       : createPhotoQueue(settings, notice, { queryOverride: part.query });
   }
+  // ジェスチャードローイング → 動きタグ
+  const gesturePhotos = own.filter((p) => p.tags.includes('動き'));
+  queues.gesture = gesturePhotos.length
+    ? createLibraryQueue(['動き'], notice)
+    : (useLibrary ? createLibraryQueue(tags || [], notice) : createPhotoQueue(settings, notice));
+  // クロッキー → 全身タグ
+  const croquisPhotos = own.filter((p) => p.tags.includes('全身'));
+  queues.croquis = croquisPhotos.length
+    ? createLibraryQueue(['全身'], notice)
+    : (useLibrary ? createLibraryQueue(tags || [], notice) : createPhotoQueue(settings, notice));
   if (weak) {
     queues[`weak:${weak.id}`] =
       createPhotoQueue(settings, notice, { queryOverride: weak.photoQuery });
@@ -1628,20 +1622,14 @@ function renderNotes(history) {
 
 function renderSettings() {
   settings = getSettings();
-  $$('#source-radios input').forEach((r) => { r.checked = r.value === settings.source; });
-  $('#unsplash-key').value = settings.unsplashKey || '';
   $('#opt-theme').value = settings.theme;
   $('#opt-sound').checked = settings.sound;
   $('#opt-sfx').checked = settings.sfx;
   $('#opt-autoflip').checked = settings.autoFlip;
   $('#opt-keepawake').checked = settings.keepAwake;
   $('#opt-orientation').value = settings.orientation;
-  $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 1) * 100));
-  $('#local-count').textContent = fmtCount(localFiles.items.length);
-  updateSourceVisibility();
+  $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 0.6) * 100));
   renderLangChips();
-  renderCategories();
-  renderTheory();
 }
 
 function renderLangChips() {
@@ -1660,58 +1648,8 @@ function switchLang(code) {
   repaint();
 }
 
-function updateSourceVisibility() {
-  $('#unsplash-config').hidden = settings.source !== 'unsplash';
-  $('#local-config').hidden = settings.source !== 'local';
-}
-
-function renderTheory() {
-  const wrap = $('#theory-list');
-  wrap.innerHTML = '';
-  for (const p of PRINCIPLES) {
-    const item = el('div', 'theory-item');
-    item.append(
-      el('h3', null, tr(p, 'title')),
-      el('p', 'muted small', tr(p, 'body')),
-      el('p', 'source muted small', p.source),
-    );
-    wrap.append(item);
-  }
-}
 
 function wireSettings() {
-  $$('#source-radios input').forEach((radio) => {
-    radio.addEventListener('change', () => {
-      settings = saveSettings({ source: radio.value });
-      updateSourceVisibility();
-    });
-  });
-
-  $('#key-save').addEventListener('click', () => {
-    settings = saveSettings({ unsplashKey: $('#unsplash-key').value.trim() });
-    $('#key-status').textContent = t('common.save');
-  });
-
-  $('#key-test').addEventListener('click', async () => {
-    const key = $('#unsplash-key').value.trim();
-    const status = $('#key-status');
-    if (!key) return void (status.textContent = t('set.key'));
-    status.textContent = '…';
-    try {
-      const { remaining } = await testUnsplashKey(key);
-      settings = saveSettings({ unsplashKey: key });
-      status.textContent = `OK（${remaining ?? '?'}）`;
-    } catch (err) {
-      status.textContent = `NG：${err.message}`;
-    }
-  });
-
-  $('#local-btn').addEventListener('click', () => $('#local-input').click());
-  $('#local-input').addEventListener('change', (e) => {
-    const count = localFiles.set(e.target.files || []);
-    $('#local-count').textContent = fmtCount(count);
-  });
-
   const bind = (sel, key) => $(sel).addEventListener('change', (e) => {
     settings = saveSettings({ [key]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
   });
@@ -1727,25 +1665,6 @@ function wireSettings() {
   bind('#opt-autoflip', 'autoFlip');
   bind('#opt-keepawake', 'keepAwake');
   bind('#opt-orientation', 'orientation');
-
-  $('#export-btn').addEventListener('click', () => {
-    const blob = new Blob(
-      [JSON.stringify({ settings: { ...settings, unsplashKey: '' }, history: getHistory() }, null, 2)],
-      { type: 'application/json' });
-    downloadBlob(blob, `artclub-${dateKey()}.json`);
-  });
-
-  $('#reset-btn').addEventListener('click', async () => {
-    if (!confirm(t('set.resetConfirm'))) return;
-    clearAll();
-    resetGame();
-    await deleteAllDrawings().catch(() => {});
-    await deleteAllPhotos().catch(() => {});
-    settings = getSettings();
-    renderSettings();
-    renderHome();
-    toast(t('set.erased'));
-  });
 }
 
 /* ==================== 起動 ==================== */
