@@ -17,7 +17,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="26">
+<body data-build="27">
 
 <!-- 明暗ポスタライズ用のSVGフィルタ（ノタン練習で使う） -->
 <svg class="filter-defs" aria-hidden="true" focusable="false">
@@ -44,11 +44,6 @@
 <!-- ============ ホーム ============ -->
 <main id="screen-home" class="screen is-active">
   <header class="topbar">
-    <!--
-      ロゴは SVG。textLength で字を横に潰している。
-      Web フォントを読むとオフラインで別の字になるので、
-      システムのゴシックを縮めて作る。
-    -->
     <h1 class="brand">
       <span class="brand-text">ARTCLUB</span>
       <span class="beta" data-i18n="app.beta">β版</span>
@@ -464,7 +459,7 @@
   <div class="sheet-inner">
     <button id="pay-close" class="icon-btn sheet-close" data-icon="close"></button>
     <span class="free-badge" data-i18n="home.freeNow">無料開放中</span>
-    <h2 data-i18n="home.paywallTitle">2周目からは、いずれ有料になります</h2>
+    <h2 data-i18n="home.paywallTitle">デイリー5回以上無料開放中</h2>
     <p class="muted small" data-i18n="home.paywallBody"></p>
     <button id="pay-continue" class="btn primary big" data-i18n="home.paywallCta"></button>
   </div>

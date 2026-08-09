@@ -89,7 +89,8 @@ body[data-theme='paper'] {
   --danger: #b3503c;
   --radius: 12px;
   --radius-sm: 9px;
-  --font-display: 'Special Gothic Expanded One', ui-serif, Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  --font-display: 'Special Gothic Expanded One', 'Arial Black', 'Helvetica Neue',
+                  'Hiragino Maru Gothic ProN', 'Yu Gothic UI', system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -891,11 +892,7 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 
 /* ---------- ブランド・言語切替 ---------- */
 
-/*
- * ロゴは SVG の textLength で字を横に潰している。
- * font-stretch や Arial Narrow は、その字を持っていない端末だと何も起きない。
- * textLength なら、どの端末でも同じ幅に収まる。
- */
+/* ロゴ */
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand-text {
   font-family: var(--font-display);
