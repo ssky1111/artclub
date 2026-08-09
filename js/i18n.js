@@ -57,12 +57,10 @@ const DICT = {
   'home.roundDone':      { ja: '完了 / 1周',             en: 'Done · 1 round' },
   'home.roundN':         { ja: '完了 / {n}周',           en: 'Done · {n} rounds' },
   'home.freeNow':        { ja: '無料開放中',             en: 'Free for now' },
-  'home.paywallTitle':   { ja: '2周目からは、いずれ有料になります', en: 'Second rounds will be paid later' },
-  'home.paywallBody':    { ja: '1日1周までは、これからもずっと無料です。' +
-                               '2周目以降を回せる Pro はいま無料で開放しています。',
-                           en: 'One round a day stays free forever. Extra rounds are Pro — ' +
-                               'open to everyone free of charge for now.' },
-  'home.paywallCta':     { ja: 'このまま2周目をやる（無料）', en: 'Run another round (free)' },
+  'home.paywallTitle':   { ja: 'この機能はいずれ有料になります', en: 'This feature will be paid later' },
+  'home.paywallBody':    { ja: 'デイリーは1日4回まで無料です。モードはいま無料で開放しています。',
+                           en: 'Daily is free up to 4 times a day. Modes are free for now.' },
+  'home.paywallCta':     { ja: 'このまま続ける（無料）', en: 'Continue (free)' },
   'home.unsplash':       { ja: 'お題の写真は Unsplash（unsplash.com）のものを使っています。',
                            en: 'Reference photos come from Unsplash (unsplash.com).' },
 

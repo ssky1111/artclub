@@ -174,13 +174,12 @@ function renderDaily(history) {
 
   const cta = el('button', 'btn primary big', t('home.startPlain'));
   cta.addEventListener('click', () => {
-    // 2周目からは、いずれ課金の壁になるところ。いまは説明を出して素通しする
-    if (rounds > 0) return openPaywall();
+    if (rounds >= 4) return openPaywall(() => startSession(daily, { part }));
     startSession(daily, { part });
   });
   hero.append(cta);
 
-  if (rounds > 0) hero.append(el('span', 'free-badge', t('home.freeNow')));
+  if (rounds >= 4) hero.append(el('span', 'free-badge', t('home.freeNow')));
   top.append(hero);
 }
 
@@ -197,7 +196,7 @@ function renderModes() {
     if (mode.steps) {
       card.append(el('div', 'menu-time', fmtDur(menuDuration(mode))));
     }
-    // ドリルの説明は、名前だけ見ても分からない人のために畳んで置いておく
+    card.append(el('span', 'free-badge', t('home.freeNow')));
     const drill = DRILLS[mode.drillId];
     if (drill?.about) {
       const why = el('details', 'why');
@@ -207,8 +206,10 @@ function renderModes() {
       card.append(why);
     }
     card.addEventListener('click', () => {
-      if (mode.picker === 'part') return openPartSheet();
-      startSession(mode);
+      openPaywall(() => {
+        if (mode.picker === 'part') return openPartSheet();
+        startSession(mode);
+      });
     });
     wrap.append(card);
   }
@@ -238,7 +239,11 @@ function renderExtras() {
   }
 }
 
-function openPaywall() { $('#pay-sheet').hidden = false; }
+let paywallCallback = null;
+function openPaywall(onContinue) {
+  paywallCallback = onContinue || null;
+  $('#pay-sheet').hidden = false;
+}
 
 /** レベルアップだけ祝う（バッジは外した）。 */
 function celebrate(history = getHistory()) {
@@ -318,8 +323,13 @@ function wirePartSheet() {
   });
   $('#pay-continue').addEventListener('click', () => {
     $('#pay-sheet').hidden = true;
-    const part = partForDate(dateKey());
-    startSession(buildDaily(part), { part });
+    if (paywallCallback) {
+      paywallCallback();
+      paywallCallback = null;
+    } else {
+      const part = partForDate(dateKey());
+      startSession(buildDaily(part), { part });
+    }
   });
 }
 
