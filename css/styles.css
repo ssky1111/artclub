@@ -808,6 +808,39 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+/* ---------- 確認ダイアログ ---------- */
+
+.confirm-dialog {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(30, 20, 25, .5);
+  display: flex; align-items: center; justify-content: center;
+  animation: confirm-fade-in .15s ease-out;
+}
+.confirm-dialog-inner {
+  background: var(--surface); border-radius: 16px;
+  padding: 24px 24px 16px; width: calc(100% - 48px); max-width: 340px;
+  animation: confirm-scale-in .2s ease-out;
+}
+.confirm-dialog-msg {
+  margin: 0 0 20px; font-size: 15px; line-height: 1.6;
+  word-break: break-word;
+}
+.confirm-dialog-actions {
+  display: flex; gap: 10px; justify-content: flex-end;
+}
+.confirm-dialog-btn {
+  padding: 8px 20px; border-radius: 999px; font-size: 14px;
+  border: none; cursor: pointer; font-family: inherit;
+}
+.confirm-dialog-btn.cancel {
+  background: var(--surface-2); color: var(--text);
+}
+.confirm-dialog-btn.ok {
+  background: var(--cta-bg); color: var(--cta-ink);
+}
+@keyframes confirm-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes confirm-scale-in { from { transform: scale(.92); opacity: 0; } to { transform: none; opacity: 1; } }
+
 @media (min-width: 720px) {
   .hud-cue p { font-size: 14px; }
 }

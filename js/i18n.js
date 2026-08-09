@@ -19,6 +19,7 @@ const DICT = {
   'common.close':        { ja: '閉じる',             en: 'Close' },
   'common.back':         { ja: 'もどる',             en: 'Back' },
   'common.cancel':       { ja: 'やめる',             en: 'Cancel' },
+  'common.ok':           { ja: 'OK',                 en: 'OK' },
   'common.save':         { ja: '保存',               en: 'Save' },
   'common.delete':       { ja: '消す',               en: 'Delete' },
   'common.download':     { ja: 'ダウンロード',       en: 'Download' },

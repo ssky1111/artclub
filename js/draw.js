@@ -23,7 +23,7 @@ export function createPad(canvas) {
     color: '#1c1a17',
     size: 4,
     eraser: false,
-    // 線の濃さ。あたりを薄く取ってから上に重ねたい人がいるので、0.15 まで下げられる
+    // 線の濃さ。あたりを薄く取ってから上に重ねたい人がいるので、0.05 まで下げられる
     alpha: 1,
   };
 
@@ -119,7 +119,7 @@ export function createPad(canvas) {
     setSize(size) { state.size = size; },
     setEraser(on) { state.eraser = on; },
     setAlpha(alpha) {
-      const v = Math.min(1, Math.max(0.05, Number(alpha) || 1));
+      const v = Math.min(1, Math.max(0.02, Number(alpha) || 1));
       state.alpha = v * v;
     },
     setColor(color) { state.color = color; state.eraser = false; },
@@ -155,7 +155,7 @@ export function createPad(canvas) {
     get hasContent() { return dirty; },
 
     /** 記録に残すときは、透明のままだと真っ黒に見えるので紙の色を敷く。 */
-    toBlob(background = '#fffdf8') {
+    toBlob(background = '#ffffff') {
       return new Promise((resolve) => {
         if (!dirty) return resolve(null);
         const out = document.createElement('canvas');

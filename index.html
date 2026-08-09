@@ -199,14 +199,14 @@
         <button class="pad-btn on" data-pad="pen" data-icon="pencil" data-i18n-title="sess.pen"></button>
         <button class="pad-btn" data-pad="eraser" data-icon="eraser" data-i18n-title="sess.eraser"></button>
         <div class="pad-sizes">
-          <button class="pad-size" data-size="2" title="細い"><i style="width:3px;height:3px"></i></button>
+          <button class="pad-size" data-size="1" title="細い"><i style="width:2px;height:2px"></i></button>
           <button class="pad-size on" data-size="5" title="ふつう"><i style="width:6px;height:6px"></i></button>
           <button class="pad-size" data-size="10" title="太い"><i style="width:11px;height:11px"></i></button>
         </div>
         <label class="pad-alpha" data-i18n-title="sess.opacity">
           <span class="pad-alpha-mark"></span>
-          <input type="range" id="pad-opacity" min="15" max="100" step="5" value="60">
-          <input type="number" id="pad-opacity-num" min="15" max="100" step="5" value="60" class="pad-alpha-num">
+          <input type="range" id="pad-opacity" min="5" max="100" step="5" value="40">
+          <input type="number" id="pad-opacity-num" min="5" max="100" step="5" value="40" class="pad-alpha-num">
         </label>
         <button class="pad-btn" data-pad="undo" data-i18n-title="sess.undo" data-icon="undo"></button>
         <button class="pad-btn" data-pad="clear" data-i18n-title="sess.clear" data-icon="trash"></button>
@@ -711,7 +711,7 @@
     </select>
 
     <label class="label" for="opt-alpha" data-i18n="set.penAlpha">線の透明度</label>
-    <input type="range" id="opt-alpha" class="range" min="15" max="100" step="5" value="100">
+    <input type="range" id="opt-alpha" class="range" min="5" max="100" step="5" value="100">
     <p class="muted small" data-i18n="set.penAlphaNote"></p>
 
     <label class="switch"><input type="checkbox" id="opt-sound"> <span data-i18n="set.tick"></span></label>
@@ -747,6 +747,16 @@
 </nav>
 
 <div id="toast" class="toast" hidden></div>
+
+<div id="confirm-dialog" class="confirm-dialog" hidden>
+  <div class="confirm-dialog-inner">
+    <p id="confirm-dialog-msg" class="confirm-dialog-msg"></p>
+    <div class="confirm-dialog-actions">
+      <button id="confirm-dialog-cancel" class="confirm-dialog-btn cancel"></button>
+      <button id="confirm-dialog-ok" class="confirm-dialog-btn ok"></button>
+    </div>
+  </div>
+</div>
 
 <script type="module" src="./js/app.js"></script>
 </body>
