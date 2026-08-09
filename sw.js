@@ -3,7 +3,7 @@
  * （毎回ちがう写真が出ることに意味があるし、端末を圧迫したくないので）。
  */
 
-const CACHE = 'artclub-v7';
+const CACHE = 'artclub-v8';
 const SHELL = [
   './',
   './index.html',
@@ -54,9 +54,14 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;   // Unsplash / Picsum は素通し
 
-  // アプリ本体はネットワーク優先・失敗したらキャッシュ（更新が反映されるように）
+  /*
+   * アプリ本体はネットワーク優先・失敗したらキャッシュ。
+   * cache:'no-cache' を付けているのは、ブラウザの HTTP キャッシュを挟むと
+   * 「HTML だけ古い / JS だけ新しい」が起きて画面が壊れるため。
+   * 中身が変わっていなければ 304 が返るだけなので、通信量はほぼ増えない。
+   */
   event.respondWith(
-    fetch(request)
+    fetch(request.url, { cache: 'no-cache', credentials: 'same-origin' })
       .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((cache) => cache.put(request, copy)).catch(() => {});

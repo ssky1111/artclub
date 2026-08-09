@@ -36,6 +36,30 @@ import { $, $$, el, showScreen, toast } from './ui.js';
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 
+/*
+ * index.html の data-build と揃えておく番号。
+ *
+ * GitHub Pages は HTML を10分キャッシュするので、更新の直後に
+ * 「古い index.html ＋ 新しい app.js」の組み合わせが起きる。
+ * そうなると、新しい JS が探している要素が HTML に無く、
+ * 最初の1つで例外が飛んでホームが真っ白になる。
+ * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
+ */
+const BUILD = '8';
+
+function shellIsCurrent() {
+  if (document.body.dataset.build === BUILD) {
+    sessionStorage.removeItem('artclub.reloading');
+    return true;
+  }
+  if (sessionStorage.getItem('artclub.reloading')) return true;   // 無限に往復させない
+  sessionStorage.setItem('artclub.reloading', '1');
+  caches?.keys?.().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+    .catch(() => {})
+    .finally(() => location.reload());
+  return false;
+}
+
 let settings = getSettings();
 let pendingDrawings = [];    // その回に描いた絵（保存前）
 
@@ -810,17 +834,28 @@ function wireLesson() {
 
 /* ==================== セッション ==================== */
 
-const runner = createSessionRunner({
-  onFinish: (result) => finishSession(result),
-  onQuit: (partial) => {
-    if (partial) {
-      saveResult(partial);
-      toast(t('toast.partial', { m: Math.round(partial.seconds / 60) }));
-    }
-    renderHome();
-    showScreen('home');
-  },
-});
+/*
+ * セッションの進行役は、最初に必要になったときに作る。
+ * 読み込んだ瞬間に作ると、その中で画面の要素を掴みに行くので、
+ * 古い HTML が残っている端末ではそこで例外が飛び、init まで到達しない。
+ * 「古い HTML を検出して読み直す」判定より先に落ちてしまうと直しようがない。
+ */
+let runner = null;
+
+function getRunner() {
+  runner ||= createSessionRunner({
+    onFinish: (result) => finishSession(result),
+    onQuit: (partial) => {
+      if (partial) {
+        saveResult(partial);
+        toast(t('toast.partial', { m: Math.round(partial.seconds / 60) }));
+      }
+      renderHome();
+      showScreen('home');
+    },
+  });
+  return runner;
+}
 
 let lastStart = null;   // 「もう1セットやる」用に、直前の開始手順をそのまま覚えておく
 
@@ -858,7 +893,7 @@ async function startSession(menu, { tags = null, part = null } = {}) {
     queues[`weak:${weak.id}`] =
       createPhotoQueue(settings, notice, { queryOverride: weak.photoQuery });
   }
-  runner.start({
+  getRunner().start({
     menu: weak ? injectWeakStep(menu, weak) : menu,
     queues,
     settings,
@@ -874,7 +909,7 @@ function startLesson(lesson) {
   lastStart = () => startLesson(lesson);
   settings = getSettings();
   const partPhotos = createPhotoQueue(settings, notice, { queryOverride: lesson.photoQuery });
-  runner.start({
+  getRunner().start({
     menu: lesson.practice,
     queues: {
       photo: partPhotos,
@@ -894,7 +929,7 @@ function startMenuWithLesson(menu, lesson, lessonMode) {
   lastStart = () => startMenuWithLesson(menu, lesson, lessonMode);
   settings = getSettings();
   const partPhotos = createPhotoQueue(settings, notice, { queryOverride: lesson.photoQuery });
-  runner.start({
+  getRunner().start({
     menu,
     queues: { photo: partPhotos, [`weak:${lesson.id}`]: partPhotos },
     settings,
@@ -1501,11 +1536,13 @@ function init() {
   });
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    // updateViaCache: 'none' … sw.js 自体が古いまま使われると、直しても直らなくなる
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(() => {});
   }
 }
 
-init();
+// 古い HTML に新しい JS が当たっている場合は、ここで読み直して init は走らせない
+if (shellIsCurrent()) init();
 
 // レッスンは部位練習から開く。外からも呼べるようにしておく（テストと将来の導線用）
 export { openLesson };

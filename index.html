@@ -10,7 +10,11 @@
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
 <link rel="stylesheet" href="./css/styles.css">
 </head>
-<body>
+<!--
+  data-build は js/app.js の BUILD と揃えてある。
+  古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
+-->
+<body data-build="8">
 
 <!-- 明暗ポスタライズ用のSVGフィルタ（ノタン練習で使う） -->
 <svg class="filter-defs" aria-hidden="true" focusable="false">
