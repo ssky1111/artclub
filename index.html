@@ -47,8 +47,8 @@
       システムのゴシックを縮めて作る。
     -->
     <h1 class="brand">
-      <svg class="brand-mark" viewBox="0 0 112 34" role="img" aria-label="ARTCLUB">
-        <text x="0" y="27" textLength="112" lengthAdjust="spacingAndGlyphs">ARTCLUB</text>
+      <svg class="brand-mark" viewBox="0 0 130 34" role="img" aria-label="ARTCLUB">
+        <text x="0" y="27" textLength="130" lengthAdjust="spacingAndGlyphs">ARTCLUB</text>
       </svg>
       <span class="beta" data-i18n="app.beta">β版</span>
     </h1>
@@ -66,6 +66,16 @@
         <span id="streak-count" class="streak-num">0</span>
         <span id="streak-unit" class="streak-unit" data-i18n="home.streakUnit">日</span>
       </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span id="total-drawings" class="hero-stat-num">0</span>
+          <span class="hero-stat-label" data-i18n="home.totalLabel">枚</span>
+        </div>
+        <div class="hero-stat">
+          <span id="total-time" class="hero-stat-num">0</span>
+          <span class="hero-stat-label" data-i18n="home.totalTimeLabel">分</span>
+        </div>
+      </div>
       <div class="level-chip">
         <span id="level-num">Lv.1</span>
         <span id="level-name" class="muted small">入口</span>
@@ -74,17 +84,6 @@
 
     <div class="xp-row">
       <div class="xp-track"><div id="xp-fill" class="xp-fill"></div></div>
-    </div>
-
-    <div class="hero-stats">
-      <div class="hero-stat">
-        <span id="total-drawings" class="hero-stat-num">0</span>
-        <span class="hero-stat-label" data-i18n="home.totalLabel">枚</span>
-      </div>
-      <div class="hero-stat">
-        <span id="total-time" class="hero-stat-num">0</span>
-        <span class="hero-stat-label" data-i18n="home.totalTimeLabel">分</span>
-      </div>
     </div>
     <div class="streak-sub">
       <span id="today-status" class="pill" data-i18n="home.todayYet">今日はまだ</span>

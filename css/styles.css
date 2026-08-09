@@ -36,8 +36,8 @@
   --pad: 18px;
   --lift: none;
   --lift-accent: none;
-  --font-display: ui-rounded, 'SF Pro Rounded', 'Hiragino Maru Gothic ProN',
-                  'Yu Gothic UI', system-ui, sans-serif;
+  --font-display: 'Arial Black', 'Helvetica Neue', ui-rounded, 'SF Pro Rounded',
+                  'Hiragino Maru Gothic ProN', 'Yu Gothic UI', system-ui, sans-serif;
 }
 
 /* 夜用。同じ設計のまま地と文字を入れ替える */
@@ -364,7 +364,7 @@ a { color: var(--accent); }
 /* ---------- ふりかえり ---------- */
 
 .review-summary { text-align: center; }
-.review-big { font-size: 46px; font-weight: 800; line-height: 1.1; font-family: var(--font-display); }
+.review-big { font-size: 46px; font-weight: 900; line-height: 1.1; font-family: var(--font-display); letter-spacing: .02em; font-stretch: expanded; }
 .review-big span { font-size: 18px; color: var(--muted); margin-left: 4px; }
 .review-drills { list-style: none; padding: 0; margin: 12px 0; }
 .review-drills li {
@@ -393,11 +393,11 @@ a { color: var(--accent); }
 /* ---------- ホームの上段（ストリーク・XP・クエスト・バッジ） ---------- */
 
 .hero { background: var(--surface); }
-.streak-num { font-family: var(--font-display); font-weight: 800; }
+.streak-num { font-family: var(--font-display); font-weight: 900; letter-spacing: .02em; }
 .level-chip { font-family: var(--font-display); color: var(--brand); }
 .hero-top { display: flex; align-items: center; justify-content: space-between; }
 .streak-flame { font-size: 26px; }
-.streak-num { font-size: 46px; }
+.streak-num { font-size: 46px; font-stretch: expanded; }
 
 .level-chip {
   display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2;
@@ -843,8 +843,8 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand-mark { height: 26px; width: auto; display: block; fill: currentColor; }
 .brand-mark text {
-  font-family: 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
-  font-size: 30px; font-weight: 800; letter-spacing: 0;
+  font-family: 'Arial Black', 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
+  font-size: 30px; font-weight: 900; letter-spacing: .04em;
 }
 .beta {
   font-size: 10px; font-weight: 700; letter-spacing: .04em;
@@ -861,17 +861,18 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 .count-pill { background: var(--surface-2); color: var(--text-soft); }
 
 .hero-stats {
-  display: flex; gap: 24px; margin-top: 12px;
+  display: flex; gap: 16px;
 }
 .hero-stat {
-  display: flex; align-items: baseline; gap: 4px;
+  display: flex; align-items: baseline; gap: 2px;
 }
 .hero-stat-num {
-  font-size: 38px; font-weight: 800; line-height: 1;
+  font-size: 22px; font-weight: 900; line-height: 1;
   font-family: var(--font-display); color: var(--text);
+  letter-spacing: .02em; font-stretch: expanded;
 }
 .hero-stat-label {
-  font-size: 14px; color: var(--muted); font-weight: 600;
+  font-size: 12px; color: var(--muted); font-weight: 600;
 }
 .credit-note { margin: 18px 4px 0; }
 
