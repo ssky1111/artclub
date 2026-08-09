@@ -128,6 +128,68 @@ export function photoUrl(photo) {
  * セッション用のキュー。images.js のキューと同じ形で使える。
  * 同じ写真が続けて出ないよう、ひと回りしてから戻ってくるようにしている。
  */
+export function createWeightedQueue(weights, onNotice = () => {}) {
+  let pools = [];
+  let loading = null;
+  const urls = [];
+
+  async function load() {
+    const all = await everyPhoto();
+    pools = weights.map(({ tags, weight }) => {
+      const matched = all.filter((p) => tags.every((t) => p.tags.includes(t)));
+      matched.sort(() => Math.random() - 0.5);
+      return { photos: matched, weight, cursor: 0 };
+    });
+    const total = pools.reduce((s, p) => s + p.photos.length, 0);
+    if (!total) onNotice('その条件の写真がありません。写真の管理から追加してください');
+  }
+
+  function pick() {
+    const available = pools.filter((p) => p.photos.length > 0);
+    if (!available.length) return null;
+    const totalWeight = available.reduce((s, p) => s + p.weight, 0);
+    let r = Math.random() * totalWeight;
+    for (const p of available) {
+      r -= p.weight;
+      if (r <= 0) {
+        const photo = p.photos[p.cursor % p.photos.length];
+        p.cursor++;
+        return photo;
+      }
+    }
+    const last = available[available.length - 1];
+    const photo = last.photos[last.cursor % last.photos.length];
+    last.cursor++;
+    return photo;
+  }
+
+  function ensure() {
+    if (pools.length || loading) return loading || Promise.resolve();
+    loading = load().finally(() => { loading = null; });
+    return loading;
+  }
+
+  return {
+    async next() {
+      await ensure();
+      const photo = pick();
+      if (!photo) return null;
+      const url = photo.blob ? URL.createObjectURL(photo.blob) : photo.url;
+      if (photo.blob) urls.push(url);
+      return {
+        url,
+        photoId: photo.id,
+        credit: photo.credit || {
+          name: photo.name || (photo.bundled ? '同梱の写真' : '自分の写真'),
+          link: null,
+          source: photo.bundled ? (photo.source || 'Unsplash') : '自分でいれた写真',
+        },
+      };
+    },
+    dispose() { urls.forEach((u) => URL.revokeObjectURL(u)); },
+  };
+}
+
 export function createLibraryQueue(tags, onNotice = () => {}, noticeText = null) {
   let pool = [];
   let cursor = 0;

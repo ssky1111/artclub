@@ -22,7 +22,7 @@ import { createSessionRunner } from './session.js';
 import { putDrawing, getDrawing } from './db.js';
 import {
   TAG_GROUPS, ALL_TAGS, allPhotos, everyPhoto, bundledPhotos, photoUrl,
-  addFiles, setTags, removePhoto, createLibraryQueue,
+  addFiles, setTags, removePhoto, createLibraryQueue, createWeightedQueue,
   refreshCustomTags, getCustomTags, getHiddenTags, allTagsWithCustom,
 } from './library.js';
 import {
@@ -54,7 +54,7 @@ import { uploadArtwork, fetchArtworks, deleteArtwork } from './gallery.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '18';
+const BUILD = '19';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1238,6 +1238,16 @@ async function startSession(menu, { tags = null, part = null } = {}) {
     queues.part = tagged.length
       ? createLibraryQueue(part.tags, notice)
       : createPhotoQueue(settings, notice, { queryOverride: part.query });
+  }
+  // 部位練習モード用：手7割、足1.5割、上半身1.5割
+  const partPhotos = own.filter((p) =>
+    p.tags.includes('手') || p.tags.includes('足') || p.tags.includes('上半身'));
+  if (partPhotos.length) {
+    queues.partMix = createWeightedQueue([
+      { tags: ['手'], weight: 7 },
+      { tags: ['足'], weight: 1.5 },
+      { tags: ['上半身'], weight: 1.5 },
+    ], notice);
   }
   // ジェスチャードローイング → 動きタグ
   const gesturePhotos = own.filter((p) => p.tags.includes('動き'));

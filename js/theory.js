@@ -404,8 +404,8 @@ export function buildPartMenu(part) {
     subtitle: `${part.label}だけを 1分×3 → 3分×2`,
     partId: part.id,
     steps: [
-      { drill: 'gesture', count: 3, seconds: 60 },
-      { drill: 'croquis', count: 2, seconds: 180 },
+      { drill: 'gesture', count: 3, seconds: 60, source: 'partMix' },
+      { drill: 'croquis', count: 2, seconds: 180, source: 'partMix' },
     ],
     en: { title: `${part.en} practice`, subtitle: `${part.en} only — 3 × 1 min, then 2 × 3 min` },
   };
