@@ -1,4 +1,4 @@
-const PAPER = '#fffdf8';
+const PAPER = '#ffffff';
 const INK = '#2b2a27';
 const SOFT = '#8b8b85';
 
@@ -39,50 +39,56 @@ export async function composeSheet(blobs, { date = '' } = {}) {
   }
   if (!images.length) return null;
 
-  const cols = images.length <= 2 ? images.length : (images.length <= 6 ? 2 : 3);
-  const rows = Math.ceil(images.length / cols);
-
-  const cell = 640;
-  const gap = 20;
-  const pad = 40;
-  const headH = 72;
-  const footH = 56;
+  const W = 1200;
+  const H = 630;
+  const pad = 32;
+  const gap = 16;
+  const leftW = 200;
 
   const canvas = document.createElement('canvas');
-  canvas.width = pad * 2 + cols * cell + (cols - 1) * gap;
-  canvas.height = pad + headH + rows * cell + (rows - 1) * gap + footH;
+  canvas.width = W;
+  canvas.height = H;
   const ctx = canvas.getContext('2d');
 
   ctx.fillStyle = PAPER;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = INK;
+  ctx.textBaseline = 'top';
+  ctx.font = '700 32px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
+  ctx.fillText('ARTCLUB', pad, pad);
 
   if (date) {
-    ctx.fillStyle = INK;
-    ctx.textBaseline = 'top';
-    ctx.font = '700 36px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
-    const dateW = ctx.measureText(date).width;
-    ctx.fillText(date, (canvas.width - dateW) / 2, pad);
+    ctx.fillStyle = SOFT;
+    ctx.font = '600 20px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
+    ctx.fillText(date, pad, pad + 44);
   }
 
+  const areaX = pad + leftW;
+  const areaW = W - areaX - pad;
+  const areaY = pad;
+  const areaH = H - pad * 2;
+
+  const n = images.length;
+  const cols = Math.min(n, Math.ceil(Math.sqrt(n * (areaW / areaH))));
+  const rows = Math.ceil(n / cols);
+  const cell = Math.min(
+    (areaW - (cols - 1) * gap) / cols,
+    (areaH - (rows - 1) * gap) / rows,
+  );
+  const totalW = cols * cell + (cols - 1) * gap;
+  const totalH = rows * cell + (rows - 1) * gap;
+  const offX = areaX + (areaW - totalW) / 2;
+  const offY = areaY + (areaH - totalH) / 2;
+
   images.forEach((img, i) => {
-    const cx = pad + (i % cols) * (cell + gap);
-    const cy = pad + headH + Math.floor(i / cols) * (cell + gap);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(cx, cy, cell, cell);
-
+    const cx = offX + (i % cols) * (cell + gap);
+    const cy = offY + Math.floor(i / cols) * (cell + gap);
     const scale = Math.min(cell / img.width, cell / img.height);
     const w = img.width * scale;
     const h = img.height * scale;
     ctx.drawImage(img, cx + (cell - w) / 2, cy + (cell - h) / 2, w, h);
   });
-
-  ctx.fillStyle = SOFT;
-  ctx.textBaseline = 'bottom';
-  ctx.font = '600 18px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
-  const label = 'ARTCLUB';
-  const labelW = ctx.measureText(label).width;
-  ctx.fillText(label, (canvas.width - labelW) / 2, canvas.height - 16);
 
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.88));
 }
