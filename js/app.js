@@ -54,7 +54,7 @@ import { uploadArtwork, fetchArtworks, deleteArtwork } from './gallery.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '21';
+const BUILD = '22';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1973,7 +1973,8 @@ function updateAuthUI(u) {
 function showUsernameSheet(onDone) {
   const sheet = $('#username-sheet');
   const input = $('#username-input');
-  input.value = '';
+  const existing = getUsername();
+  input.value = existing || '';
   sheet.hidden = false;
   input.focus();
 
@@ -1986,7 +1987,10 @@ function showUsernameSheet(onDone) {
     if (onDone) onDone();
   }
 
+  function close() { sheet.hidden = true; }
+
   $('#username-ok').onclick = submit;
+  $('#username-close').onclick = close;
   input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
 }
 

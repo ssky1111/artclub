@@ -17,7 +17,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="21">
+<body data-build="22">
 
 <!-- 明暗ポスタライズ用のSVGフィルタ（ノタン練習で使う） -->
 <svg class="filter-defs" aria-hidden="true" focusable="false">
@@ -451,6 +451,7 @@
 <!-- ユーザーネーム登録 -->
 <div id="username-sheet" class="sheet" hidden>
   <div class="sheet-inner" style="text-align:center">
+    <button id="username-close" class="icon-btn sheet-close" data-icon="close" data-i18n-title="common.close"></button>
     <h2 data-i18n="auth.setUsername">ユーザーネームを決めてください</h2>
     <input type="text" id="username-input" class="input" maxlength="20" data-i18n-ph="auth.usernamePh" placeholder="ユーザーネーム" style="margin:16px 0;text-align:center;font-size:18px">
     <button id="username-ok" class="btn primary big" data-i18n="auth.usernameOk">決定</button>
