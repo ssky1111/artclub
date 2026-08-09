@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Gothic+Expanded+One&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Gothic+Expanded+One&family=DotGothic16&display=swap">
 <link rel="stylesheet" href="./css/styles.css">
 </head>
 <!--
@@ -210,10 +210,13 @@
         </div>
         <label class="pad-alpha" data-i18n-title="sess.opacity">
           <span class="pad-alpha-mark"></span>
-          <input type="range" id="pad-opacity" min="15" max="100" step="5" value="100">
+          <input type="range" id="pad-opacity" min="15" max="100" step="5" value="60">
+          <input type="number" id="pad-opacity-num" min="15" max="100" step="5" value="60" class="pad-alpha-num">
         </label>
         <button class="pad-btn" data-pad="undo" data-i18n-title="sess.undo" data-icon="undo"></button>
         <button class="pad-btn" data-pad="clear" data-i18n-title="sess.clear" data-icon="trash"></button>
+        <button id="pad-swap" class="pad-btn" title="写真を入れ替え" data-icon="flip"></button>
+        <button id="pad-skip" class="pad-btn" data-i18n-title="sess.skipDrill" data-icon="next"></button>
         <button id="pad-next" class="pad-next" data-icon="check" data-i18n-label="sess.saveNext"></button>
       </div>
     </div>
@@ -227,14 +230,15 @@
   <div class="bridge-card">
     <div class="label" id="bridge-label">つぎは</div>
     <h2 id="bridge-title">—</h2>
+    <p id="bridge-desc" class="bridge-desc" hidden></p>
     <p id="bridge-reminder" class="reminder-text" hidden></p>
-    <div class="bridge-meta muted small" id="bridge-meta"></div>
+    <div class="bridge-meta" id="bridge-meta"></div>
     <button id="bridge-start" class="btn primary big" data-i18n="sess.begin">はじめる</button>
     <details class="why" hidden>
       <summary data-i18n="sess.why">なぜこれをやるの？</summary>
       <p id="bridge-theory"></p>
     </details>
-    <button id="bridge-skip" class="btn ghost small" data-i18n="sess.skipDrill">これは飛ばす</button>
+    <button id="bridge-skip" class="btn ghost small" data-i18n="sess.skipDrill">飛ばす</button>
   </div>
 </main>
 
@@ -583,6 +587,7 @@
         <button id="sb-select-all" class="btn ghost small">全選択</button>
         <button id="sb-deselect" class="btn ghost small">解除</button>
         <button id="sb-bulk-tag-btn" class="btn primary small">一括タグ付け</button>
+        <button id="sb-bulk-delete" class="btn danger small">一括削除</button>
       </div>
     </section>
 
@@ -669,44 +674,6 @@
     <div id="lang-chips" class="chips"></div>
   </section>
 
-  <section class="card">
-    <div class="section-head"><h2 data-i18n="set.genres">お題のジャンル</h2></div>
-    <div id="category-chips" class="chips"></div>
-    <p class="muted small" data-i18n="set.genresNote"></p>
-  </section>
-
-  <section class="card">
-    <div class="section-head"><h2 data-i18n="set.source">お題をどこから持ってくるか</h2></div>
-    <div id="source-radios" class="radios">
-      <label><input type="radio" name="source" value="unsplash"> <span data-i18n="set.srcUnsplash"></span></label>
-      <label><input type="radio" name="source" value="picsum"> <span data-i18n="set.srcPicsum"></span></label>
-      <label><input type="radio" name="source" value="local"> <span data-i18n="set.srcLocal"></span></label>
-    </div>
-
-    <div id="unsplash-config" class="subcard">
-      <label class="label" for="unsplash-key" data-i18n="set.key">アンスプラッシュのキー</label>
-      <input type="password" id="unsplash-key" class="input" placeholder="xxxxxxxx..." autocomplete="off">
-      <div class="row">
-        <button id="key-save" class="btn small" data-i18n="common.save">保存</button>
-        <button id="key-test" class="btn ghost small" data-i18n="set.keyTest">接続テスト</button>
-        <span id="key-status" class="muted small"></span>
-      </div>
-      <details class="why">
-        <summary data-i18n="set.keyHow">キーの取り方</summary>
-        <p class="muted small">
-          <a href="https://unsplash.com/oauth/applications" target="_blank" rel="noopener">unsplash.com/developers</a>
-          で無料のアプリを1つ作ると、キーがもらえます。
-          キーはこの端末のブラウザにだけ保存され、Unsplash 以外には送られません。
-        </p>
-      </details>
-    </div>
-
-    <div id="local-config" class="subcard">
-      <input type="file" id="local-input" accept="image/*" multiple hidden>
-      <button id="local-btn" class="btn" data-i18n="set.pick">画像を選ぶ</button>
-      <span id="local-count" class="muted small">0</span>
-    </div>
-  </section>
 
   <section class="card">
     <div class="section-head"><h2 data-i18n="set.practice">練習の設定</h2></div>
@@ -735,11 +702,6 @@
   </section>
 
   <section class="card">
-    <div class="section-head"><h2 data-i18n="set.data">データ</h2></div>
-    <div class="row">
-      <button id="export-btn" class="btn ghost small" data-i18n="set.export">記録を書き出す</button>
-      <button id="reset-btn" class="btn danger small" data-i18n="set.reset">すべて消す</button>
-    </div>
     <div class="row">
       <button id="admin-open" class="btn ghost small" data-i18n="set.admin">管理画面をひらく</button>
     </div>
@@ -750,12 +712,6 @@
     <p class="muted small" data-i18n="set.creditsBody"></p>
   </section>
 
-  <section class="card">
-    <details class="why">
-      <summary data-i18n="set.basis">この練習メニューの根拠</summary>
-      <div id="theory-list" class="theory-list"></div>
-    </details>
-  </section>
 </main>
 
 <nav class="tabbar">

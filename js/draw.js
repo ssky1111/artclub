@@ -140,6 +140,15 @@ export function createPad(canvas) {
       dirty = false;
     },
 
+    resetHistory() {
+      undoStack.length = 0;
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+      dirty = false;
+    },
+
     get hasContent() { return dirty; },
 
     /** 記録に残すときは、透明のままだと真っ黒に見えるので紙の色を敷く。 */

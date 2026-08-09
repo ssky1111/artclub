@@ -14,7 +14,7 @@ const LANG_KEY = 'drawpamine.lang';
 const DICT = {
   /* ---------- 共通 ---------- */
   'app.name':            { ja: 'ARTCLUB',           en: 'ARTCLUB' },
-  'app.beta':            { ja: 'β版',               en: 'beta' },
+  'app.beta':            { ja: 'テスト公開中',        en: 'beta' },
   'app.tagline':         { ja: '毎日3分の絵の練習',  en: 'Three minutes of drawing, every day' },
   'common.close':        { ja: '閉じる',             en: 'Close' },
   'common.back':         { ja: 'もどる',             en: 'Back' },
@@ -99,10 +99,10 @@ const DICT = {
   'sess.first':          { ja: 'はじめのドリル',       en: 'First drill' },
   'sess.begin':          { ja: 'はじめる',             en: 'Start' },
   'sess.why':            { ja: 'なぜこれをやるの？',   en: 'Why this drill?' },
-  'sess.skipDrill':      { ja: 'これは飛ばす',         en: 'Skip this drill' },
+  'sess.skipDrill':      { ja: '飛ばす',                en: 'Skip' },
   'sess.left':           { ja: 'のこり',               en: 'left' },
   'sess.paused':         { ja: '（とめ中）',           en: '(paused)' },
-  'sess.saveNext':       { ja: '保存してつぎへ',       en: 'Save & next' },
+  'sess.saveNext':       { ja: '保存して終わる',         en: 'Save & finish' },
   'sess.hint':           { ja: 'ヒント',               en: 'Hint' },
   'sess.saved':          { ja: '{n}枚目を保存しました', en: 'Saved drawing {n}' },
   'sess.pen':            { ja: 'ペン',                 en: 'Pen' },
@@ -140,7 +140,7 @@ const DICT = {
   'rev.shareText':       { ja: '今日は {n}枚 / {d} 描きました。#ARTCLUB',
                            en: 'Drew {n} sketches in {d} today. #ARTCLUB' },
   'rev.save':            { ja: '保存して終わる',       en: 'Save & finish' },
-  'rev.again':           { ja: 'もう1セットやる',      en: 'One more round' },
+  'rev.again':           { ja: 'もう一度試す',          en: 'Try again' },
   'rev.streakLine':      { ja: '連続 {s} 日 / 通算 {n} 回', en: '{s}-day streak · {n} sessions' },
   'rev.sheetDone':       { ja: 'まとめ画像を作りました', en: 'Contact sheet ready' },
 
