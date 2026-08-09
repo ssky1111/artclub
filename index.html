@@ -17,7 +17,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="25">
+<body data-build="26">
 
 <!-- 明暗ポスタライズ用のSVGフィルタ（ノタン練習で使う） -->
 <svg class="filter-defs" aria-hidden="true" focusable="false">
@@ -50,9 +50,7 @@
       システムのゴシックを縮めて作る。
     -->
     <h1 class="brand">
-      <svg class="brand-mark" viewBox="0 0 130 34" role="img" aria-label="ARTCLUB">
-        <text x="0" y="27" textLength="130" lengthAdjust="spacingAndGlyphs">ARTCLUB</text>
-      </svg>
+      <span class="brand-text">ARTCLUB</span>
       <span class="beta" data-i18n="app.beta">β版</span>
     </h1>
     <div class="topbar-actions">
@@ -74,6 +72,7 @@
         <span class="streak-flame" data-icon="flame" data-icon-size="26"></span>
         <span id="streak-count" class="streak-num">0</span>
         <span id="streak-unit" class="streak-unit" data-i18n="home.streakUnit">日</span>
+        <span class="streak-label" data-i18n="home.streakLabel">継続</span>
       </div>
       <div class="hero-stats">
         <div class="hero-stat-header" data-i18n="home.cumulative">累計</div>
