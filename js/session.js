@@ -52,6 +52,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     padOpacity: $('#pad-opacity'),
     padOpacityNum: $('#pad-opacity-num'),
     padSwap: $('#pad-swap'),
+    swapBtn: $('#swap-btn'),
     bridgeDesc: $('#bridge-desc'),
   };
 
@@ -467,7 +468,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
   dom.refMini.addEventListener('click', () => dom.refMini.classList.toggle('big'));
   $('#attr-btn').addEventListener('click', () => { dom.attrBox.hidden = !dom.attrBox.hidden; });
 
-  dom.padSwap?.addEventListener('click', async () => {
+  async function swapPhoto() {
     if (!state?.current) return;
     const item = state.current;
     const photo = await queueFor(item).next().catch(() => null);
@@ -477,7 +478,9 @@ export function createSessionRunner({ onFinish, onQuit }) {
     dom.padRefImg.src = photo.url;
     state.currentPhotoId = photo.photoId || null;
     renderAttribution(photo);
-  });
+  }
+  dom.padSwap?.addEventListener('click', swapPhoto);
+  dom.swapBtn?.addEventListener('click', swapPhoto);
 
   $('#bridge-start').addEventListener('click', () => {
     if (!state?.awaitingBridge) return;

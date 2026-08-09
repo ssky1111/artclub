@@ -54,7 +54,7 @@ import { uploadArtwork, fetchArtworks, deleteArtwork } from './gallery.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '23';
+const BUILD = '24';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -655,13 +655,19 @@ async function renderSupabaseGrid() {
           if (sbLastClickedIndex >= 0 && sbLastClickedIndex !== idx) {
             const from = Math.min(sbLastClickedIndex, idx);
             const to = Math.max(sbLastClickedIndex, idx);
+            const selecting = !btn.classList.contains('selected');
             for (let i = from; i <= to; i++) {
               const item = items[i];
               const itemCb = item.querySelector('.sb-check');
-              if (itemCb && !itemCb.checked) {
+              if (!itemCb) continue;
+              if (selecting && !itemCb.checked) {
                 itemCb.checked = true;
                 sbSelected.add(item.dataset.file);
                 item.classList.add('selected');
+              } else if (!selecting && itemCb.checked) {
+                itemCb.checked = false;
+                sbSelected.delete(item.dataset.file);
+                item.classList.remove('selected');
               }
             }
             updateSelectBar();
