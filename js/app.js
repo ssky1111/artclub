@@ -44,7 +44,7 @@ import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
 import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, userAvatar, hasUsername, setUsername, getUsername } from './auth.js';
-import { uploadArtwork, fetchArtworks, deleteArtwork } from './gallery.js';
+import { uploadArtwork, uploadShareImage, fetchArtworks, deleteArtwork } from './gallery.js';
 
 /*
  * index.html の data-build と揃えておく番号。
@@ -1477,6 +1477,22 @@ function wireDrawingLightbox() {
     const shot = pendingDrawings[drawingIndex];
     if (shot) downloadBlob(shot.blob, `artclub-${dateKey()}-${drawingIndex + 1}.jpg`);
   });
+  $('#draw-share-x').addEventListener('click', async () => {
+    const shot = pendingDrawings[drawingIndex];
+    if (!shot) return;
+    const btn = $('#draw-share-x');
+    const text = t('rev.shareText', { n: 1, d: '' });
+    if (getUser()) {
+      btn.disabled = true;
+      try {
+        const url = await uploadShareImage(shot.blob);
+        shareToX(`${text}\n${url}`);
+      } catch { shareToX(text); }
+      btn.disabled = false;
+    } else {
+      shareToX(text);
+    }
+  });
   $('#draw-remove').addEventListener('click', () => {
     if (drawingIndex < 0) return;
     pendingDrawings.splice(drawingIndex, 1);
@@ -1510,9 +1526,20 @@ function wireReview() {
     if (sheetBlob) downloadBlob(sheetBlob, `artclub-${dateKey()}.jpg`);
   });
 
-  $('#share-x').addEventListener('click', () => {
+  $('#share-x').addEventListener('click', async () => {
+    const btn = $('#share-x');
     const seconds = getHistory().at(-1)?.seconds || 0;
-    shareToX(t('rev.shareText', { n: pendingDrawings.length, d: fmtDur(seconds) }));
+    const text = t('rev.shareText', { n: pendingDrawings.length, d: fmtDur(seconds) });
+    if (sheetBlob && getUser()) {
+      btn.disabled = true;
+      try {
+        const url = await uploadShareImage(sheetBlob);
+        shareToX(`${text}\n${url}`);
+      } catch { shareToX(text); }
+      btn.disabled = false;
+    } else {
+      shareToX(text);
+    }
   });
 
   $('#review-save').addEventListener('click', async () => {

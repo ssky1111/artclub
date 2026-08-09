@@ -142,6 +142,20 @@ export async function fetchArtworks(promptId, { limit = 50 } = {}) {
   return await res.json();
 }
 
+export async function uploadShareImage(blob) {
+  const user = getUser();
+  if (!user) throw new Error('not logged in');
+  const ts = Date.now();
+  const path = `${user.id}/share-${ts}.webp`;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'image/webp', 'x-upsert': 'true' },
+    body: blob,
+  });
+  if (!res.ok) throw new Error(`upload failed: ${res.status}`);
+  return publicUrl(path);
+}
+
 export async function deleteArtwork(id, storagePath) {
   await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${storagePath}`, {
     method: 'DELETE',
