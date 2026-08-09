@@ -54,7 +54,7 @@ import { uploadArtwork, fetchArtworks, deleteArtwork } from './gallery.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '15';
+const BUILD = '16';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1871,6 +1871,20 @@ function updateAuthUI(u) {
     label.textContent = t('auth.login');
     btn.title = t('auth.login');
   }
+
+  const loggedIn = !!u;
+  const heroStats = $('.hero-stats');
+  if (heroStats) heroStats.hidden = !loggedIn;
+  const streakMain = $('.streak-main');
+  if (streakMain) streakMain.hidden = !loggedIn;
+  const xpRow = $('.xp-row');
+  if (xpRow) xpRow.hidden = !loggedIn;
+  const levelChip = $('.level-chip');
+  if (levelChip) levelChip.hidden = !loggedIn;
+  const streakSub = $('.streak-sub');
+  if (streakSub) streakSub.hidden = !loggedIn;
+  const logTab = $('[data-tab="log"]');
+  if (logTab) logTab.hidden = !loggedIn;
 }
 
 function showUsernameSheet(onDone) {
