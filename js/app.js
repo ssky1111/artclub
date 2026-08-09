@@ -565,12 +565,28 @@ async function renderAdmin() {
 /* ---------- Supabase 写真グリッド ---------- */
 
 const sbSelected = new Set();
+const sbUploadTags = new Set();
+
+function renderUploadTagChips() {
+  const wrap = $('#sb-upload-tags');
+  wrap.innerHTML = '';
+  const allT = allTagsWithCustom();
+  for (const tag of allT) {
+    const chip = el('button', `chip${sbUploadTags.has(tag) ? ' on' : ''}`, tag);
+    chip.addEventListener('click', () => {
+      if (sbUploadTags.has(tag)) sbUploadTags.delete(tag); else sbUploadTags.add(tag);
+      chip.classList.toggle('on');
+    });
+    wrap.append(chip);
+  }
+}
 
 async function renderSupabaseGrid() {
   const grid = $('#sb-grid');
   grid.innerHTML = '';
   sbSelected.clear();
   updateSelectBar();
+  renderUploadTagChips();
 
   try {
     const photos = await supabasePhotos();
@@ -770,10 +786,13 @@ function wireAdmin() {
 
   /* ---------- Supabase ---------- */
 
-  $('#sb-add').addEventListener('click', () => $('#sb-input').click());
+  let sbUploadWithTags = true;
+  $('#sb-add').addEventListener('click', () => { sbUploadWithTags = true; $('#sb-input').click(); });
+  $('#sb-add-notag').addEventListener('click', () => { sbUploadWithTags = false; $('#sb-input').click(); });
   $('#sb-input').addEventListener('change', async (e) => {
     const files = [...(e.target.files || [])];
     if (!files.length) return;
+    const tags = sbUploadWithTags ? [...sbUploadTags] : [];
     const status = $('#sb-status');
     status.textContent = `${files.length} 枚をアップロード中…`;
     try {
@@ -785,7 +804,7 @@ function wireAdmin() {
         photos.push({
           id: `p${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
           blob,
-          tags: [],
+          tags: [...tags],
           name: file.name,
           addedAt: Date.now(),
         });
@@ -794,7 +813,8 @@ function wireAdmin() {
         status.textContent = `アップロード中… ${i}/${n}`;
       });
       e.target.value = '';
-      status.textContent = `${photos.length} 枚をアップロードしました`;
+      const tagMsg = tags.length ? `（${tags.join('・')}）` : '';
+      status.textContent = `${photos.length} 枚をアップロードしました${tagMsg}`;
       await renderSupabaseGrid();
     } catch (err) {
       status.textContent = `エラー: ${err.message}`;
