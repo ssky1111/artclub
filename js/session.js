@@ -32,6 +32,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     stageMessage: $('#stage-message'),
     bridgeLabel: $('#bridge-label'),
     bridgeTitle: $('#bridge-title'),
+    bridgeCue: $('#bridge-cue'),
     bridgeTheory: $('#bridge-theory'),
     bridgeMeta: $('#bridge-meta'),
     bridgeReminder: $('#bridge-reminder'),
@@ -162,9 +163,12 @@ export function createSessionRunner({ onFinish, onQuit }) {
   async function showBridge(item, isFirst) {
     const drill = DRILLS[item.drillId];
     timer.stop();
-    dom.bridgeLabel.textContent = isFirst ? t('sess.first') : t('sess.next');
+    dom.bridgeLabel.textContent = t('sess.next');
     dom.bridgeTitle.textContent = stepTitle(item, drill);
     dom.bridgeTheory.textContent = tr(drill, 'theory');
+    const cue = tr(drill, 'cue');
+    dom.bridgeCue.hidden = !cue;
+    dom.bridgeCue.textContent = cue || '';
     dom.bridgeMeta.textContent =
       t('sess.sheetsBy', { n: item.countInStep, t: fmtDur(item.seconds) });
 

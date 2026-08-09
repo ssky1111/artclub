@@ -10,14 +10,14 @@
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Gothic+Expanded+One&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Special+Gothic+Expanded+One&display=swap">
 <link rel="stylesheet" href="./css/styles.css">
 </head>
 <!--
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="13">
+<body data-build="14">
 
 <!-- 明暗ポスタライズ用のSVGフィルタ（ノタン練習で使う） -->
 <svg class="filter-defs" aria-hidden="true" focusable="false">
@@ -190,8 +190,7 @@
             <img id="ref-mini-img" alt="お題">
           </button>
 
-          <!-- 手順は右上。閉じられるので、写真の邪魔になったら畳める -->
-          <div id="pad-hint" class="pad-hint">
+          <div id="pad-hint" class="pad-hint" hidden>
             <button id="hint-toggle" class="hint-toggle">
               <span data-i18n="sess.hint">ヒント</span><i></i>
             </button>
@@ -227,8 +226,9 @@
   <div class="bridge-card">
     <div class="label" id="bridge-label">つぎは</div>
     <h2 id="bridge-title">—</h2>
+    <p id="bridge-cue" class="bridge-cue" hidden></p>
     <p id="bridge-reminder" class="reminder-text" hidden></p>
-    <div class="bridge-meta muted small" id="bridge-meta"></div>
+    <div class="bridge-meta" id="bridge-meta"></div>
     <button id="bridge-start" class="btn primary big" data-i18n="sess.begin">はじめる</button>
     <details class="why" hidden>
       <summary data-i18n="sess.why">なぜこれをやるの？</summary>
@@ -410,6 +410,7 @@
     <button id="auth-close" class="icon-btn sheet-close" data-icon="close"></button>
     <h2 data-i18n="auth.loginTitle">ログイン</h2>
     <p class="muted small" data-i18n="auth.loginNote">アカウントを連携すると、記録やスケッチを保存できるようになります。</p>
+    <p class="muted small" data-i18n="auth.privacyNote" style="margin-top:4px">勝手に投稿したり情報を取得したりしません。ログインのためだけに使います。</p>
     <div class="auth-buttons">
       <button id="login-x" class="auth-provider-btn x-btn">
         <svg class="auth-provider-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
@@ -422,14 +423,24 @@
     </div>
     <div id="auth-user-info" class="auth-user-info" hidden>
       <div class="auth-user-row">
-        <img id="auth-info-avatar" class="auth-info-avatar" alt="">
+        <img id="auth-info-avatar" class="auth-info-avatar" alt="" hidden>
         <div>
           <div id="auth-info-name" class="auth-info-name"></div>
           <div class="muted small" data-i18n="auth.loggedIn">ログイン中</div>
         </div>
       </div>
+      <button id="auth-change-username" class="btn ghost small" data-i18n="auth.changeUsername">ユーザーネームを変更</button>
       <button id="auth-logout" class="btn ghost small" data-i18n="auth.logout">ログアウト</button>
     </div>
+  </div>
+</div>
+
+<!-- ユーザーネーム登録 -->
+<div id="username-sheet" class="sheet" hidden>
+  <div class="sheet-inner" style="text-align:center">
+    <h2 data-i18n="auth.setUsername">ユーザーネームを決めてください</h2>
+    <input type="text" id="username-input" class="input" maxlength="20" data-i18n-ph="auth.usernamePh" placeholder="ユーザーネーム" style="margin:16px 0;text-align:center;font-size:18px">
+    <button id="username-ok" class="btn primary big" data-i18n="auth.usernameOk">決定</button>
   </div>
 </div>
 
@@ -663,6 +674,14 @@
     <h1 class="brand" data-i18n="set.title">設定</h1>
     <span></span>
   </header>
+
+  <section class="card" id="profile-card" hidden>
+    <div class="section-head"><h2 data-i18n="auth.profile">プロフィール</h2></div>
+    <div class="row">
+      <input type="text" id="profile-username" class="input" maxlength="20" data-i18n-ph="auth.usernamePh" placeholder="ユーザーネーム" style="flex:1">
+      <button id="profile-save" class="btn primary small" data-i18n="common.save">保存</button>
+    </div>
+  </section>
 
   <section class="card">
     <div class="section-head"><h2 data-i18n="common.language">言語</h2></div>

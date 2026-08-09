@@ -53,7 +53,7 @@ export const deleteAllPhotos = () => tx(PHOTOS, 'readwrite', (s) => s.clear());
  * カメラや一眼の写真はそのままだと数MBあるので、長辺を落としてから保存する。
  * お題として見るだけなので、これ以上の解像度は要らない。
  */
-export function shrinkImage(file, maxSide = 1400, quality = 0.82) {
+export function shrinkImage(file, maxSide = 1000, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);

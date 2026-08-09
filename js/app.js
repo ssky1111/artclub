@@ -42,7 +42,7 @@ import { sfx } from './timer.js';
 import { $, $$, el, showScreen, toast } from './ui.js';
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
-import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, userAvatar } from './auth.js';
+import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, userAvatar, hasUsername, setUsername, getUsername } from './auth.js';
 import { uploadArtwork, fetchArtworks, deleteArtwork } from './gallery.js';
 
 /*
@@ -54,7 +54,7 @@ import { uploadArtwork, fetchArtworks, deleteArtwork } from './gallery.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '13';
+const BUILD = '14';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1722,6 +1722,12 @@ function renderNotes(history) {
 
 function renderSettings() {
   settings = getSettings();
+  const u = getUser();
+  const profileCard = $('#profile-card');
+  profileCard.hidden = !u;
+  if (u) {
+    $('#profile-username').value = getUsername();
+  }
   $$('#source-radios input').forEach((r) => { r.checked = r.value === settings.source; });
   $('#unsplash-key').value = settings.unsplashKey || '';
   $('#opt-theme').value = settings.theme;
@@ -1774,6 +1780,14 @@ function renderTheory() {
 }
 
 function wireSettings() {
+  $('#profile-save').addEventListener('click', () => {
+    const name = $('#profile-username').value.trim();
+    if (!name) return;
+    setUsername(name);
+    updateAuthUI(getUser());
+    toast(t('auth.saved'));
+  });
+
   $$('#source-radios input').forEach((radio) => {
     radio.addEventListener('change', () => {
       settings = saveSettings({ source: radio.value });
@@ -1887,21 +1901,34 @@ function updateAuthUI(u) {
   const avatarWrap = $('#auth-avatar-wrap');
   const label = $('#auth-login-label');
   const btn = $('#auth-btn');
+  avatarWrap.hidden = true;
   if (u) {
-    const src = userAvatar(u);
-    if (src) {
-      $('#auth-avatar').src = src;
-      avatarWrap.hidden = false;
-    } else {
-      avatarWrap.hidden = true;
-    }
     label.textContent = userName(u);
     btn.title = userName(u);
   } else {
-    avatarWrap.hidden = true;
     label.textContent = t('auth.login');
     btn.title = t('auth.login');
   }
+}
+
+function showUsernameSheet(onDone) {
+  const sheet = $('#username-sheet');
+  const input = $('#username-input');
+  input.value = '';
+  sheet.hidden = false;
+  input.focus();
+
+  function submit() {
+    const name = input.value.trim();
+    if (!name) return;
+    setUsername(name);
+    sheet.hidden = true;
+    updateAuthUI(getUser());
+    if (onDone) onDone();
+  }
+
+  $('#username-ok').onclick = submit;
+  input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
 }
 
 function wireAuth() {
@@ -1914,8 +1941,7 @@ function wireAuth() {
     if (u) {
       buttons.hidden = true;
       userInfo.hidden = false;
-      const src = userAvatar(u);
-      if (src) $('#auth-info-avatar').src = src;
+      $('#auth-info-avatar').hidden = true;
       $('#auth-info-name').textContent = userName(u);
     } else {
       buttons.hidden = false;
@@ -1935,13 +1961,31 @@ function wireAuth() {
   $('#login-x').addEventListener('click', () => loginWithProvider('twitter'));
   $('#login-google').addEventListener('click', () => loginWithProvider('google'));
 
+  $('#auth-change-username').addEventListener('click', () => {
+    sheet.hidden = true;
+    showUsernameSheet();
+  });
+
   $('#auth-logout').addEventListener('click', async () => {
     await logout();
+    renderSheet();
     sheet.hidden = true;
+    updateAuthUI(null);
   });
 
   onAuthChange((u) => {
     updateAuthUI(u);
+    if (u && !hasUsername()) {
+      sheet.hidden = true;
+      showUsernameSheet(() => {
+        if (pendingStart) {
+          const fn = pendingStart;
+          pendingStart = null;
+          fn();
+        }
+      });
+      return;
+    }
     if (u && pendingStart) {
       sheet.hidden = true;
       const fn = pendingStart;
