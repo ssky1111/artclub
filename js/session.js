@@ -11,7 +11,7 @@ import { createTimer, sfx } from './timer.js';
 import { createPad } from './draw.js';
 import { $, $$, showScreen, toast, fmtClock } from './ui.js';
 import { paintIcons } from './icons.js';
-import { t, tr, fmtDur } from './i18n.js';
+import { t, tr, fmtDur, getLang } from './i18n.js';
 import { saveSettings } from './storage.js';
 
 export function createSessionRunner({ onFinish, onQuit }) {
@@ -119,7 +119,10 @@ export function createSessionRunner({ onFinish, onQuit }) {
         queue.push({
           drillId: step.drill,
           seconds: step.seconds,
-          source: step.source || 'photo',   // 'photo' = 写真 / 'plate' = 解剖図版
+          source: step.source || 'photo',   // 'photo' = 写真 / 'plate' = 図版 / 'part' = その日の部位
+          // 同じドリルでも、その回が何のためのものかは名前を変えて示す（部位練習など）
+          label: step.label || null,
+          labelEn: step.labelEn || null,
           stepIndex,
           indexInStep: i + 1,
           countInStep: step.count,
@@ -152,11 +155,17 @@ export function createSessionRunner({ onFinish, onQuit }) {
     return photo;
   }
 
+  /** その回の見出し。部位練習のように、ドリル名だけでは足りないときに step.label が勝つ。 */
+  function stepTitle(item, drill) {
+    if (!item.label) return tr(drill, 'name');
+    return getLang() === 'en' ? (item.labelEn || item.label) : item.label;
+  }
+
   async function showBridge(item, isFirst) {
     const drill = DRILLS[item.drillId];
     timer.stop();
     dom.bridgeLabel.textContent = isFirst ? t('sess.first') : t('sess.next');
-    dom.bridgeTitle.textContent = tr(drill, 'name');
+    dom.bridgeTitle.textContent = stepTitle(item, drill);
     dom.bridgeTheory.textContent = tr(drill, 'theory');
     dom.bridgeCue.textContent = tr(drill, 'cue');
     // 名前だけでは何をするのか分からないドリルがあるので、説明を1段落そのまま出す
@@ -184,7 +193,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     dom.peekBtn.hidden = state.peeksLeft === 0;
 
     const drill = DRILLS[item.drillId];
-    dom.drillName.textContent = tr(drill, 'name');
+    dom.drillName.textContent = stepTitle(item, drill);
     dom.drillProgress.textContent = `${item.indexInStep} / ${item.countInStep}`;
     dom.drillCue.textContent = tr(drill, 'cue');
     dom.attrBox.hidden = true;
@@ -207,7 +216,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     dom.img.src = photo.url;
     dom.refMiniImg.src = photo.url;
     dom.padRefImg.src = photo.url;      // 広い画面では左半分にそのまま出す
-    dom.padDrill.textContent = tr(drill, 'name');
+    dom.padDrill.textContent = stepTitle(item, drill);
     dom.padProgress.textContent = `${item.indexInStep} / ${item.countInStep}`;
     dom.padSteps.innerHTML = (tr(drill, 'steps') || [])
       .map((line) => `<li>${escapeHtml(line)}</li>`).join('');

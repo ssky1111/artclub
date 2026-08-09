@@ -2,18 +2,23 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<title>DRAWPAMINE</title>
+<title>ARTCLUB</title>
 <!--
   GitHub Pages は静的配信なので /admin のようなパスは 404 になる。
   そのとき、この 404 ページが index.html#admin に流し直す。
   こうしておくと、アドレスバーに /admin と打つだけで管理画面に入れる。
+
+  何でもかんでも飛ばすと、ただの打ち間違いまで画面が開いてしまうので、
+  受け付けるのは下の ROUTES に書いたものだけ。それ以外はトップに戻す。
 -->
 <script>
   (function () {
+    var ROUTES = ['admin'];
     var path = location.pathname.replace(/\/+$/, '');
     var last = path.split('/').pop();
     var base = path.slice(0, path.length - last.length) || '/';
-    location.replace(base + (last ? '#' + last : ''));
+    var hash = ROUTES.indexOf(last) >= 0 ? '#' + last : '';
+    location.replace(base + hash);
   })();
 </script>
 </head>

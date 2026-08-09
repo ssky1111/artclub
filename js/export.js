@@ -33,7 +33,7 @@ function loadImage(blob) {
 }
 
 /** 1枚ずつ順番に落とす。ブラウザがまとめてブロックしないよう少し間隔をあける。 */
-export async function downloadEach(blobs, prefix = 'drawpamine') {
+export async function downloadEach(blobs, prefix = 'artclub') {
   for (let i = 0; i < blobs.length; i++) {
     downloadBlob(blobs[i], `${prefix}-${String(i + 1).padStart(2, '0')}.jpg`);
     await new Promise((r) => setTimeout(r, 350));
@@ -44,7 +44,7 @@ export async function downloadEach(blobs, prefix = 'drawpamine') {
  * その回に描いたものを1枚のコンタクトシートにする。
  * 並び順＝描いた順なので、上から下へ「今日の流れ」がそのまま見える。
  */
-export async function composeSheet(blobs, { title = 'DRAWPAMINE', subtitle = '' } = {}) {
+export async function composeSheet(blobs, { title = 'ARTCLUB', subtitle = '' } = {}) {
   if (!blobs.length) return null;
 
   const images = [];
@@ -101,7 +101,7 @@ export async function composeSheet(blobs, { title = 'DRAWPAMINE', subtitle = '' 
 
   ctx.fillStyle = SOFT;
   ctx.font = '400 22px system-ui, sans-serif';
-  ctx.fillText('drawpamine — reference photos from Unsplash',
+  ctx.fillText('artclub — reference photos from Unsplash',
                pad, canvas.height - footH + 8);
 
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.88));

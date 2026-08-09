@@ -327,22 +327,56 @@ export const CATEGORIES = [
 ];
 
 /**
- * デイリー。1日1周がこれ。
- * ジェスチャードローイングで流れを掴んでから、クロッキーで形にする。
+ * 部位練習で選べる部位。tags は写真のタグ、lessonId があれば構造レッスンに繋がる。
  */
-export const DAILY = {
-  id: 'daily',
-  title: 'デイリー',
-  subtitle: 'ジェスチャードローイングで流れを掴んでから、クロッキーで形にする',
-  steps: [
-    { drill: 'gesture', count: 3, seconds: 60 },
-    { drill: 'croquis', count: 3, seconds: 180 },
-  ],
-  en: {
-    title: 'Daily',
-    subtitle: 'Find the flow with gestures, then give it shape with croquis',
-  },
-};
+export const PARTS = [
+  { id: 'hand',   label: '手',       en: 'Hands',      tags: ['手'],   lessonId: 'hand',      query: 'hands close up gesture' },
+  { id: 'upper',  label: '上半身',   en: 'Upper body', tags: ['半身'], lessonId: null,        query: 'torso upper body pose' },
+  { id: 'lower',  label: '下半身',   en: 'Lower body', tags: ['全身'], lessonId: 'pelvisLeg', query: 'legs walking barefoot dancer' },
+  { id: 'face',   label: '顔',       en: 'Head',       tags: ['顔'],   lessonId: null,        query: 'portrait head shoulders natural light' },
+  { id: 'foot',   label: '足',       en: 'Feet',       tags: ['足'],   lessonId: 'foot',      query: 'bare feet' },
+  { id: 'full',   label: '全身',     en: 'Full body',  tags: ['全身'], lessonId: null,        query: 'full body standing pose' },
+];
+
+/**
+ * デイリー。1日1周がこれ。
+ * 中身は3つのモードをそのまま順番に通す：
+ *   ジェスチャードローイング（流れを掴む）→ 部位練習（苦手を1つ）→ クロッキー（形にする）
+ *
+ * 真ん中に部位を挟んでいるのは、手や脚だけを別の日にやろうとすると
+ * ふつうやらないため。全身の練習の中に混ぜてしまうほうが確実に回る。
+ */
+export function buildDaily(part) {
+  return {
+    id: 'daily',
+    title: 'デイリー',
+    subtitle: 'ジェスチャードローイング → 部位練習 → クロッキー',
+    partId: part.id,
+    steps: [
+      { drill: 'gesture', count: 3, seconds: 60 },
+      {
+        drill: 'croquis', count: 2, seconds: 60, source: 'part',
+        label: `部位練習：${part.label}`,
+        labelEn: `Body part: ${part.en}`,
+      },
+      { drill: 'croquis', count: 2, seconds: 180 },
+    ],
+    en: {
+      title: 'Daily',
+      subtitle: 'Gesture → body part → croquis',
+    },
+  };
+}
+
+/**
+ * その日の部位。日付で決まるので、同じ日に何回やっても同じ部位。
+ * 自分で選ばせないのは、選ぶ時間が始めない理由になるのと、
+ * 放っておくと得意なところばかり選ぶため（1周すると全部位を通る）。
+ */
+export function partForDate(dateStr) {
+  const days = Math.floor(new Date(`${dateStr}T00:00:00`).getTime() / 86400000);
+  return PARTS[((days % PARTS.length) + PARTS.length) % PARTS.length];
+}
 
 /**
  * モードは3つだけ。増やすと「どれを押すか」を考える時間ができて、それが始めない理由になる。
@@ -372,18 +406,6 @@ export const MODES = [
     steps: [{ drill: 'croquis', count: 5, seconds: 180 }],
     en: { title: 'Croquis', subtitle: '5 × 3 min. Put the shape down properly' },
   },
-];
-
-/**
- * 部位練習で選べる部位。tags は写真のタグ、lessonId があれば構造レッスンに繋がる。
- */
-export const PARTS = [
-  { id: 'hand',   label: '手',       en: 'Hands',      tags: ['手'],   lessonId: 'hand',      query: 'hands close up gesture' },
-  { id: 'upper',  label: '上半身',   en: 'Upper body', tags: ['半身'], lessonId: null,        query: 'torso upper body pose' },
-  { id: 'lower',  label: '下半身',   en: 'Lower body', tags: ['全身'], lessonId: 'pelvisLeg', query: 'legs walking barefoot dancer' },
-  { id: 'face',   label: '顔',       en: 'Head',       tags: ['顔'],   lessonId: null,        query: 'portrait head shoulders natural light' },
-  { id: 'foot',   label: '足',       en: 'Feet',       tags: ['足'],   lessonId: 'foot',      query: 'bare feet' },
-  { id: 'full',   label: '全身',     en: 'Full body',  tags: ['全身'], lessonId: null,        query: 'full body standing pose' },
 ];
 
 /** 部位練習のメニュー。ジェスドロで温めてからクロッキー。 */

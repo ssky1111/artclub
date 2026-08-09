@@ -3,7 +3,7 @@
  */
 
 import {
-  DAILY, MODES, PARTS, DRILLS, PRINCIPLES, PICKABLE_DRILLS,
+  buildDaily, partForDate, MODES, PARTS, DRILLS, PRINCIPLES, PICKABLE_DRILLS,
   TIME_CHOICES, COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu,
   levelLabel, menuDuration, availableCategories,
 } from './theory.js';
@@ -108,36 +108,56 @@ function renderWeekBars(history) {
 }
 
 /**
- * きょうのデイリー。1日1周までは無料、2周目から先はいずれ有料にする。
- * いまは全部開けてあるので「無料開放中」と書いておく。
+ * きょうのデイリー。
+ * 中身は3つのモードをそのまま順番に通す。何をやるのかカードの上で見えるようにしておく
+ * （「デイリー」とだけ書いてあると、押すまで中身が分からない）。
+ *
+ * 1日1周までは無料、2周目から先はいずれ有料にする。いまは全部開けてある。
  */
 function renderDaily(history) {
   const rounds = roundsToday('daily', history);
+  const part = partForDate(dateKey());
+  const daily = buildDaily(part);
+
   const top = $('#menu-primary');
   top.innerHTML = '';
 
   const hero = el('div', 'card primary-card');
   hero.append(
     el('div', 'menu-kicker', t('home.todayLabel')),
-    el('div', 'menu-title big', tr(DAILY, 'title')),
-    el('div', 'menu-sub', tr(DAILY, 'subtitle')),
+    el('div', 'menu-title big', tr(daily, 'title')),
   );
+
+  // 3つの内訳。今日の部位もここで分かる
+  const list = el('ol', 'daily-steps');
+  for (const step of daily.steps) {
+    const row = el('li');
+    const name = step.label
+      ? (getLang() === 'en' ? step.labelEn : step.label)
+      : tr(DRILLS[step.drill], 'name');
+    row.append(
+      el('span', 'daily-step-name', name),
+      el('span', 'daily-step-meta', t('sess.sheetsBy', { n: step.count, t: fmtDur(step.seconds) })),
+    );
+    list.append(row);
+  }
+  hero.append(list);
 
   if (rounds > 0) {
     const done = el('div', 'done-row');
     done.append(
-      el('span', 'done-check', '✓'),
+      el('span', 'done-check', '\u2713'),
       el('span', 'done-text', rounds === 1 ? t('home.roundDone') : t('home.roundN', { n: rounds })),
     );
     hero.append(done);
   }
 
   const cta = el('button', 'btn primary big',
-    t('home.start', { d: fmtDur(menuDuration(DAILY)) }));
+    t('home.start', { d: fmtDur(menuDuration(daily)) }));
   cta.addEventListener('click', () => {
     // 2周目からは、いずれ課金の壁になるところ。いまは説明を出して素通しする
     if (rounds > 0) return openPaywall();
-    startSession(DAILY);
+    startSession(daily, { part });
   });
   hero.append(cta);
 
@@ -279,7 +299,8 @@ function wirePartSheet() {
   });
   $('#pay-continue').addEventListener('click', () => {
     $('#pay-sheet').hidden = true;
-    startSession(DAILY);
+    const part = partForDate(dateKey());
+    startSession(buildDaily(part), { part });
   });
 }
 
@@ -826,6 +847,13 @@ async function startSession(menu, { tags = null, part = null } = {}) {
       ? createLibraryQueue(tags || [], notice)
       : createPhotoQueue(settings, notice, part?.query ? { queryOverride: part.query } : {}),
   };
+  // デイリーの真ん中はその日の部位。タグの付いた写真があればそこから、無ければ検索で出す
+  if (part) {
+    const tagged = own.filter((p) => part.tags.every((tag) => p.tags.includes(tag)));
+    queues.part = tagged.length
+      ? createLibraryQueue(part.tags, notice)
+      : createPhotoQueue(settings, notice, { queryOverride: part.query });
+  }
   if (weak) {
     queues[`weak:${weak.id}`] =
       createPhotoQueue(settings, notice, { queryOverride: weak.photoQuery });
@@ -983,7 +1011,7 @@ function wireDrawingLightbox() {
   });
   $('#draw-dl').addEventListener('click', () => {
     const shot = pendingDrawings[drawingIndex];
-    if (shot) downloadBlob(shot.blob, `drawpamine-${dateKey()}-${drawingIndex + 1}.jpg`);
+    if (shot) downloadBlob(shot.blob, `artclub-${dateKey()}-${drawingIndex + 1}.jpg`);
   });
   $('#draw-remove').addEventListener('click', () => {
     if (drawingIndex < 0) return;
@@ -1014,13 +1042,13 @@ function wireReview() {
   });
 
   $('#dl-all').addEventListener('click', () => {
-    downloadEach(pendingDrawings.map((s) => s.blob), `drawpamine-${dateKey()}`);
+    downloadEach(pendingDrawings.map((s) => s.blob), `artclub-${dateKey()}`);
   });
 
   // その回の全部を1枚に。シェアするとき、絵が何枚も並んでいるほうが伝わる
   $('#make-sheet').addEventListener('click', async () => {
     const blob = await composeSheet(pendingDrawings.map((s) => s.blob), {
-      title: 'DRAWPAMINE',
+      title: 'ARTCLUB',
       subtitle: `${dateKey()} · ${fmtCount(pendingDrawings.length)}`,
     });
     if (!blob) return;
@@ -1031,7 +1059,7 @@ function wireReview() {
   });
 
   $('#sheet-dl').addEventListener('click', () => {
-    if (sheetBlob) downloadBlob(sheetBlob, `drawpamine-${dateKey()}.jpg`);
+    if (sheetBlob) downloadBlob(sheetBlob, `artclub-${dateKey()}.jpg`);
   });
 
   $('#share-x').addEventListener('click', () => {
@@ -1186,7 +1214,7 @@ async function openDaySheet(dayKey, history = getHistory()) {
       $('#draw-img').src = URL.createObjectURL(blob);
       drawingIndex = -1;                       // 過去の絵はここから消せない
       $('#draw-remove').hidden = true;
-      $('#draw-dl').onclick = () => downloadBlob(blob, `drawpamine-${dayKey}-${i + 1}.jpg`);
+      $('#draw-dl').onclick = () => downloadBlob(blob, `artclub-${dayKey}-${i + 1}.jpg`);
       $('#draw-lightbox').hidden = false;
     });
     shots.append(item);
@@ -1380,7 +1408,7 @@ function wireSettings() {
     const blob = new Blob(
       [JSON.stringify({ settings: { ...settings, unsplashKey: '' }, history: getHistory() }, null, 2)],
       { type: 'application/json' });
-    downloadBlob(blob, `drawpamine-${dateKey()}.json`);
+    downloadBlob(blob, `artclub-${dateKey()}.json`);
   });
 
   $('#reset-btn').addEventListener('click', async () => {

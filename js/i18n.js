@@ -13,7 +13,7 @@ const LANG_KEY = 'drawpamine.lang';
 
 const DICT = {
   /* ---------- 共通 ---------- */
-  'app.name':            { ja: 'DRAWPAMINE',        en: 'DRAWPAMINE' },
+  'app.name':            { ja: 'ARTCLUB',           en: 'ARTCLUB' },
   'app.beta':            { ja: 'β版',               en: 'beta' },
   'app.tagline':         { ja: '毎日3分の絵の練習',  en: 'Three minutes of drawing, every day' },
   'common.close':        { ja: '閉じる',             en: 'Close' },
@@ -111,8 +111,8 @@ const DICT = {
   'rev.shareX':          { ja: 'X に投稿する',         en: 'Post on X' },
   'rev.shareNote':       { ja: '画像は自動では付きません。ダウンロードしてから貼ってください。',
                            en: 'The image is not attached automatically — download it and attach it.' },
-  'rev.shareText':       { ja: '今日は {n}枚 / {d} 描きました。#DRAWPAMINE',
-                           en: 'Drew {n} sketches in {d} today. #DRAWPAMINE' },
+  'rev.shareText':       { ja: '今日は {n}枚 / {d} 描きました。#ARTCLUB',
+                           en: 'Drew {n} sketches in {d} today. #ARTCLUB' },
   'rev.save':            { ja: '保存して終わる',       en: 'Save & finish' },
   'rev.again':           { ja: 'もう1セットやる',      en: 'One more round' },
   'rev.streakLine':      { ja: '連続 {s} 日 / 通算 {n} 回', en: '{s}-day streak · {n} sessions' },

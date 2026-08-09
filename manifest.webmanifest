@@ -1,6 +1,6 @@
 {
-  "name": "DRAWPAMINE — 毎日3分の絵の練習",
-  "short_name": "DRAWPAMINE",
+  "name": "ARTCLUB — 毎日3分の絵の練習",
+  "short_name": "ARTCLUB",
   "description": "写真をお題に、ジェスチャードローイングとクロッキーを毎日3分から続けるための練習アプリ。",
   "start_url": "./index.html",
   "scope": "./",

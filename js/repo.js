@@ -14,6 +14,7 @@
  */
 
 const MANIFEST_URL = './photos/manifest.json';
+// 保存キーは名前を変えない。変えると、すでに入っている設定が読めなくなるだけなので
 const CFG_KEY = 'drawpamine.repo.v1';
 
 let manifestCache = null;
@@ -119,7 +120,7 @@ export function manifestJson(entries) {
   return JSON.stringify({
     version: 1,
     updatedAt: new Date().toISOString(),
-    note: 'DRAWPAMINE のお題写真。file は photos/ からの相対パス。',
+    note: 'ARTCLUB のお題写真。file は photos/ からの相対パス。',
     photos: entries,
   }, null, 2);
 }
