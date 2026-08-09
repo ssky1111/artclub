@@ -233,6 +233,60 @@ export async function supabasePhotos() {
   }));
 }
 
+export async function convertToWebp(entry, maxSide = 1000, quality = 0.82) {
+  const oldPath = entry.file;
+  const url = publicUrl(oldPath);
+  const res = await fetch(url, { cache: 'reload' });
+  if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
+  const srcBlob = await res.blob();
+
+  const webpBlob = await new Promise((resolve, reject) => {
+    const img = new Image();
+    const u = URL.createObjectURL(srcBlob);
+    img.onload = () => {
+      URL.revokeObjectURL(u);
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error('encode failed'))),
+        'image/webp',
+        quality,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(u); reject(new Error('decode failed')); };
+    img.src = u;
+  });
+
+  const id = oldPath.replace(/\.[^.]+$/, '');
+  const newPath = `${id}.webp`;
+
+  await fetch(storageUrl(newPath), {
+    method: 'POST',
+    headers: hdrs({ 'Content-Type': 'image/webp', 'x-upsert': 'true' }),
+    body: webpBlob,
+  });
+
+  if (newPath !== oldPath) {
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}`, {
+      method: 'DELETE',
+      headers: hdrs({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ prefixes: [oldPath] }),
+    }).catch(() => {});
+  }
+
+  const entries = await loadManifest({ fresh: true });
+  const e = entries.find((x) => x.file === oldPath);
+  if (e) {
+    e.file = newPath;
+    await saveManifest(entries);
+  }
+
+  return newPath;
+}
+
 export async function testConnection() {
   const res = await fetch(`${SUPABASE_URL}/storage/v1/bucket/${BUCKET}`, {
     headers: hdrs(),

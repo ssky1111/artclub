@@ -33,7 +33,7 @@ import {
   loadManifest as sbLoadManifest, pushToSupabase, testConnection as sbTest,
   supabasePhotos, updateTags as sbUpdateTags, bulkUpdateTags, bulkRemoveTags,
   removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
-  saveHiddenTags, invalidateTagConfig,
+  saveHiddenTags, invalidateTagConfig, convertToWebp,
 } from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
@@ -54,7 +54,7 @@ import { uploadArtwork, fetchArtworks, deleteArtwork } from './gallery.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '17';
+const BUILD = '18';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -578,6 +578,7 @@ async function renderAdmin() {
 
 const sbSelected = new Set();
 const sbUploadTags = new Set();
+let sbLastClickedIndex = -1;
 
 function renderUploadTagChips() {
   const wrap = $('#sb-upload-tags');
@@ -597,6 +598,7 @@ async function renderSupabaseGrid() {
   const grid = $('#sb-grid');
   grid.innerHTML = '';
   sbSelected.clear();
+  sbLastClickedIndex = -1;
   updateSelectBar();
   renderUploadTagChips();
 
@@ -618,8 +620,32 @@ async function renderSupabaseGrid() {
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.className = 'sb-check';
-      cb.addEventListener('click', (e) => e.stopPropagation());
-      cb.addEventListener('change', () => toggleSelect(btn, photo, cb.checked));
+      cb.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const items = [...grid.querySelectorAll('.lib-item')];
+        const idx = items.indexOf(btn);
+        if (e.shiftKey && sbLastClickedIndex >= 0 && sbLastClickedIndex !== idx) {
+          const from = Math.min(sbLastClickedIndex, idx);
+          const to = Math.max(sbLastClickedIndex, idx);
+          for (let i = from; i <= to; i++) {
+            const item = items[i];
+            const itemCb = item.querySelector('.sb-check');
+            if (itemCb && !itemCb.checked) {
+              itemCb.checked = true;
+              const file = item.dataset.file;
+              sbSelected.add(file);
+              item.classList.add('selected');
+            }
+          }
+          updateSelectBar();
+        } else {
+          toggleSelect(btn, photo, cb.checked);
+        }
+        sbLastClickedIndex = idx;
+      });
+      cb.addEventListener('change', (e) => {
+        if (!e.isTrusted) toggleSelect(btn, photo, cb.checked);
+      });
       btn.append(cb);
       btn.addEventListener('click', () => openSbPhoto(photo));
       grid.append(btn);
@@ -907,6 +933,25 @@ function wireAdmin() {
   });
 
   $('#bulk-tag-close').addEventListener('click', () => { $('#bulk-tag-sheet').hidden = true; });
+
+  $('#sb-bulk-convert').addEventListener('click', async () => {
+    const entries = await sbLoadManifest({ fresh: true });
+    const targets = [...sbSelected].filter((f) => !f.endsWith('.webp'));
+    if (!targets.length) return toast('すべてWebPです');
+    if (!confirm(`${targets.length}枚をWebP変換しますか？`)) return;
+    const status = $('#sb-status');
+    let done = 0;
+    for (const file of targets) {
+      status.textContent = `WebP変換中… ${++done}/${targets.length}`;
+      const entry = entries.find((e) => e.file === file);
+      if (entry) {
+        try { await convertToWebp(entry); } catch { /* skip */ }
+      }
+    }
+    sbSelected.clear();
+    status.textContent = `${targets.length}枚をWebPに変換しました`;
+    await renderSupabaseGrid();
+  });
 
   $('#sb-bulk-delete').addEventListener('click', async () => {
     const n = sbSelected.size;
