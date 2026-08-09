@@ -3,7 +3,7 @@
  * （毎回ちがう写真が出ることに意味があるし、端末を圧迫したくないので）。
  */
 
-const CACHE = 'croqui-v5';
+const CACHE = 'drawpamine-v6';
 const SHELL = [
   './',
   './index.html',
@@ -23,6 +23,10 @@ const SHELL = [
   './js/icons.js',
   './js/library.js',
   './js/draw.js',
+  './js/i18n.js',
+  './js/export.js',
+  './js/repo.js',
+  './js/glossary.js',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-192.png',

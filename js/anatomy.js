@@ -14,28 +14,52 @@
 
 export const PD_BOOKS = [
   {
+    id: 'bridgman',
     title: 'Constructive Anatomy',
+    titleJa: '『構成的解剖学』',
     author: 'George B. Bridgman',
     year: 1920,
     note: '人体を箱とくさびに置き換える描き方の元祖。手と脚の図版が特に多い。',
+    en: { note: 'The origin of drawing the figure as boxes and wedges. Especially strong on hands and legs.' },
+    queries: [
+      'Bridgman Constructive Anatomy',
+      'Bridgman anatomy hand drawing',
+      'Bridgman anatomy leg drawing',
+    ],
   },
   {
-    title: "Gray's Anatomy（1918年版）",
+    id: 'gray',
+    title: "Gray's Anatomy (1918)",
+    titleJa: '『グレイ解剖学』1918年版',
     author: 'Henry Gray',
     year: 1918,
     note: '骨と筋肉の正確な図版。骨のでっぱりの位置を確かめるのに使う。',
+    en: { note: 'Accurate bone and muscle plates. Use it to check where the bony landmarks sit.' },
+    queries: [
+      'Gray anatomy plate skeleton',
+      'Gray anatomy muscles plate',
+      'Gray anatomy bones of the hand',
+    ],
   },
   {
+    id: 'vanderpoel',
     title: 'The Human Figure',
+    titleJa: '『人体』',
     author: 'John H. Vanderpoel',
     year: 1907,
     note: '面と陰影のとらえ方。手足の見え方の変化が丁寧。',
+    en: { note: 'Planes and shading. Careful about how hands and feet change as they turn.' },
+    queries: ['Vanderpoel Human Figure', 'human figure drawing plate 1907'],
   },
   {
+    id: 'richer',
     title: 'Anatomie artistique',
+    titleJa: '『美術解剖学』',
     author: 'Paul Richer',
     year: 1890,
     note: 'プロポーションと体表の解剖。フランス語だが図が主役。',
+    en: { note: 'Proportion and surface anatomy. French text, but the plates carry it.' },
+    queries: ['Paul Richer Anatomie artistique', 'Richer anatomie artistique plate'],
   },
 ];
 
@@ -112,6 +136,57 @@ export const LESSONS = [
       '節が根元から先へ短くなっているか',
     ],
 
+    en: {
+      name: 'Hands',
+      tagline: 'While you think of it as five fingers, you will never draw it',
+      problem:
+        'Hands fail because you try to grow five fingers. A real hand is three masses — the box of the ' +
+        'palm, the triangle of the thumb, the staircase of the four fingers — and all three face ' +
+        'different directions. Place the masses first; the fingers come last.',
+      steps: [
+        { title: '1. Place the palm as a box with thickness',
+          body: 'The palm is not a flat board. It is a slightly twisted wedge, thin on the little-finger ' +
+                'side and thick on the thumb side. Draw that one box. No fingers yet.' },
+        { title: '2. The knuckles sit on an arc',
+          body: 'The knuckles from index to little finger do not line up straight. They arc, peaking at ' +
+                'the middle finger. Line them up and the hand becomes a mitten.' },
+        { title: '3. The thumb grows from the side',
+          body: 'The thumb comes off the side of the palm, not the front, and faces a plane about 90° ' +
+                'from the other four. Its base pad takes up roughly a third of the palm.' },
+        { title: '4. Fingers are a staircase of three boxes',
+          body: 'A finger is not a rod. It is three segments (two for the thumb) joined at hinges. Bent, ' +
+                'it steps down and you see each box face. It never bends anywhere else.' },
+        { title: '5. The fingertips make another arc',
+          body: 'Middle longest, index and ring about equal, little finger shortest. Segment lengths ' +
+                'shorten from base to tip, roughly 1 : 0.6 : 0.4.' },
+      ],
+      landmarks: [
+        'The round bump on the little-finger side of the wrist (ulnar head) — it sets the wrist angle',
+        'The knuckles (metacarpal heads) — the middle one is highest',
+        'The thenar pad — the triangle of muscle at the base of the thumb',
+        'The hypothenar pad — the long strip on the little-finger side',
+        'The extensor tendons — they fan out on the back of the hand when the fingers straighten',
+      ],
+      proportions: [
+        'Whole hand ≈ the length of the face (chin to hairline)',
+        'Palm : fingers ≈ 1 : 1',
+        'The thumb tip only reaches about the first joint of the index finger',
+      ],
+      mistakes: [
+        { bad: 'Making the palm a flat board', fix: 'Draw the side plane first to give it thickness' },
+        { bad: 'Fanning all five from the same plane', fix: 'The thumb is its own group, 90° away' },
+        { bad: 'Lining the knuckles up straight', fix: 'Arc them, peaking at the middle finger' },
+        { bad: 'Equal-length finger segments', fix: 'They shorten from base to tip' },
+        { bad: 'Drawing fingers as cylinders', fix: 'The section is nearly square, especially past the first joint' },
+      ],
+      checks: [
+        'Does the palm box have thickness?',
+        'Does the thumb come off the side, facing a different way?',
+        'Do the knuckles arc?',
+        'Do the segments shorten toward the tip?',
+      ],
+    },
+
     refQueries: [
       'Bridgman Constructive Anatomy hand',
       'Gray anatomy bones of the hand',
@@ -123,11 +198,12 @@ export const LESSONS = [
     practice: {
       id: 'lesson-hand',
       title: '手をつぶす',
+      en: { title: 'Crack the hand' },
       steps: [
-        { drill: 'mass',     source: 'plate', count: 2, seconds: 180 },
-        { drill: 'landmark', source: 'photo', count: 2, seconds: 60 },
-        { drill: 'gesture',  source: 'photo', count: 4, seconds: 30 },
-        { drill: 'memory',   source: 'photo', count: 1, seconds: 120 },
+        { drill: 'mass',    source: 'plate', count: 2, seconds: 180 },
+        { drill: 'mass',    source: 'photo', count: 2, seconds: 60 },
+        { drill: 'gesture', source: 'photo', count: 4, seconds: 30 },
+        { drill: 'memory',  source: 'photo', count: 1, seconds: 120 },
       ],
     },
   },
@@ -211,6 +287,64 @@ export const LESSONS = [
       'ふくらはぎの内と外で高さがずれているか',
     ],
 
+    en: {
+      name: 'Pelvis and legs',
+      tagline: 'Legs turn into sticks because you skipped the pelvis',
+      problem:
+        'Almost every failed lower body is a missing pelvis. Grow two cylinders out of the waist and you ' +
+        'get sticks. The order is: set the tilt of the pelvic box, run the femur down and inward, box the ' +
+        'knee, then the shin. The leg is decided by the pelvis before the leg is drawn.',
+      steps: [
+        { title: '1. Place the pelvis as a box that narrows downward',
+          body: 'Draw the pelvis before the legs. Decide whether it tilts forward or back, and which side ' +
+                'is higher. The hip on the weight-bearing side rises and the shoulders drop the other way. ' +
+                'Get this wrong and everything below is wrong.' },
+        { title: '2. The femur runs from outside to inside',
+          body: 'The thigh bone starts at the widest point of the hip (the greater trochanter, right at ' +
+                'the trouser pocket) and slopes inward to the knee. Both together form a narrow V. Two ' +
+                'vertical legs are already a mistake.' },
+        { title: '3. The knee is a wide box, not a circle',
+          body: 'From the front the knee is a box wider than it is tall. The kneecap is a plate lying on ' +
+                'its front. Below the knee the direction changes slightly outward — that change is why a ' +
+                'leg does not read as a stick.' },
+        { title: '4. Run one straight line down the shin',
+          body: 'The crest of the tibia sits right under the skin, so it reads as a hard straight line. ' +
+                'Draw it and the lower leg suddenly has a bone in it. The fibula runs outside it and ends ' +
+                'as the outer ankle bone.' },
+        { title: '5. The calf is asymmetric',
+          body: 'The calf is two masses: the inner one higher and larger, the outer lower and smaller. So ' +
+                'the two outlines peak at different heights. A symmetrical spindle always looks fake.' },
+      ],
+      landmarks: [
+        'Iliac crest — the rim of bone you feel with your hands on your hips',
+        'ASIS — the two front points of the pelvis; draw the pelvic tilt through them',
+        'Greater trochanter — the bump at the side of the hip, where the leg starts',
+        'The kneecap and the bump below it (tibial tuberosity)',
+        'The shin crest — a straight line from knee to ankle',
+        'Inner ankle (higher, further forward) / outer ankle (lower, further back)',
+      ],
+      proportions: [
+        'At eight heads tall, the crotch is exactly halfway',
+        'The knee is halfway between crotch and sole',
+        'The greater trochanter sits at about crotch height',
+        'Foot length ≈ head length',
+      ],
+      mistakes: [
+        { bad: 'Sticks below the waist, no pelvis', fix: 'Draw the pelvic box and its tilt first' },
+        { bad: 'Parallel legs', fix: 'Slope them inward from the trochanters' },
+        { bad: 'A circle for the knee', fix: 'A wide box with the cap on the front' },
+        { bad: 'A symmetrical calf', fix: 'Inner mass high, outer mass low' },
+        { bad: 'Ankles at the same height', fix: 'Inner high, outer low — the ankle always looks tilted' },
+      ],
+      checks: [
+        'Did you set the pelvic tilt before anything else?',
+        'Does the femur slope inward?',
+        'Is the knee a box?',
+        'Is there one hard straight line down the shin?',
+        'Do the two calf masses peak at different heights?',
+      ],
+    },
+
     refQueries: [
       'Bridgman Constructive Anatomy leg',
       'Gray anatomy pelvis bones plate',
@@ -222,9 +356,10 @@ export const LESSONS = [
     practice: {
       id: 'lesson-leg',
       title: '下半身をつぶす',
+      en: { title: 'Crack the lower body' },
       steps: [
         { drill: 'mass',       source: 'plate', count: 2, seconds: 180 },
-        { drill: 'landmark',   source: 'photo', count: 2, seconds: 60 },
+        { drill: 'mass',       source: 'photo', count: 2, seconds: 60 },
         { drill: 'proportion', source: 'photo', count: 1, seconds: 180 },
         { drill: 'gesture',    source: 'photo', count: 4, seconds: 30 },
       ],
@@ -300,6 +435,54 @@ export const LESSONS = [
       '甲が盛り上がっているか',
     ],
 
+    en: {
+      name: 'Ankles and feet',
+      tagline: 'You memorised the shoe, so barefoot falls apart',
+      problem:
+        'A foot is a wedge plus an arch. Drawn as a flat spatula, you cannot tell whether it is standing ' +
+        'on the ground or floating above it. The twist at the ankle comes down entirely to knowing that ' +
+        'the two ankle bones sit at different heights.',
+      steps: [
+        { title: '1. From the side it is a triangular wedge',
+          body: 'The heel is narrow and tall, the toes wide and low. In profile it is close to a right ' +
+                'triangle. Place that wedge first. No toes yet.' },
+        { title: '2. It stands on three points',
+          body: 'Heel, ball of the big toe, ball of the little toe. Put those three on the ground and the ' +
+                'foot lands. The inside lifts into the arch; the outside stays down.' },
+        { title: '3. Inner ankle high, outer ankle low',
+          body: 'The inner ankle is higher and further forward, the outer lower and further back. That ' +
+                'difference is the twist. Level them and the ankle turns into a plastic model part.' },
+        { title: '4. The instep humps up',
+          body: 'The top of the foot is the crown of the arch, so it is not flat. From ankle to toes it ' +
+                'is a gentle downhill.' },
+        { title: '5. Big toe, then the other four',
+          body: 'Like the hand, the big one is its own group. Place it as a large independent mass, then ' +
+                'take the remaining four as one mass and divide it.' },
+      ],
+      landmarks: [
+        'Inner ankle (high, forward) / outer ankle (low, back)',
+        'Achilles tendon — a thin plate from heel to calf; in profile the back of the ankle dips',
+        'The round back of the heel bone',
+        'The two balls of the foot that take the weight',
+      ],
+      proportions: [
+        'Foot length ≈ head length ≈ forearm length',
+        'Ankle height is about a quarter of the foot length',
+      ],
+      mistakes: [
+        { bad: 'Ankle bones at the same height', fix: 'Inner high, outer low — tilt the ankle' },
+        { bad: 'No arch', fix: 'Lift the inside, plant the outside' },
+        { bad: 'A flat instep', fix: 'Hump it as the crown of the arch' },
+        { bad: 'Five equal toes in a row', fix: 'Big toe separate, the other four split off one mass' },
+      ],
+      checks: [
+        'Is it a wedge in profile?',
+        'Is it standing on three points?',
+        'Are the ankle bones at different heights?',
+        'Does the instep hump up?',
+      ],
+    },
+
     refQueries: [
       'Bridgman Constructive Anatomy foot',
       'Gray anatomy bones of the foot',
@@ -311,11 +494,12 @@ export const LESSONS = [
     practice: {
       id: 'lesson-foot',
       title: '足をつぶす',
+      en: { title: 'Crack the foot' },
       steps: [
-        { drill: 'mass',     source: 'plate', count: 2, seconds: 180 },
-        { drill: 'landmark', source: 'photo', count: 2, seconds: 60 },
-        { drill: 'contour',  source: 'photo', count: 1, seconds: 120 },
-        { drill: 'memory',   source: 'photo', count: 1, seconds: 120 },
+        { drill: 'mass',    source: 'plate', count: 2, seconds: 180 },
+        { drill: 'mass',    source: 'photo', count: 2, seconds: 60 },
+        { drill: 'contour', source: 'photo', count: 1, seconds: 120 },
+        { drill: 'memory',  source: 'photo', count: 1, seconds: 120 },
       ],
     },
   },

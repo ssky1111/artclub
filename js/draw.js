@@ -23,6 +23,8 @@ export function createPad(canvas) {
     color: '#1c1a17',
     size: 4,
     eraser: false,
+    // 線の濃さ。あたりを薄く取ってから上に重ねたい人がいるので、0.15 まで下げられる
+    alpha: 1,
   };
 
   /** 見た目のサイズと実ピクセルを合わせる。ぼやけ防止。 */
@@ -68,12 +70,15 @@ export function createPad(canvas) {
 
   function stroke(from, to) {
     ctx.globalCompositeOperation = state.eraser ? 'destination-out' : 'source-over';
+    // 消しゴムは薄くしない。薄い消しゴムは「消えない消しゴム」にしかならないので
+    ctx.globalAlpha = state.eraser ? 1 : state.alpha;
     ctx.strokeStyle = state.color;
     ctx.lineWidth = state.size * (state.eraser ? 3 : 0.6 + to.p);
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);
     ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   function onDown(event) {
@@ -113,6 +118,7 @@ export function createPad(canvas) {
 
     setSize(size) { state.size = size; },
     setEraser(on) { state.eraser = on; },
+    setAlpha(alpha) { state.alpha = Math.min(1, Math.max(0.1, Number(alpha) || 1)); },
     setColor(color) { state.color = color; state.eraser = false; },
 
     undo() {

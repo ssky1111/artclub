@@ -8,6 +8,7 @@
  */
 
 import { putPhoto, getPhoto, listPhotos, deletePhoto, shrinkImage } from './db.js';
+import { loadManifest, manifestPhotoUrl } from './repo.js';
 
 /** よく使うタグ。これ以外も自由に足せる。 */
 export const TAG_GROUPS = [
@@ -64,18 +65,48 @@ export async function removePhoto(id) {
   invalidate();
 }
 
+/**
+ * リポジトリに同梱されている写真も、端末の写真と同じ形にそろえて混ぜる。
+ * 同梱側は消せないので bundled: true を立てておく。
+ */
+export async function bundledPhotos() {
+  const entries = await loadManifest();
+  return entries.map((entry) => ({
+    id: `repo:${entry.file}`,
+    url: manifestPhotoUrl(entry),
+    blob: null,
+    tags: entry.tags || [],
+    name: entry.name || entry.file,
+    source: entry.source || 'Unsplash',
+    credit: entry.credit || null,
+    bundled: true,
+    addedAt: 0,
+  }));
+}
+
+/** 端末の写真＋同梱の写真。お題を出すときはこちらを使う。 */
+export async function everyPhoto({ fresh = false } = {}) {
+  const [mine, bundled] = await Promise.all([allPhotos({ fresh }), bundledPhotos()]);
+  return [...mine, ...bundled];
+}
+
 /** タグでしぼる。タグを1つも選んでいなければ全部。 */
 export async function photosWithTags(tags = []) {
-  const photos = await allPhotos();
+  const photos = await everyPhoto();
   if (!tags.length) return photos;
   return photos.filter((p) => tags.every((t) => p.tags.includes(t)));
+}
+
+/** 表示用のURL。端末の写真は Blob から作り、同梱の写真はそのままのパス。 */
+export function photoUrl(photo) {
+  return photo.blob ? URL.createObjectURL(photo.blob) : photo.url;
 }
 
 /**
  * セッション用のキュー。images.js のキューと同じ形で使える。
  * 同じ写真が続けて出ないよう、ひと回りしてから戻ってくるようにしている。
  */
-export function createLibraryQueue(tags, onNotice = () => {}) {
+export function createLibraryQueue(tags, onNotice = () => {}, noticeText = null) {
   let pool = [];
   let cursor = 0;
   let loading = null;
@@ -83,7 +114,9 @@ export function createLibraryQueue(tags, onNotice = () => {}) {
 
   async function load() {
     pool = await photosWithTags(tags);
-    if (!pool.length) onNotice('その条件の写真がありません。写真の管理から追加してください');
+    if (!pool.length) {
+      onNotice(noticeText || 'その条件の写真がありません。写真の管理から追加してください');
+    }
     pool.sort(() => Math.random() - 0.5);
   }
 
@@ -99,12 +132,16 @@ export function createLibraryQueue(tags, onNotice = () => {}) {
       if (!pool.length) return null;
       const photo = pool[cursor % pool.length];
       cursor++;
-      const url = URL.createObjectURL(photo.blob);
-      urls.push(url);
+      const url = photo.blob ? URL.createObjectURL(photo.blob) : photo.url;
+      if (photo.blob) urls.push(url);
       return {
         url,
         photoId: photo.id,             // 同じ写真の前回と比べるために持ち回る
-        credit: { name: photo.name || '自分の写真', link: null, source: '自分でいれた写真' },
+        credit: photo.credit || {
+          name: photo.name || (photo.bundled ? '同梱の写真' : '自分の写真'),
+          link: null,
+          source: photo.bundled ? (photo.source || 'Unsplash') : '自分でいれた写真',
+        },
       };
     },
     prime() { return ensure(); },

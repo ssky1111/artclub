@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>DRAWPAMINE</title>
+<!--
+  GitHub Pages は静的配信なので /admin のようなパスは 404 になる。
+  そのとき、この 404 ページが index.html#admin に流し直す。
+  こうしておくと、アドレスバーに /admin と打つだけで管理画面に入れる。
+-->
+<script>
+  (function () {
+    var path = location.pathname.replace(/\/+$/, '');
+    var last = path.split('/').pop();
+    var base = path.slice(0, path.length - last.length) || '/';
+    location.replace(base + (last ? '#' + last : ''));
+  })();
+</script>
+</head>
+<body></body>
+</html>

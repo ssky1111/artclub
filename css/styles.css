@@ -415,37 +415,6 @@ a { color: var(--accent); }
   transition: width .6s cubic-bezier(.2, .8, .3, 1);
 }
 
-.quest-card { background: none; border: none; box-shadow: none; padding: 4px 4px 8px; }
-.quest-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
-.quest {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; border-radius: var(--radius-sm);
-  background: var(--surface-2); border: 1px solid var(--line);
-}
-.quest-icon { font-size: 20px; }
-.quest-main { flex: 1; min-width: 0; }
-.quest-title { font-size: 14px; font-weight: 600; }
-.quest-detail { font-size: 12px; color: var(--muted); }
-.quest-mark { font-size: 18px; color: var(--muted); }
-.quest.done { background: color-mix(in srgb, var(--good) 14%, var(--surface)); border-color: color-mix(in srgb, var(--good) 40%, transparent); }
-.quest.done .quest-title { color: var(--good); }
-.quest.done .quest-mark { color: var(--good); }
-
-.badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 10px; }
-.badge-item { text-align: center; }
-.badge-face {
-  width: 52px; height: 52px; margin: 0 auto 4px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px; border-radius: 50%;
-  background: var(--surface-2); border: 2px solid var(--line);
-}
-.badge-item.earned .badge-face {
-  background: var(--accent-soft); border-color: var(--accent-dim);
-}
-.badge-item.locked .badge-face { filter: grayscale(1); opacity: .35; }
-.badge-name { font-size: 11px; color: var(--text-soft); line-height: 1.3; }
-.badge-item.locked .badge-name { color: var(--muted); }
-
 /* 獲得したときのお祝い */
 .celebrate {
   position: fixed; left: 50%; top: 22%; transform: translateX(-50%);
@@ -495,20 +464,23 @@ a { color: var(--accent); }
 /* ---------- 描くところ ---------- */
 
 /*
- * 描くときは、キャンバスを画面いっぱいにする。
- * お題は左上の小窓に退避させ、見たいときだけ大きくする。
- * 紙に描くときも、資料はふつう手元の端に置くので。
+ * 上の帯にタイマーを真ん中で置き、その下を「左＝お題／右＝キャンバス」に割る。
+ * 狭い画面では左を畳んで、お題は小窓（ref-mini）に退避する。
+ * 手順は右上に置いて、写真の邪魔になったら畳めるようにしてある。
  */
 .pad-wrap {
   position: absolute; inset: 0; z-index: 2;
   display: flex; flex-direction: column; background: #fffdf8;
 }
+.pad-body { flex: 1; display: flex; min-height: 0; }
+.pad-ref { display: none; }
+.pad-canvas { position: relative; flex: 1; min-width: 0; display: flex; }
 .pad { flex: 1; width: 100%; touch-action: none; cursor: crosshair; }
 
-/* 左上のお題。押すと大きくなる */
+/* 左上のお題。押すと大きくなる（狭い画面用） */
 .ref-mini {
-  position: absolute; left: 10px; top: calc(52px + env(safe-area-inset-top));
-  width: 150px; height: 190px; padding: 0; overflow: hidden; cursor: pointer;
+  position: absolute; left: 10px; top: 10px;
+  width: 132px; height: 168px; padding: 0; overflow: hidden; cursor: pointer;
   border: 2px solid #2b2a27; border-radius: 12px; background: #e9e6dd;
   transition: width .18s ease, height .18s ease;
 }
@@ -516,38 +488,54 @@ a { color: var(--accent); }
 .ref-mini.big { width: min(92vw, 460px); height: min(80vh, 620px); }
 .ref-mini.big img { object-fit: contain; background: #14130f; }
 
-/* キャンバス側の上帯。練習画面の HUD は隠れるのでここに最小限だけ置く */
+/* 上帯。タイマーが真ん中 */
 .pad-hud {
-  position: absolute; left: 0; right: 0; top: 0;
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: max(8px, env(safe-area-inset-top)) 12px 8px;
-  background: rgba(255, 253, 248, .92); border-bottom: 1px solid #e2ded1;
+  display: grid; grid-template-columns: 44px 1fr 44px; align-items: center;
+  padding: max(6px, env(safe-area-inset-top)) 12px 6px;
+  background: rgba(255, 253, 248, .96); border-bottom: 1px solid #e2ded1;
   color: #2b2a27;
 }
-.pad-hud-mid { text-align: center; line-height: 1.2; }
-.pad-drill { font-size: 14px; font-weight: 700; display: block; }
+.pad-hud-right { text-align: right; line-height: 1.15; grid-column: 3; justify-self: end; }
+.pad-hud-right { position: absolute; right: 12px; }
+.pad-drill { font-size: 12px; font-weight: 700; display: block; white-space: nowrap; }
 .pad-icon {
   background: none; border: none; color: #2b2a27; cursor: pointer;
   width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
 }
 .pad-time {
+  grid-column: 2; justify-self: center;
   background: none; border: none; color: #2b2a27; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; line-height: 1; min-width: 62px;
+  display: flex; flex-direction: column; align-items: center; line-height: 1; min-width: 72px;
 }
-.pad-time-num { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.pad-time-num { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .pad-time-unit { font-size: 10px; color: #8b8b85; margin-top: 2px; }
 .pad-time.paused .pad-time-num { color: #b3503c; }
-.pad-time.paused .pad-time-unit::after { content: '（とめ中）'; }
+.pad-time.paused .pad-time-unit::after { content: '…'; }
 
-/* 帯の下に残り時間のバー。数字だけだと気づかれないため */
-.pad-timebar {
-  position: absolute; left: 0; right: 0; top: 0; height: 4px;
-  background: #e2ded1; pointer-events: none;
-}
+.pad-timebar { position: relative; height: 4px; background: #e2ded1; pointer-events: none; }
 .pad-timebar-fill {
   height: 100%; width: 100%; background: var(--brand);
   transform-origin: right; transform: scaleX(1);
 }
+
+/* 手順ヒント。閉じられる */
+.pad-hint { position: absolute; right: 10px; top: 10px; z-index: 3; text-align: right; }
+.hint-toggle {
+  font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  background: rgba(255, 253, 248, .94); color: #55534d;
+  border: 1px solid #ddd8c9; border-radius: 999px; padding: 4px 12px;
+}
+.hint-toggle i { font-style: normal; }
+.hint-toggle i::after { content: ' ＋'; }
+.pad-hint.open .hint-toggle i::after { content: ' −'; }
+.pad-steps {
+  display: none; margin: 6px 0 0;
+  padding: 10px 14px 10px 30px; max-width: min(70vw, 300px);
+  list-style: decimal; color: #55534d; font-size: 13px; line-height: 1.7; text-align: left;
+  background: rgba(255, 253, 248, .94); border: 1px solid #e2ded1; border-radius: 12px;
+}
+.pad-hint.open .pad-steps { display: block; }
+.pad-steps li::marker { color: var(--brand-ink); font-weight: 700; }
 
 .pad-tools {
   display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
@@ -565,6 +553,18 @@ a { color: var(--accent); }
 .pad-size i { display: block; background: #2b2a27; border-radius: 50%; }
 .pad-size.on { border-color: #2b2a27; border-width: 2px; }
 
+/* 線の濃さ。左の丸が、いまの濃さそのままの色で出る */
+.pad-alpha {
+  display: flex; align-items: center; gap: 6px;
+  background: #fffdf8; border: 1px solid #cfcabb; border-radius: 10px;
+  height: 38px; padding: 0 10px; cursor: pointer;
+}
+.pad-alpha-mark {
+  width: 14px; height: 14px; border-radius: 50%; flex: none;
+  background: #2b2a27; opacity: var(--a, 1);
+}
+.pad-alpha input { width: 74px; accent-color: #2b2a27; }
+
 /* 1枚描き終えたことを、はっきり押せる場所にする */
 .pad-next {
   display: flex; align-items: center; gap: 6px;
@@ -573,6 +573,19 @@ a { color: var(--accent); }
   padding: 0 16px; height: 38px; border-radius: 999px; cursor: pointer;
 }
 .pad-next:active { transform: translateY(1px); }
+
+/*
+ * 広い画面では、お題を小窓に閉じ込める理由が無い。
+ * 左半分に写真、右半分にキャンバス。小窓は消す。
+ */
+@media (min-width: 900px) {
+  .pad-ref {
+    display: flex; align-items: center; justify-content: center;
+    flex: 0 0 46%; background: #14130f; padding: 12px; min-width: 0;
+  }
+  .pad-ref img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+  .ref-mini { display: none; }
+}
 
 /* ---------- カレンダー ---------- */
 
@@ -621,18 +634,6 @@ a { color: var(--accent); }
 .review-card { background: var(--surface); }
 .good-badge { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, transparent); }
 
-.due-list { list-style: none; padding: 0; margin: 10px 0; }
-.due-item {
-  display: flex; gap: 8px; align-items: baseline;
-  padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px;
-}
-.due-part {
-  flex: none; font-size: 11px; color: var(--good);
-  border: 1px solid color-mix(in srgb, var(--good) 40%, transparent);
-  border-radius: 999px; padding: 1px 8px;
-}
-.due-text { color: var(--text-soft); }
-
 .reminder-text {
   margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 14px;
   background: color-mix(in srgb, var(--good) 12%, transparent);
@@ -644,26 +645,7 @@ a { color: var(--accent); }
   display: block; margin-top: 4px; font-size: 11px; color: var(--danger);
 }
 
-.upcoming {
-  display: flex; align-items: flex-end; gap: 4px; height: 90px; margin: 12px 0 6px;
-}
-.up-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; gap: 4px; }
-.up-bar { background: var(--good); border-radius: 3px 3px 0 0; min-height: 3px; }
-.up-bar.empty { background: var(--surface-2); }
-.up-label { font-size: 10px; color: var(--muted); text-align: center; }
-
-.box-bars { margin-top: 14px; }
-.box-bars .bar { background: var(--good); }
-
 /* ---------- 解剖レッスン ---------- */
-
-.lesson-cta { background: none; border: none; box-shadow: none; padding: 4px; }
-/* 黄緑は塗りで使う。白地に線と文字だけだと、読める濃さまで落として結局くすむため */
-.lesson-chip {
-  background: var(--lime); border-color: var(--lime);
-  color: #17330a; font-weight: 700;
-}
-.lesson-chip:hover { filter: brightness(1.05); }
 
 .lesson-problem { font-size: 14px; margin: 8px 0 0; }
 
@@ -732,26 +714,6 @@ a { color: var(--accent); }
 .stat { text-align: center; }
 .stat-num { font-size: 24px; font-weight: 700; }
 .stat-label { font-size: 11px; color: var(--muted); }
-
-.heatmap {
-  display: grid; grid-template-rows: repeat(7, 1fr); grid-auto-flow: column;
-  gap: 3px; overflow-x: auto; padding-bottom: 4px;
-}
-.heatmap .cell { width: 12px; height: 12px; border-radius: 3px; background: var(--surface-2); }
-.cell.h0 { background: var(--line); }
-.cell.h1 { background: color-mix(in srgb, var(--accent) 40%, #fff); }
-.cell.h2 { background: color-mix(in srgb, var(--accent) 65%, #fff); }
-.cell.h3 { background: color-mix(in srgb, var(--accent) 85%, #fff); }
-.cell.h4 { background: var(--accent); }
-.cell.hx { background: transparent; }
-
-.heat-legend { display: flex; align-items: center; gap: 4px; margin-top: 8px; }
-.heat-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
-.heat-legend .h0 { background: var(--line); }
-.heat-legend .h1 { background: color-mix(in srgb, var(--accent) 40%, #fff); }
-.heat-legend .h2 { background: color-mix(in srgb, var(--accent) 65%, #fff); }
-.heat-legend .h3 { background: color-mix(in srgb, var(--accent) 85%, #fff); }
-.heat-legend .h4 { background: var(--accent); }
 
 .bar-row { display: grid; grid-template-columns: 118px 1fr 56px; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 13px; }
 .bar-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -825,20 +787,6 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 }
 .tabbar button.on { background: var(--cta-bg); color: var(--cta-ink); }
 
-/* ---------- 描いている最中の手順 ---------- */
-
-/*
- * 「何をすればいいか分からない」がいちばん多い詰まりどころなので、
- * 手順を描いている画面に出しっぱなしにする。読まなくても視界の端に入る位置。
- */
-.pad-steps {
-  position: absolute; left: 10px; bottom: 76px; margin: 0;
-  padding: 8px 12px 8px 28px; max-width: min(62vw, 300px);
-  list-style: decimal; color: #55534d; font-size: 13px; line-height: 1.7;
-  background: rgba(255, 253, 248, .88); border-radius: 12px; pointer-events: none;
-}
-.pad-steps li::marker { color: var(--brand-ink); font-weight: 700; }
-
 /* ---------- 設定シート ---------- */
 
 .setup-label { margin-top: 16px; display: block; }
@@ -872,3 +820,97 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 }
 .attempt .attempt-meta { font-size: 11px; color: var(--muted); margin-top: 4px; text-align: center; }
 .attempt.latest .attempt-meta { color: var(--brand-ink); font-weight: 700; }
+
+
+/* ---------- ブランド・言語切替 ---------- */
+
+.brand { display: flex; align-items: center; gap: 8px; }
+.beta {
+  font-size: 10px; font-weight: 700; letter-spacing: .04em;
+  color: var(--brand-ink); background: color-mix(in srgb, var(--brand) 22%, transparent);
+  border-radius: 999px; padding: 2px 8px; font-family: system-ui, sans-serif;
+}
+.lang-btn {
+  font: inherit; font-size: 12px; font-weight: 800; letter-spacing: .06em; cursor: pointer;
+  background: var(--surface); color: var(--text); border: none;
+  height: 40px; padding: 0 14px; border-radius: 999px;
+}
+.lang-btn:hover { background: var(--surface-2); }
+
+.count-pill { background: var(--surface-2); color: var(--text-soft); }
+.credit-note { margin: 18px 4px 0; }
+
+/* ---------- この1週間 ---------- */
+
+/*
+ * 時間ではなく枚数で出す。「今日は3枚描いた」のほうが、
+ * 「今日は12分やった」より、次に何をすればいいかが分かりやすい。
+ */
+.week-block { margin-top: 16px; }
+.week-bars { display: flex; gap: 6px; align-items: flex-end; margin-top: 6px; }
+.week-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.week-num { font-size: 11px; font-weight: 700; color: var(--brand-ink); height: 14px; }
+.week-track {
+  width: 100%; height: 52px; display: flex; align-items: flex-end;
+  background: var(--surface-2); border-radius: 8px; overflow: hidden;
+}
+.week-bar { width: 100%; background: var(--surface-2); border-radius: 8px; }
+.week-col.on .week-bar { background: var(--brand); }
+.week-dow { font-size: 10px; color: var(--muted); }
+
+/* ---------- デイリーの完了と、2周目の導線 ---------- */
+
+.done-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 14px; }
+.done-check {
+  width: 22px; height: 22px; border-radius: 50%; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--good); color: #fff; font-size: 13px; font-weight: 700;
+}
+.done-text { font-weight: 700; color: var(--good); }
+
+.free-badge {
+  display: inline-block; margin-top: 10px;
+  font-size: 11px; font-weight: 700; letter-spacing: .04em;
+  color: var(--lime-ink); background: color-mix(in srgb, var(--lime) 30%, transparent);
+  border-radius: 999px; padding: 3px 10px;
+}
+#pay-sheet h2 { font-size: 19px; }
+
+/* モードのカードに畳んだ説明を入れる。名前だけでは分からないものがあるので */
+.menu-card .why { margin-top: 8px; }
+.menu-card .why > summary { padding: 2px 0; }
+.menu-card .menu-sub { margin-top: 2px; }
+.big-chips .chip { font-size: 16px; padding: 10px 20px; }
+
+/* ---------- 描いた絵の並び ---------- */
+
+.strip-item { position: relative; }
+.strip-num {
+  position: absolute; left: 4px; top: 2px; font-size: 11px; font-weight: 700;
+  color: var(--muted);
+}
+.lightbox-actions { display: flex; gap: 10px; }
+.sheet-preview { margin-top: 12px; }
+.sheet-preview img {
+  width: 100%; border-radius: var(--radius-sm); background: #fffdf8; display: block;
+}
+
+/* ---------- 解剖学の本 ---------- */
+
+.book-tabs { margin-bottom: 12px; }
+.plate-ja { font-size: 16px; font-weight: 700; color: #fff; }
+.term-list { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 8px; }
+.term-list .label { width: 100%; }
+.term {
+  font-size: 12px; color: #e6e8ee;
+  background: rgba(255,255,255,.12); border-radius: 999px; padding: 2px 10px;
+}
+
+/* ---------- 管理画面 ---------- */
+
+.lib-badge {
+  position: absolute; left: 4px; top: 4px; font-size: 9px; font-weight: 700;
+  background: rgba(0,0,0,.6); color: #fff; border-radius: 999px; padding: 1px 7px;
+}
+.range { width: 100%; accent-color: var(--accent); margin: 6px 0 2px; }
+#screen-admin .input { margin-bottom: 6px; }

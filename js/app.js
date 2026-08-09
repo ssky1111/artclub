@@ -3,175 +3,214 @@
  */
 
 import {
-  MENUS, DRILLS, PRINCIPLES, CATEGORIES,
-  TIME_CHOICES, COUNT_CHOICES, timeLabel, buildCustomMenu,
-  levelFor, levelLabel, scaleMenu, menuDuration, focusForDate, availableCategories,
+  DAILY, MODES, PARTS, DRILLS, PRINCIPLES, PICKABLE_DRILLS,
+  TIME_CHOICES, COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu,
+  levelLabel, menuDuration, availableCategories,
 } from './theory.js';
 import {
   getSettings, saveSettings, getHistory, addSession, updateLastSession, clearAll,
-  dateKey, addDays, dailyTotals, stats,
+  dateKey, addDays, dailyTotals, drawingsByDay, totalDrawings, roundsToday, stats,
 } from './storage.js';
 import { LESSONS, PD_BOOKS, lessonById } from './anatomy.js';
 import { createPhotoQueue, localFiles, testUnsplashKey } from './images.js';
 import { searchPlatesMulti, createPlateQueue } from './commons.js';
 import {
   ensureLessonCards, cardsForLesson, dueCards, weakestLesson,
-  grade, reminderFor, injectWeakStep, buildReviewMenu, syncWeakParts,
+  grade, reminderFor, injectWeakStep, buildReviewMenu,
 } from './review.js';
 import { createSessionRunner } from './session.js';
 import { putDrawing, getDrawing, deleteAllDrawings, deleteAllPhotos, shrinkImage } from './db.js';
 import {
-  TAG_GROUPS, ALL_TAGS, allPhotos, addFiles, setTags, removePhoto, createLibraryQueue,
+  TAG_GROUPS, ALL_TAGS, allPhotos, everyPhoto, bundledPhotos, photoUrl,
+  addFiles, setTags, removePhoto, createLibraryQueue,
 } from './library.js';
 import {
-  totalXp, levelProgress, graceStreak, bestGraceStreak, badges, takeNewBadges, primeBadges,
-  takeLevelUp, dailyQuests, resetGame,
-} from './game.js';
+  loadManifest, getRepoConfig, saveRepoConfig, pushPhotos, testRepo,
+  manifestJson, fileNameFor, manifestPhotoUrl,
+} from './repo.js';
+import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp, resetGame } from './game.js';
+import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
+import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
-import { $, $$, el, showScreen, toast, fmtDuration } from './ui.js';
+import { $, $$, el, showScreen, toast } from './ui.js';
 import { icon, paintIcons } from './icons.js';
+import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 
 let settings = getSettings();
 let pendingDrawings = [];    // その回に描いた絵（保存前）
 
+/** 言語で切り替わる部分は、この関数を呼べば全部描き直る。 */
+function repaint() {
+  applyI18n();
+  paintIcons();
+  renderHome();
+  const screen = document.body.dataset.screen;
+  if (screen === 'log') renderLog();
+  if (screen === 'settings') renderSettings();
+  if (screen === 'library') renderLibrary();
+}
 
 /* ==================== ホーム ==================== */
 
 function renderHome() {
   const history = getHistory();
-  const s = stats(history);
-  const level = levelFor(s.sessions);
   const today = dateKey();
-  const focus = focusForDate(today);
   const { streak } = graceStreak(history);
   const xp = levelProgress(totalXp(history));
 
   $('#streak-count').textContent = String(streak);
   $('#level-num').textContent = `Lv.${xp.level}`;
-  $('#level-name').textContent = levelLabel(Math.min(5, xp.level));
+  $('#level-name').textContent = levelLabel(Math.min(5, xp.level), getLang());
   $('#xp-fill').style.width = `${xp.ratio * 100}%`;
 
   const doneToday = dailyTotals(history).has(today);
   const status = $('#today-status');
-  status.textContent = doneToday ? '今日は完了' : '今日はまだ';
+  status.textContent = doneToday ? t('home.todayDone') : t('home.todayYet');
   status.classList.toggle('done', doneToday);
 
-  $('#focus-title').textContent = focus.title;
-  $('#focus-desc').textContent = focus.desc;
+  // 「レベル」の隣に、これまで何枚描いてきたか。時間より枚数のほうが実感が出る
+  $('#total-drawings').textContent = t('home.totalDrawings', { n: totalDrawings(history) });
 
-  allPhotos().then((ps) => { $('#library-count').textContent = String(ps.length); }).catch(() => {});
-  renderStreakDots(history);
-  renderQuests(history);
-  renderBadges(history);
-  renderLessonChips();
-  renderMenus(level);
+  renderWeekBars(history);
+  renderDaily(history);
+  renderModes();
+  renderExtras();
 }
 
-function renderStreakDots(history) {
-  const totals = dailyTotals(history);
-  const wrap = $('#streak-dots');
+/** 直近7日、1日に何枚描いたか。棒の高さがそのまま枚数。 */
+function renderWeekBars(history) {
+  const byDay = drawingsByDay(history);
+  const wrap = $('#week-bars');
   wrap.innerHTML = '';
-  for (let i = 13; i >= 0; i--) {
-    const day = addDays(dateKey(), -i);
-    const dot = el('i', totals.has(day) ? 'dot on' : 'dot');
-    dot.title = day;
-    wrap.append(dot);
+  const days = [];
+  for (let i = 6; i >= 0; i--) days.push(addDays(dateKey(), -i));
+  const max = Math.max(1, ...days.map((d) => byDay.get(d) || 0));
+
+  const dow = getLang() === 'ja'
+    ? ['日', '月', '火', '水', '木', '金', '土']
+    : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+  for (const day of days) {
+    const count = byDay.get(day) || 0;
+    const col = el('div', `week-col${count ? ' on' : ''}`);
+    const track = el('div', 'week-track');
+    const bar = el('div', 'week-bar');
+    bar.style.height = `${count ? Math.max(12, (count / max) * 100) : 3}%`;
+    track.append(bar);
+    col.append(
+      el('div', 'week-num', count ? String(count) : ''),
+      track,
+      el('div', 'week-dow', dow[new Date(`${day}T00:00:00`).getDay()]),
+    );
+    col.title = `${day}：${count}`;
+    wrap.append(col);
   }
-}
-
-function renderQuests(history) {
-  const list = $('#quest-list');
-  list.innerHTML = '';
-  for (const quest of dailyQuests(history)) {
-    const item = el('li', `quest${quest.done ? ' done' : ''}`);
-    const main = el('div', 'quest-main');
-    main.append(el('div', 'quest-title', quest.title), el('div', 'quest-detail', quest.detail));
-    const mark = el('span', 'quest-mark');
-    mark.innerHTML = quest.done ? icon('check', 20) : '';
-    const ico = el('span', 'quest-icon');
-    ico.innerHTML = icon(quest.icon, 20);
-    item.append(ico, main, mark);
-    list.append(item);
-  }
-}
-
-function renderBadges(history) {
-  const list = badges(history);
-  const earned = list.filter((b) => b.earned).length;
-  $('#badge-count').textContent = `${earned} / ${list.length}`;
-
-  const grid = $('#badge-grid');
-  grid.innerHTML = '';
-  for (const badge of list) {
-    const item = el('div', `badge-item ${badge.earned ? 'earned' : 'locked'}`);
-    item.append(el('div', 'badge-face', badge.earned ? badge.icon : '？'),
-                el('div', 'badge-name', badge.earned ? badge.name : '？？？'));
-    item.title = badge.earned ? `${badge.name} — ${badge.desc}` : badge.desc;
-    grid.append(item);
-  }
-}
-
-/** レベルアップとバッジ獲得を、順番に1つずつ見せる。 */
-function celebrate(history = getHistory()) {
-  const events = [];
-  const level = takeLevelUp(totalXp(history));
-  if (level) events.push({ big: '🎉', title: `レベル ${level} になった`, sound: 'levelUp' });
-  for (const badge of takeNewBadges(history)) {
-    events.push({ big: badge.icon, title: `${badge.name} を獲得`, sound: 'badge' });
-  }
-  if (!events.length) return;
-
-  events.forEach((event, i) => {
-    setTimeout(() => {
-      if (settings.sfx) sfx[event.sound]?.();
-      const box = el('div', 'celebrate');
-      box.append(el('div', 'big', event.big), el('div', 'title', event.title));
-      document.body.append(box);
-      setTimeout(() => box.remove(), 1800);
-    }, i * 1400);
-  });
 }
 
 /**
- * 押すものが4つ並ぶと、どれを押すか考える時間ができてしまう。
- * ふだんは1枚だけ大きく出し、残りは下に小さく置く。
+ * きょうのデイリー。1日1周までは無料、2周目から先はいずれ有料にする。
+ * いまは全部開けてあるので「無料開放中」と書いておく。
  */
-function renderMenus(level) {
-  const menus = MENUS.map((base) => scaleMenu(base, level));
-  const primary = menus.find((m) => m.id === 'daily') || menus[0];
-
-  // カードは説明、押すのは黒いピル。カードごと黒く塗ると、どこを押すのか分からなくなる
+function renderDaily(history) {
+  const rounds = roundsToday('daily', history);
   const top = $('#menu-primary');
   top.innerHTML = '';
+
   const hero = el('div', 'card primary-card');
-  const cta = el('button', 'btn primary big', `はじめる（約${fmtDuration(menuDuration(primary))}）`);
-  cta.addEventListener('click', () => startSession(primary));
   hero.append(
-    el('div', 'menu-kicker', 'きょうの練習'),
-    el('div', 'menu-title big', primary.title),
-    el('div', 'menu-sub', primary.subtitle),
-    cta,
+    el('div', 'menu-kicker', t('home.todayLabel')),
+    el('div', 'menu-title big', tr(DAILY, 'title')),
+    el('div', 'menu-sub', tr(DAILY, 'subtitle')),
   );
+
+  if (rounds > 0) {
+    const done = el('div', 'done-row');
+    done.append(
+      el('span', 'done-check', '✓'),
+      el('span', 'done-text', rounds === 1 ? t('home.roundDone') : t('home.roundN', { n: rounds })),
+    );
+    hero.append(done);
+  }
+
+  const cta = el('button', 'btn primary big',
+    t('home.start', { d: fmtDur(menuDuration(DAILY)) }));
+  cta.addEventListener('click', () => {
+    // 2周目からは、いずれ課金の壁になるところ。いまは説明を出して素通しする
+    if (rounds > 0) return openPaywall();
+    startSession(DAILY);
+  });
+  hero.append(cta);
+
+  if (rounds > 0) hero.append(el('span', 'free-badge', t('home.freeNow')));
   top.append(hero);
+}
 
-  const wrap = $('#menu-cards');
+/** モードは3つだけ。 */
+function renderModes() {
+  const wrap = $('#mode-cards');
   wrap.innerHTML = '';
-
-  // 時間や枚数を自分で決めたいときはこちら
-  const custom = el('button', 'menu-card slim');
-  custom.append(el('div', 'menu-title', 'じぶんで決めて描く'),
-                el('div', 'menu-time', '何分・何枚・タグ'));
-  custom.addEventListener('click', openSetup);
-  wrap.append(custom);
-
-  for (const menu of menus) {
-    if (menu === primary) continue;
-    const card = el('button', 'menu-card slim');
-    card.append(el('div', 'menu-title', menu.title),
-                el('div', 'menu-time', `約${fmtDuration(menuDuration(menu))}`));
-    card.addEventListener('click', () => startSession(menu));
+  for (const mode of MODES) {
+    const card = el('button', 'menu-card');
+    card.append(
+      el('div', 'menu-title', tr(mode, 'title')),
+      el('div', 'menu-sub muted', tr(mode, 'subtitle')),
+    );
+    if (mode.steps) {
+      card.append(el('div', 'menu-time', fmtDur(menuDuration(mode))));
+    }
+    // ドリルの説明は、名前だけ見ても分からない人のために畳んで置いておく
+    const drill = DRILLS[mode.drillId];
+    if (drill?.about) {
+      const why = el('details', 'why');
+      const sum = el('summary', null, getLang() === 'ja' ? 'これって何？' : 'What is this?');
+      why.append(sum, el('p', null, tr(drill, 'about')));
+      why.addEventListener('click', (e) => e.stopPropagation());
+      card.append(why);
+    }
+    card.addEventListener('click', () => {
+      if (mode.picker === 'part') return openPartSheet();
+      startSession(mode);
+    });
     wrap.append(card);
   }
+}
+
+function renderExtras() {
+  const wrap = $('#extra-cards');
+  wrap.innerHTML = '';
+
+  const rows = [
+    { title: t('home.custom'), sub: t('home.customSub'), go: openSetup },
+    { title: t('home.library'), sub: '', go: openLibrary, count: true },
+    { title: t('home.books'), sub: t('home.booksSub'), go: openBooks },
+  ];
+
+  for (const row of rows) {
+    const card = el('button', 'menu-card slim');
+    card.append(el('div', 'menu-title', row.title));
+    const right = el('div', 'menu-time', row.sub);
+    if (row.count) {
+      right.textContent = '…';
+      everyPhoto().then((ps) => { right.textContent = fmtCount(ps.length); }).catch(() => {});
+    }
+    card.append(right);
+    card.addEventListener('click', row.go);
+    wrap.append(card);
+  }
+}
+
+function openPaywall() { $('#pay-sheet').hidden = false; }
+
+/** レベルアップだけ祝う（バッジは外した）。 */
+function celebrate(history = getHistory()) {
+  const level = takeLevelUp(totalXp(history));
+  if (!level) return;
+  if (settings.sfx) sfx.levelUp?.();
+  const box = el('div', 'celebrate');
+  box.append(el('div', 'big', '🎉'),
+             el('div', 'title', getLang() === 'ja' ? `レベル ${level} になった` : `Level ${level}`));
+  document.body.append(box);
+  setTimeout(() => box.remove(), 1800);
 }
 
 function renderCategories() {
@@ -179,11 +218,11 @@ function renderCategories() {
   wrap.innerHTML = '';
   for (const cat of availableCategories()) {
     const on = settings.categories.includes(cat.id);
-    const chip = el('button', `chip${on ? ' on' : ''}`, cat.label);
+    const chip = el('button', `chip${on ? ' on' : ''}`, getLang() === 'en' ? cat.en : cat.label);
     chip.addEventListener('click', () => {
       const next = new Set(settings.categories);
       next.has(cat.id) ? next.delete(cat.id) : next.add(cat.id);
-      if (next.size === 0) return toast('ジャンルは1つ以上えらんでください');
+      if (next.size === 0) return toast(t('toast.pickGenre'));
       settings = saveSettings({ categories: [...next] });
       renderCategories();
     });
@@ -191,12 +230,61 @@ function renderCategories() {
   }
 }
 
+/* ==================== 部位練習 ==================== */
+
+let currentPart = PARTS[0];
+
+function openPartSheet() {
+  renderPartChips();
+  $('#part-sheet').hidden = false;
+}
+
+function renderPartChips() {
+  const wrap = $('#part-chips');
+  wrap.innerHTML = '';
+  for (const part of PARTS) {
+    const chip = el('button', `chip${currentPart.id === part.id ? ' on' : ''}`,
+                    getLang() === 'en' ? part.en : part.label);
+    chip.addEventListener('click', () => { currentPart = part; renderPartChips(); });
+    wrap.append(chip);
+  }
+  const menu = buildPartMenu(currentPart);
+  $('#part-note').textContent = tr(menu, 'subtitle');
+
+  // 構造レッスンがある部位だけ、読みに行く導線を出す
+  const lesson = currentPart.lessonId ? lessonById(currentPart.lessonId) : null;
+  const link = $('#part-lesson');
+  link.hidden = !lesson;
+  if (lesson) {
+    link.textContent = getLang() === 'ja'
+      ? `${tr(lesson, 'name')}の構造を読む`
+      : `Read how the ${tr(lesson, 'name').toLowerCase()} are built`;
+    link.onclick = () => { $('#part-sheet').hidden = true; openLesson(lesson.id); };
+  }
+}
+
+function wirePartSheet() {
+  $('#part-close').addEventListener('click', () => { $('#part-sheet').hidden = true; });
+  $('#part-sheet').addEventListener('click', (e) => {
+    if (e.target.id === 'part-sheet') $('#part-sheet').hidden = true;
+  });
+  $('#part-start').addEventListener('click', () => {
+    $('#part-sheet').hidden = true;
+    startSession(buildPartMenu(currentPart), { tags: currentPart.tags, part: currentPart });
+  });
+
+  $('#pay-close').addEventListener('click', () => { $('#pay-sheet').hidden = true; });
+  $('#pay-sheet').addEventListener('click', (e) => {
+    if (e.target.id === 'pay-sheet') $('#pay-sheet').hidden = true;
+  });
+  $('#pay-continue').addEventListener('click', () => {
+    $('#pay-sheet').hidden = true;
+    startSession(DAILY);
+  });
+}
+
 /* ==================== はじめる前の設定 ==================== */
 
-/*
- * 「30秒固定では描けない」という声のとおり、時間は本人が決めるもの。
- * 何を・何分・何枚・どう描くか、をここで選んでから始める。
- */
 const setup = { tags: [], seconds: 60, count: 5, drill: 'gesture' };
 
 function openSetup() {
@@ -224,7 +312,7 @@ function renderSetupChips() {
   const time = $('#setup-time');
   time.innerHTML = '';
   for (const sec of TIME_CHOICES) {
-    const chip = el('button', `chip${setup.seconds === sec ? ' on' : ''}`, timeLabel(sec));
+    const chip = el('button', `chip${setup.seconds === sec ? ' on' : ''}`, fmtDur(sec));
     chip.addEventListener('click', () => { setup.seconds = sec; renderSetupChips(); });
     time.append(chip);
   }
@@ -232,23 +320,21 @@ function renderSetupChips() {
   const count = $('#setup-count');
   count.innerHTML = '';
   for (const n of COUNT_CHOICES) {
-    const chip = el('button', `chip${setup.count === n ? ' on' : ''}`, `${n}枚`);
+    const chip = el('button', `chip${setup.count === n ? ' on' : ''}`, fmtCount(n));
     chip.addEventListener('click', () => { setup.count = n; renderSetupChips(); });
     count.append(chip);
   }
 
   const drills = $('#setup-drill');
   drills.innerHTML = '';
-  // ネガティブスペースやシルエットは毎日やるものではないが、
-  // 詰まったときに効くので、選べるところには置いておく
-  for (const id of ['gesture', 'croquis', 'mass', 'landmark', 'contour',
-                    'negative', 'squint', 'notan', 'memory']) {
-    const chip = el('button', `chip${setup.drill === id ? ' on' : ''}`, DRILLS[id].name);
+  for (const id of PICKABLE_DRILLS) {
+    const chip = el('button', `chip${setup.drill === id ? ' on' : ''}`, tr(DRILLS[id], 'name'));
     chip.addEventListener('click', () => { setup.drill = id; renderSetupChips(); });
     drills.append(chip);
   }
-  $('#setup-drill-note').textContent = (DRILLS[setup.drill].steps || []).join(' → ');
-  $('#setup-total').textContent = fmtDuration(setup.seconds * setup.count);
+  $('#setup-drill-note').textContent = tr(DRILLS[setup.drill], 'about')
+    || (tr(DRILLS[setup.drill], 'steps') || []).join(' → ');
+  $('#setup-start').textContent = t('setup.start', { d: fmtDur(setup.seconds * setup.count) });
 }
 
 function wireSetup() {
@@ -272,7 +358,7 @@ async function openLibrary() {
 }
 
 async function renderLibrary() {
-  const photos = await allPhotos({ fresh: true });
+  const photos = await everyPhoto({ fresh: true });
   $('#lib-empty').hidden = photos.length > 0;
 
   const filter = $('#lib-filter');
@@ -289,26 +375,30 @@ async function renderLibrary() {
   }
 
   const shown = libFilter.length
-    ? photos.filter((p) => libFilter.every((t) => p.tags.includes(t)))
+    ? photos.filter((p) => libFilter.every((tag) => p.tags.includes(tag)))
     : photos;
 
-  const grid = $('#lib-grid');
+  fillPhotoGrid($('#lib-grid'), shown, openPhoto);
+}
+
+function fillPhotoGrid(grid, photos, onPick) {
   grid.innerHTML = '';
-  for (const photo of shown) {
+  for (const photo of photos) {
     const item = el('button', 'lib-item');
     const img = el('img');
-    img.src = URL.createObjectURL(photo.blob);
+    img.src = photoUrl(photo);
+    img.loading = 'lazy';
     item.append(img);
+    if (photo.bundled) item.append(el('span', 'lib-badge', t('lib.builtin')));
     if (photo.tags.length) item.append(el('div', 'lib-tags', photo.tags.join('・')));
-    item.addEventListener('click', () => openPhoto(photo));
+    item.addEventListener('click', () => onPick(photo));
     grid.append(item);
   }
-  $('#library-count').textContent = String(photos.length);
 }
 
 /** 写真1枚。タグを付け替えられて、これまでの記録も見られる。 */
 function openPhoto(photo) {
-  $('#photo-big').src = URL.createObjectURL(photo.blob);
+  $('#photo-big').src = photoUrl(photo);
 
   const tags = $('#photo-tags');
   tags.innerHTML = '';
@@ -317,7 +407,9 @@ function openPhoto(photo) {
     const row = el('div', 'chips');
     for (const tag of group.tags) {
       const chip = el('button', `chip${photo.tags.includes(tag) ? ' on' : ''}`, tag);
-      chip.addEventListener('click', async () => {
+      // 同梱の写真のタグはリポジトリ側の manifest が持っているので、ここでは触らせない
+      if (photo.bundled) chip.disabled = true;
+      else chip.addEventListener('click', async () => {
         const next = new Set(photo.tags);
         next.has(tag) ? next.delete(tag) : next.add(tag);
         photo.tags = [...next];
@@ -332,8 +424,10 @@ function openPhoto(photo) {
 
   renderPhotoHistory(photo.id);
 
-  $('#photo-delete').onclick = async () => {
-    if (!confirm('この写真を消します。よろしいですか？')) return;
+  const del = $('#photo-delete');
+  del.hidden = !!photo.bundled;
+  del.onclick = async () => {
+    if (!confirm(t('lib.deleteConfirm'))) return;
     await removePhoto(photo.id);
     $('#photo-sheet').hidden = true;
     renderLibrary();
@@ -352,7 +446,7 @@ function renderPhotoHistory(photoId) {
     }
   }
   if (!attempts.length) {
-    wrap.append(el('p', 'muted small', 'まだこの写真では描いていません。'));
+    wrap.append(el('p', 'muted small', t('lib.noneYet')));
     return;
   }
   attempts.forEach(({ entry, shot }, i) => {
@@ -362,22 +456,21 @@ function renderPhotoHistory(photoId) {
       .then((blob) => { if (blob) img.src = URL.createObjectURL(blob); })
       .catch(() => {});
     box.append(img, el('div', 'attempt-meta',
-      `${entry.date}・${shot.seconds ? fmtDuration(shot.seconds) : '—'}`));
+      `${entry.date}・${shot.seconds ? fmtDur(shot.seconds) : '—'}`));
     wrap.append(box);
   });
 }
 
 function wireLibrary() {
-  $('#library-cta').addEventListener('click', openLibrary);
   $('#lib-add').addEventListener('click', () => $('#lib-input').click());
   $('#lib-input').addEventListener('change', async (e) => {
     const files = [...(e.target.files || [])];
     if (!files.length) return;
-    toast(`${files.length}枚を取り込んでいます…`);
+    toast(t('lib.importing', { n: files.length }));
     const added = await addFiles(files, libFilter);
     e.target.value = '';
     await renderLibrary();
-    toast(`${added.length}枚いれました。タップしてタグを付けてください`);
+    toast(t('lib.imported', { n: added.length }));
   });
   $('#photo-close').addEventListener('click', () => { $('#photo-sheet').hidden = true; });
   $('#photo-sheet').addEventListener('click', (e) => {
@@ -385,17 +478,188 @@ function wireLibrary() {
   });
 }
 
-/* ==================== 解剖レッスン ==================== */
+/* ==================== 管理画面（#admin） ==================== */
 
-function renderLessonChips() {
-  const wrap = $('#lesson-chips');
+const PASS_KEY = 'drawpamine.admin.v1';
+let adminOpen = false;
+
+async function hash(text) {
+  if (!crypto?.subtle) return `plain:${text}`;      // file:// では subtle が無いことがある
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function storedPass() {
+  try { return localStorage.getItem(PASS_KEY) || ''; } catch { return ''; }
+}
+
+async function openAdmin() {
+  showScreen('admin');
+  const hasPass = !!storedPass();
+  $('#admin-gate-note').textContent = hasPass ? t('admin.enterPass') : t('admin.setPass');
+  $('#admin-pass').value = '';
+  $('#admin-msg').textContent = '';
+  $('#admin-gate').hidden = adminOpen;
+  $('#admin-body').hidden = !adminOpen;
+  $('#admin-lock').hidden = !adminOpen;
+  if (adminOpen) await renderAdmin();
+}
+
+async function renderAdmin() {
+  const [mine, bundled] = await Promise.all([allPhotos({ fresh: true }), bundledPhotos()]);
+
+  const untagged = mine.filter((p) => !p.tags.length).length;
+  $('#admin-untagged').textContent = untagged ? t('admin.needTag', { n: untagged }) : '';
+  fillPhotoGrid($('#admin-grid'), mine, openPhoto);
+  fillPhotoGrid($('#admin-bundled'), bundled, openPhoto);
+
+  const cfg = getRepoConfig();
+  $('#repo-path').value = cfg.owner && cfg.repo ? `${cfg.owner}/${cfg.repo}` : '';
+  $('#repo-branch').value = cfg.branch || 'main';
+  $('#repo-token').value = cfg.token || '';
+  $('#repo-push').textContent = t('admin.push', { n: mine.length });
+}
+
+function readRepoForm() {
+  const [owner, repo] = ($('#repo-path').value || '').trim().split('/');
+  return saveRepoConfig({
+    owner: (owner || '').trim(),
+    repo: (repo || '').trim(),
+    branch: ($('#repo-branch').value || 'main').trim(),
+    token: ($('#repo-token').value || '').trim(),
+  });
+}
+
+function wireAdmin() {
+  $('#admin-enter').addEventListener('click', async () => {
+    const value = $('#admin-pass').value;
+    if (!value) return void ($('#admin-msg').textContent = t('admin.enterPass'));
+    const digest = await hash(value);
+    if (!storedPass()) {
+      try { localStorage.setItem(PASS_KEY, digest); } catch { /* 保存できなくても開ける */ }
+    } else if (storedPass() !== digest) {
+      $('#admin-msg').textContent = t('admin.wrong');
+      return;
+    }
+    adminOpen = true;
+    await openAdmin();
+  });
+
+  $('#admin-pass').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') $('#admin-enter').click();
+  });
+
+  $('#admin-lock').addEventListener('click', () => { adminOpen = false; openAdmin(); });
+  $('#admin-open').addEventListener('click', () => { location.hash = '#admin'; openAdmin(); });
+
+  $('#admin-add').addEventListener('click', () => $('#admin-input').click());
+  $('#admin-input').addEventListener('change', async (e) => {
+    const files = [...(e.target.files || [])];
+    if (!files.length) return;
+    toast(t('lib.importing', { n: files.length }));
+    const added = await addFiles(files, []);
+    e.target.value = '';
+    await renderAdmin();
+    toast(t('lib.imported', { n: added.length }));
+  });
+
+  $('#repo-test').addEventListener('click', async () => {
+    const cfg = readRepoForm();
+    const status = $('#repo-status');
+    status.textContent = '…';
+    try {
+      const info = await testRepo(cfg);
+      status.textContent = `OK — ${info.name}${info.canPush ? '' : '（書き込み権限なし）'}`;
+    } catch (err) {
+      status.textContent = `NG：${err.message}`;
+    }
+  });
+
+  $('#repo-push').addEventListener('click', async () => {
+    const cfg = readRepoForm();
+    const status = $('#repo-status');
+    const mine = await allPhotos({ fresh: true });
+    if (!mine.length) return void (status.textContent = t('lib.empty'));
+    try {
+      await pushPhotos(cfg, mine, (i, n) => { status.textContent = t('admin.pushing', { i, n }); });
+      status.textContent = t('admin.pushed', { n: mine.length });
+      await loadManifest({ fresh: true });
+      await renderAdmin();
+    } catch (err) {
+      status.textContent = t('admin.pushFail', { m: err.message });
+    }
+  });
+
+  // トークンを使いたくない人向け。落としたものを photos/ に置いて commit すれば同じ結果になる
+  $('#repo-export').addEventListener('click', async () => {
+    const mine = await allPhotos({ fresh: true });
+    if (!mine.length) return void toast(t('lib.empty'));
+    const entries = mine.map((p) => ({
+      file: fileNameFor(p), tags: p.tags || [], name: p.name || null, source: 'Unsplash',
+    }));
+    downloadBlob(new Blob([manifestJson(entries)], { type: 'application/json' }), 'manifest.json');
+    for (let i = 0; i < mine.length; i++) {
+      await new Promise((r) => setTimeout(r, 350));
+      downloadBlob(mine[i].blob, fileNameFor(mine[i]));
+    }
+  });
+}
+
+/* ==================== 解剖学の本 ==================== */
+
+let currentBook = PD_BOOKS[0];
+
+function openBooks() {
+  showScreen('books');
+  renderBookTabs();
+  renderBook();
+}
+
+function renderBookTabs() {
+  const wrap = $('#book-tabs');
   wrap.innerHTML = '';
-  for (const lesson of LESSONS) {
-    const chip = el('button', 'chip lesson-chip', lesson.name);
-    chip.addEventListener('click', () => openLesson(lesson.id));
+  for (const book of PD_BOOKS) {
+    const chip = el('button', `chip${currentBook.id === book.id ? ' on' : ''}`, book.author);
+    chip.addEventListener('click', () => { currentBook = book; renderBookTabs(); renderBook(); });
     wrap.append(chip);
   }
 }
+
+function renderBook() {
+  const book = currentBook;
+  $('#book-title').textContent = getLang() === 'ja'
+    ? `${book.titleJa}（${book.title}）`
+    : `${book.title} — ${book.author}, ${book.year}`;
+  $('#book-note').textContent = `${book.author}, ${book.year} — ${tr(book, 'note')}`;
+  $('#book-gallery').innerHTML = '';
+  $('#book-status').textContent = '';
+  loadBookPlates(book);
+}
+
+async function loadBookPlates(book) {
+  const gallery = $('#book-gallery');
+  const status = $('#book-status');
+  status.textContent = t('books.loading');
+  try {
+    const plates = await searchPlatesMulti(book.queries, { limit: 8, width: 900 });
+    if (!plates.length) { status.textContent = t('books.none'); return; }
+    status.textContent = '';
+    for (const plate of plates.slice(0, 16)) {
+      const thumb = el('button', 'plate-thumb');
+      const img = el('img');
+      img.src = plate.url;
+      img.alt = plate.title;
+      img.loading = 'lazy';
+      thumb.append(img);
+      thumb.addEventListener('click', () => openLightbox(plate, { translate: true }));
+      gallery.append(thumb);
+    }
+  } catch (err) {
+    status.textContent = `${t('books.none')}（${err.message}）`;
+  }
+}
+
+/* ==================== 解剖レッスン ==================== */
 
 let currentLesson = null;
 
@@ -404,24 +668,23 @@ function openLesson(id) {
   if (!lesson) return;
   currentLesson = lesson;
 
-  $('#lesson-name').textContent = lesson.name;
-  $('#lesson-tagline').textContent = lesson.tagline;
-  $('#lesson-problem').textContent = lesson.problem;
+  $('#lesson-name').textContent = tr(lesson, 'name');
+  $('#lesson-tagline').textContent = tr(lesson, 'tagline');
+  $('#lesson-problem').textContent = tr(lesson, 'problem');
 
   const steps = $('#lesson-steps');
   steps.innerHTML = '';
-  for (const step of lesson.steps) {
+  for (const step of tr(lesson, 'steps')) {
     const item = el('div', 'lesson-step');
     item.append(el('h3', null, step.title), el('p', null, step.body));
     steps.append(item);
   }
 
-  fillList('#lesson-landmarks', lesson.landmarks);
-  fillList('#lesson-proportions', lesson.proportions);
+  fillList('#lesson-proportions', tr(lesson, 'proportions'));
 
   const mistakes = $('#lesson-mistakes');
   mistakes.innerHTML = '';
-  for (const m of lesson.mistakes) {
+  for (const m of tr(lesson, 'mistakes')) {
     const row = el('div', 'mistake');
     row.append(el('div', 'mistake-bad', `✕ ${m.bad}`), el('div', 'mistake-fix', `→ ${m.fix}`));
     mistakes.append(row);
@@ -429,9 +692,9 @@ function openLesson(id) {
 
   const books = $('#lesson-books');
   books.innerHTML = '';
-  books.append(el('div', 'label', '出典（すべて著作権保護期間が満了した書籍）'));
+  books.append(el('div', 'label', t('lesson.sources')));
   for (const b of PD_BOOKS) {
-    books.append(el('p', 'muted small', `${b.author}『${b.title}』${b.year} — ${b.note}`));
+    books.append(el('p', 'muted small', `${b.author}『${b.title}』${b.year} — ${tr(b, 'note')}`));
   }
 
   $('#lesson-review').hidden = dueCards().every((c) => c.lessonId !== lesson.id);
@@ -452,14 +715,10 @@ async function loadPlates(lesson) {
   const gallery = $('#plate-gallery');
   const status = $('#plate-status');
   gallery.innerHTML = '';
-  status.textContent = '図版を探しています…';
+  status.textContent = t('books.loading');
   try {
     const plates = await searchPlatesMulti(lesson.refQueries, { limit: 8, width: 800 });
-    if (!plates.length) {
-      status.textContent = '図版が見つかりませんでした（通信環境かCommons側の問題かもしれません）。' +
-                           '解説と練習はこのまま使えます。';
-      return;
-    }
+    if (!plates.length) { status.textContent = t('books.none'); return; }
     status.textContent = '';
     for (const plate of plates.slice(0, 12)) {
       const thumb = el('button', 'plate-thumb');
@@ -468,25 +727,45 @@ async function loadPlates(lesson) {
       img.alt = plate.title;
       img.loading = 'lazy';
       thumb.append(img);
-      thumb.addEventListener('click', () => openLightbox(plate));
+      thumb.addEventListener('click', () => openLightbox(plate, { translate: true }));
       gallery.append(thumb);
     }
   } catch (err) {
-    status.textContent = `図版を取得できませんでした（${err.message}）。解説と練習はこのまま使えます。`;
+    status.textContent = `${t('books.none')}（${err.message}）`;
   }
 }
 
-function openLightbox(plate) {
+/**
+ * 図版の拡大。英語のタイトルはそのまま出しても読めないので、
+ * 用語辞書で置き換えた日本語と、出てくる用語の対訳表を下に付ける。
+ */
+function openLightbox(plate, { translate = false } = {}) {
   $('#lightbox-img').src = plate.url;
   $('#lightbox-img').alt = plate.title;
   const caption = $('#lightbox-caption');
   caption.innerHTML = '';
-  caption.append(el('div', null, plate.title));
+
+  if (translate && getLang() === 'ja') {
+    caption.append(el('div', 'plate-ja', translateTitle(plate.title)));
+    caption.append(el('div', 'muted small', `${t('books.original')}：${plate.title}`));
+    const terms = termsIn(`${plate.title} ${plate.description || ''}`);
+    if (terms.length) {
+      const list = el('div', 'term-list');
+      list.append(el('div', 'label', t('books.glossary')));
+      for (const term of terms.slice(0, 14)) {
+        list.append(el('span', 'term', `${term.en} = ${term.ja}`));
+      }
+      caption.append(list);
+    }
+  } else {
+    caption.append(el('div', null, plate.title));
+  }
+
   const credit = el('div', 'muted small');
   credit.textContent = `${plate.credit.name} / ${plate.credit.source}`;
   caption.append(credit);
   if (plate.credit.link) {
-    const a = el('a', 'small', 'Commons で見る');
+    const a = el('a', 'small', 'Wikimedia Commons');
     a.href = plate.credit.link;
     a.target = '_blank';
     a.rel = 'noopener';
@@ -497,6 +776,7 @@ function openLightbox(plate) {
 
 function wireLesson() {
   $('#plate-reload').addEventListener('click', () => currentLesson && loadPlates(currentLesson));
+  $('#book-reload').addEventListener('click', () => renderBook());
   $('#lesson-practice').addEventListener('click', () => currentLesson && startLesson(currentLesson));
   $('#lesson-review').addEventListener('click', () => {
     if (currentLesson) startMenuWithLesson(buildReviewMenu(currentLesson), currentLesson, 'weak');
@@ -514,7 +794,7 @@ const runner = createSessionRunner({
   onQuit: (partial) => {
     if (partial) {
       saveResult(partial);
-      toast(`途中まででも記録しました（${Math.round(partial.seconds / 60)}分）`);
+      toast(t('toast.partial', { m: Math.round(partial.seconds / 60) }));
     }
     renderHome();
     showScreen('home');
@@ -529,19 +809,22 @@ const notice = (msg) => toast(msg);
  * ふだんのメニュー。期限の来た復習があれば、その部位のドリルを1本ねじ込む。
  * 復習を別画面のタスクにすると誰もやらないので、いつもの導線に混ぜてしまう。
  */
-async function startSession(menu, { tags = null } = {}) {
-  lastStart = () => startSession(menu, { tags });
+async function startSession(menu, { tags = null, part = null } = {}) {
+  lastStart = () => startSession(menu, { tags, part });
   settings = getSettings();
   const weak = weakestLesson();
 
-  // 自分の写真が1枚でも入っていればそこから出す。
-  // タグを選んだときだけ使う作りだと、入れた写真がふだんの練習に出てこない。
-  const own = await allPhotos().catch(() => []);
-  const useLibrary = tags?.length ? true : own.length > 0;
+  // 自分の写真（＋リポジトリ同梱）が1枚でもあればそこから出す。
+  const own = await everyPhoto().catch(() => []);
+  const matching = tags?.length
+    ? own.filter((p) => tags.every((tag) => p.tags.includes(tag)))
+    : own;
+  const useLibrary = matching.length > 0;
+
   const queues = {
     photo: useLibrary
       ? createLibraryQueue(tags || [], notice)
-      : createPhotoQueue(settings, notice),
+      : createPhotoQueue(settings, notice, part?.query ? { queryOverride: part.query } : {}),
   };
   if (weak) {
     queues[`weak:${weak.id}`] =
@@ -551,9 +834,9 @@ async function startSession(menu, { tags = null } = {}) {
     menu: weak ? injectWeakStep(menu, weak) : menu,
     queues,
     settings,
-    focus: focusForDate(dateKey()),
-    lessonId: weak?.id || null,
+    lessonId: part?.lessonId || weak?.id || null,
     lessonMode: 'weak',
+    focus: { id: null },
     reminder: weak ? reminderFor(weak.id) : null,
   });
 }
@@ -571,14 +854,14 @@ function startLesson(lesson) {
       plate: createPlateQueue(lesson.refQueries, notice),
     },
     settings,
-    focus: focusForDate(dateKey()),
+    focus: { id: null },
     lessonId: lesson.id,
     lessonMode: 'lesson',
     reminder: reminderFor(lesson.id),
   });
 }
 
-/** 復習だけをやる（ホームの「◯◯を復習」から）。 */
+/** 復習だけをやる。 */
 function startMenuWithLesson(menu, lesson, lessonMode) {
   lastStart = () => startMenuWithLesson(menu, lesson, lessonMode);
   settings = getSettings();
@@ -587,7 +870,7 @@ function startMenuWithLesson(menu, lesson, lessonMode) {
     menu,
     queues: { photo: partPhotos, [`weak:${lesson.id}`]: partPhotos },
     settings,
-    focus: focusForDate(dateKey()),
+    focus: { id: null },
     lessonId: lesson.id,
     lessonMode,
     reminder: reminderFor(lesson.id),
@@ -608,37 +891,30 @@ function finishSession(result) {
   const entry = saveResult(result);
   if (settings.sfx) sfx.fanfare();
 
-  // 画面内のキャンバスに描いていたら、撮り直さなくていいように引き継ぐ
   pendingDrawings = result.drawings || [];
   renderDrawingStrip();
   $('#review-note').value = '';
+  $('#sheet-preview').hidden = true;
   $$('.rate-btn').forEach((b) => b.classList.remove('on'));
 
-  const focus = focusForDate(entry.date);
-  $('#review-focus').textContent = focus.title;
   renderReviewChecks(entry.lessonId, entry.lessonMode);
 
   const drillLines = Object.entries(entry.byDrill)
-    .map(([id, sec]) => `<li><span>${DRILLS[id]?.name || id}</span><b>${fmtDuration(sec)}</b></li>`)
+    .map(([id, sec]) => `<li><span>${tr(DRILLS[id], 'name') || id}</span><b>${fmtDur(sec)}</b></li>`)
     .join('');
   const s = stats();
   const short = entry.seconds < 60;
   $('#review-summary').innerHTML =
     `<div class="review-big">${short ? entry.seconds : Math.round(entry.seconds / 60)}` +
-    `<span>${short ? '秒' : '分'}</span></div>` +
+    `<span>${short ? t('common.sec') : t('common.min')}</span></div>` +
     `<ul class="review-drills">${drillLines}</ul>` +
-    `<div class="muted small">連続 ${s.streak} 日 / 通算 ${s.sessions} 回</div>`;
+    `<div class="muted small">${t('rev.streakLine', { s: s.streak, n: s.sessions })}</div>`;
 
   showScreen('review');
 }
 
 /* ==================== ふりかえり ==================== */
 
-/**
- * その部位のチェック項目を出す。ここでの ○✕ がそのまま復習カードの採点になる。
- * レッスンをやった直後は全項目、ふだんのメニューに苦手が混ざっただけのときは
- * 期限の来ているものだけを出す（毎回全部聞かれると答えるのが面倒になるため）。
- */
 function renderReviewChecks(lessonId, lessonMode) {
   const card = $('#review-checks-card');
   const list = $('#review-checks');
@@ -667,25 +943,53 @@ function renderReviewChecks(lessonId, lessonMode) {
   }
 }
 
-/** その回に描いた絵をならべる。押すと外せる。 */
+/**
+ * その回に描いた絵をならべる。
+ * 以前はここを押すと消えていた。押して消えるのは事故にしかならないので、
+ * 押したら大きくなり、消すのは拡大した先でもう一度選ぶ形にした。
+ */
 function renderDrawingStrip() {
   const strip = $('#drawing-strip');
   strip.innerHTML = '';
   strip.hidden = pendingDrawings.length === 0;
-  $('#drawing-count').textContent = pendingDrawings.length
-    ? `${pendingDrawings.length}枚`
-    : '';
+  $('#dl-all').disabled = pendingDrawings.length === 0;
+  $('#make-sheet').disabled = pendingDrawings.length === 0;
+
   pendingDrawings.forEach((shot, i) => {
     const item = el('button', 'strip-item');
     const img = el('img');
     img.src = URL.createObjectURL(shot.blob);
-    item.append(img);
-    item.title = '押すと外す';
-    item.addEventListener('click', () => {
-      pendingDrawings.splice(i, 1);
-      renderDrawingStrip();
-    });
+    item.append(img, el('span', 'strip-num', String(i + 1)));
+    item.addEventListener('click', () => openDrawing(i));
     strip.append(item);
+  });
+}
+
+let drawingIndex = -1;
+
+function openDrawing(index) {
+  const shot = pendingDrawings[index];
+  if (!shot) return;
+  drawingIndex = index;
+  $('#draw-img').src = URL.createObjectURL(shot.blob);
+  $('#draw-lightbox').hidden = false;
+}
+
+function wireDrawingLightbox() {
+  const close = () => { $('#draw-lightbox').hidden = true; drawingIndex = -1; };
+  $('#draw-close').addEventListener('click', close);
+  $('#draw-lightbox').addEventListener('click', (e) => {
+    if (e.target.id === 'draw-lightbox') close();
+  });
+  $('#draw-dl').addEventListener('click', () => {
+    const shot = pendingDrawings[drawingIndex];
+    if (shot) downloadBlob(shot.blob, `drawpamine-${dateKey()}-${drawingIndex + 1}.jpg`);
+  });
+  $('#draw-remove').addEventListener('click', () => {
+    if (drawingIndex < 0) return;
+    pendingDrawings.splice(drawingIndex, 1);
+    close();
+    renderDrawingStrip();
   });
 }
 
@@ -703,10 +1007,36 @@ function wireReview() {
     const files = [...(e.target.files || [])];
     for (const file of files) {
       try { pendingDrawings.push({ blob: await shrinkImage(file), photoId: null, seconds: null }); }
-      catch { toast('画像を読み込めませんでした'); }
+      catch { toast(t('toast.imgFail')); }
     }
     renderDrawingStrip();
     e.target.value = '';
+  });
+
+  $('#dl-all').addEventListener('click', () => {
+    downloadEach(pendingDrawings.map((s) => s.blob), `drawpamine-${dateKey()}`);
+  });
+
+  // その回の全部を1枚に。シェアするとき、絵が何枚も並んでいるほうが伝わる
+  $('#make-sheet').addEventListener('click', async () => {
+    const blob = await composeSheet(pendingDrawings.map((s) => s.blob), {
+      title: 'DRAWPAMINE',
+      subtitle: `${dateKey()} · ${fmtCount(pendingDrawings.length)}`,
+    });
+    if (!blob) return;
+    sheetBlob = blob;
+    $('#sheet-img').src = URL.createObjectURL(blob);
+    $('#sheet-preview').hidden = false;
+    toast(t('rev.sheetDone'));
+  });
+
+  $('#sheet-dl').addEventListener('click', () => {
+    if (sheetBlob) downloadBlob(sheetBlob, `drawpamine-${dateKey()}.jpg`);
+  });
+
+  $('#share-x').addEventListener('click', () => {
+    const seconds = getHistory().at(-1)?.seconds || 0;
+    shareToX(t('rev.shareText', { n: pendingDrawings.length, d: fmtDur(seconds) }));
   });
 
   $('#review-save').addEventListener('click', async () => {
@@ -716,26 +1046,25 @@ function wireReview() {
     for (const btn of checkBtns) {
       const ok = btn.classList.contains('on');
       grade(btn.dataset.cardId, ok);          // ここで次に出る日が決まる
-      if (!ok) missed.push(btn.firstChild.textContent);
+      if (!ok) missed.push(btn.textContent);
     }
     const entry = updateLastSession({
       rating: rated ? Number(rated.dataset.rate) : null,
       note: $('#review-note').value.trim() || null,
       hasDrawing: pendingDrawings.length > 0,
       drawingCount: pendingDrawings.length || null,
-      // どの写真を何秒で描いたか。あとで「前は何分だったか」を出すのに使う
       shots: pendingDrawings.map((shot, i) => ({
         index: i, photoId: shot.photoId || null, seconds: shot.seconds || null,
       })),
-      missed: missed.length ? missed : null,   // 次回の宿題になる
+      missed: missed.length ? missed : null,
     });
     if (entry) {
       try {
-        // 1枚目がカレンダーの顔になる
         await Promise.all(pendingDrawings.map((shot, i) => putDrawing(`${entry.id}#${i}`, shot.blob)));
-      } catch { toast('絵の保存に失敗しました（記録は残ります）'); }
+      } catch { toast(t('toast.saveFail')); }
     }
     pendingDrawings = [];
+    sheetBlob = null;
     renderHome();
     showScreen('home');
     celebrate();
@@ -743,6 +1072,8 @@ function wireReview() {
 
   $('#review-again').addEventListener('click', () => lastStart?.());
 }
+
+let sheetBlob = null;
 
 /* ==================== 記録 ==================== */
 
@@ -752,13 +1083,19 @@ function renderLog() {
   $('#st-streak').textContent = String(graceStreak(history).streak);
   $('#st-best').textContent = String(bestGraceStreak(history));
   $('#st-minutes').textContent = String(s.minutes);
+  $('#st-drawings').textContent = String(totalDrawings(history));
+
+  const dow = $('#cal-dow');
+  dow.innerHTML = '';
+  const labels = getLang() === 'ja'
+    ? ['日', '月', '火', '水', '木', '金', '土']
+    : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  for (const label of labels) dow.append(el('span', null, label));
 
   renderCalendar(history);
   renderDrillBars(s);
   renderNotes(history);
 }
-
-/* ---------- 絵を貼るカレンダー ---------- */
 
 let calMonth = null;   // 'YYYY-MM'
 
@@ -775,17 +1112,14 @@ function shiftMonth(key, delta) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-/**
- * 月表示のカレンダー。その日に描いた絵の写真があればマスに貼り、
- * 無ければ練習量で色を濃くする。「過去が見える」ことが続ける理由になるので。
- */
 function renderCalendar(history = getHistory()) {
   calMonth ||= monthKey(dateKey());
   const [year, month] = calMonth.split('-').map(Number);
-  $('#cal-title').textContent = `${year}年 ${month}月`;
+  $('#cal-title').textContent = getLang() === 'ja'
+    ? `${year}年 ${month}月`
+    : new Date(year, month - 1, 1).toLocaleString('en', { month: 'long', year: 'numeric' });
 
   const totals = dailyTotals(history);
-  // 1日にセッションが複数あることがあるので、絵がある方を優先して1つ選ぶ
   const byDay = new Map();
   for (const entry of history) {
     const current = byDay.get(entry.date);
@@ -815,47 +1149,64 @@ function renderCalendar(history = getHistory()) {
       const img = el('img');
       loadDrawing(entry.id).then((blob) => { if (blob) img.src = URL.createObjectURL(blob); }).catch(() => {});
       cell.prepend(img);
-    } else if (entry?.lessonId) {
-      cell.append(el('span', 'cal-dot', '🦴'));
     }
 
-    cell.title = seconds ? `${dayKey}：${fmtDuration(seconds)}` : dayKey;
+    cell.title = seconds ? `${dayKey}：${fmtDur(seconds)}` : dayKey;
     cell.addEventListener('click', () => openDaySheet(dayKey, history));
     grid.append(cell);
   }
 }
 
-function openDaySheet(dayKey, history = getHistory()) {
+/** その日に描いたものを全部ならべる。押すと拡大＋ダウンロード。 */
+async function openDaySheet(dayKey, history = getHistory()) {
   const entries = history.filter((h) => h.date === dayKey);
   $('#sheet-date').textContent = dayKey;
 
   const seconds = entries.reduce((sum, e) => sum + (e.seconds || 0), 0);
-  $('#sheet-title').textContent = seconds ? `${fmtDuration(seconds)} 描いた` : 'この日は休み';
+  $('#sheet-title').textContent = seconds ? t('log.drew', { d: fmtDur(seconds) }) : t('log.restDay');
 
-  const image = $('#sheet-image');
-  const withDrawing = entries.find((e) => e.hasDrawing);
-  image.hidden = true;
-  if (withDrawing) {
-    loadDrawing(withDrawing.id)
-      .then((blob) => { if (blob) { image.src = URL.createObjectURL(blob); image.hidden = false; } })
-      .catch(() => {});
+  const shots = $('#sheet-shots');
+  shots.innerHTML = '';
+  const blobs = [];
+  for (const entry of entries) {
+    const count = entry.drawingCount || (entry.hasDrawing ? 1 : 0);
+    for (let i = 0; i < count; i++) {
+      const blob = await getDrawing(`${entry.id}#${i}`).catch(() => null)
+        || (i === 0 ? await getDrawing(entry.id).catch(() => null) : null);
+      if (blob) blobs.push(blob);
+    }
   }
+  shots.hidden = blobs.length === 0;
+  blobs.forEach((blob, i) => {
+    const item = el('button', 'strip-item');
+    const img = el('img');
+    img.src = URL.createObjectURL(blob);
+    item.append(img);
+    item.addEventListener('click', () => {
+      $('#draw-img').src = URL.createObjectURL(blob);
+      drawingIndex = -1;                       // 過去の絵はここから消せない
+      $('#draw-remove').hidden = true;
+      $('#draw-dl').onclick = () => downloadBlob(blob, `drawpamine-${dayKey}-${i + 1}.jpg`);
+      $('#draw-lightbox').hidden = false;
+    });
+    shots.append(item);
+  });
 
   const body = $('#sheet-body');
   body.innerHTML = '';
   for (const entry of entries) {
     const block = el('div', 'note-item');
     const head = el('div', 'note-head');
-    head.append(el('span', 'note-date', entry.menuTitle || '練習'));
-    if (entry.lessonId) head.append(el('span', 'rate-tag', lessonById(entry.lessonId)?.name || ''));
+    head.append(el('span', 'note-date', entry.menuTitle || '—'));
+    if (entry.lessonId) head.append(el('span', 'rate-tag', tr(lessonById(entry.lessonId), 'name') || ''));
     block.append(head);
     const drills = Object.entries(entry.byDrill || {})
-      .map(([id, sec]) => `${DRILLS[id]?.name || id} ${fmtDuration(sec)}`).join(' / ');
+      .map(([id, sec]) => `${tr(DRILLS[id], 'name') || id} ${fmtDur(sec)}`).join(' / ');
     if (drills) block.append(el('p', 'muted small', drills));
     if (entry.note) block.append(el('p', 'note-body', entry.note));
     body.append(block);
   }
-  if (!entries.length) body.append(el('p', 'muted small', '記録はありません。'));
+  if (!entries.length) body.append(el('p', 'muted small', t('log.noRecord')));
 
   $('#day-sheet').hidden = false;
 }
@@ -873,7 +1224,7 @@ function renderDrillBars(s) {
   wrap.innerHTML = '';
   const entries = [...s.byDrill.entries()].sort((a, b) => b[1] - a[1]);
   if (!entries.length) {
-    wrap.append(el('p', 'muted small', 'まだ記録がありません。'));
+    wrap.append(el('p', 'muted small', t('log.noRecord')));
     return;
   }
   const max = entries[0][1];
@@ -885,9 +1236,9 @@ function renderDrillBars(s) {
 
     const row = el('div', 'bar-row');
     row.append(
-      el('div', 'bar-label', DRILLS[id]?.name || id),
+      el('div', 'bar-label', tr(DRILLS[id], 'name') || id),
       track,
-      el('div', 'bar-value muted small', fmtDuration(sec)),
+      el('div', 'bar-value muted small', fmtDur(sec)),
     );
     wrap.append(row);
   }
@@ -898,27 +1249,18 @@ function renderNotes(history) {
   wrap.innerHTML = '';
   const notes = history.filter((h) => h.note || h.hasDrawing || h.missed?.length).slice(-20).reverse();
   if (!notes.length) {
-    wrap.append(el('p', 'muted small', 'ふりかえりのメモがここに並びます。'));
+    wrap.append(el('p', 'muted small', t('log.noNotes')));
     return;
   }
-  const ratingText = { 1: 'むずかしかった', 2: 'まあまあ', 3: 'つかめた' };
+  const ratingText = { 1: t('rev.rate1'), 2: t('rev.rate2'), 3: t('rev.rate3') };
   for (const entry of notes) {
     const item = el('div', 'note-item');
     const head = el('div', 'note-head');
-    head.append(
-      el('span', 'note-date', entry.date),
-      el('span', 'muted small', focusForDate(entry.date).title),
-    );
+    head.append(el('span', 'note-date', entry.date));
     if (entry.rating) head.append(el('span', `rate-tag r${entry.rating}`, ratingText[entry.rating]));
-    if (entry.lessonId) head.append(el('span', 'rate-tag', lessonById(entry.lessonId)?.name || ''));
+    if (entry.lessonId) head.append(el('span', 'rate-tag', tr(lessonById(entry.lessonId), 'name') || ''));
     item.append(head);
     if (entry.note) item.append(el('p', 'note-body', entry.note));
-    if (entry.missed?.length) {
-      const todo = el('div', 'todo');
-      todo.append(el('span', 'label', '次回の宿題'));
-      for (const text of entry.missed) todo.append(el('div', 'todo-item', `・${text}`));
-      item.append(todo);
-    }
     if (entry.hasDrawing) {
       const img = el('img', 'note-thumb');
       loadDrawing(entry.id)
@@ -942,31 +1284,28 @@ function renderSettings() {
   $('#opt-autoflip').checked = settings.autoFlip;
   $('#opt-keepawake').checked = settings.keepAwake;
   $('#opt-orientation').value = settings.orientation;
-  $('#local-count').textContent = `${localFiles.items.length}枚`;
+  $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 1) * 100));
+  $('#local-count').textContent = fmtCount(localFiles.items.length);
   updateSourceVisibility();
+  renderLangChips();
   renderCategories();
-  renderWeakChips();
   renderTheory();
 }
 
-function renderWeakChips() {
-  const wrap = $('#weak-chips');
+function renderLangChips() {
+  const wrap = $('#lang-chips');
   wrap.innerHTML = '';
-  for (const lesson of LESSONS) {
-    const on = settings.weakParts.includes(lesson.id);
-    const chip = el('button', `chip${on ? ' on' : ''}`, lesson.name);
-    chip.addEventListener('click', () => {
-      const next = new Set(settings.weakParts);
-      next.has(lesson.id) ? next.delete(lesson.id) : next.add(lesson.id);
-      settings = saveSettings({ weakParts: [...next] });
-      syncWeakParts(settings.weakParts);      // 選んだ瞬間から復習に出す
-      renderWeakChips();
-      toast(next.has(lesson.id)
-        ? `${lesson.name}を復習に入れました`
-        : `${lesson.name}を外しました（出ているカードは予定どおり残ります）`);
-    });
+  for (const [code, label] of [['ja', '日本語'], ['en', 'English']]) {
+    const chip = el('button', `chip${getLang() === code ? ' on' : ''}`, label);
+    chip.addEventListener('click', () => switchLang(code));
     wrap.append(chip);
   }
+}
+
+function switchLang(code) {
+  setLang(code);
+  $('#lang-btn').textContent = code === 'ja' ? 'EN' : 'JA';
+  repaint();
 }
 
 function updateSourceVisibility() {
@@ -976,12 +1315,12 @@ function updateSourceVisibility() {
 
 function renderTheory() {
   const wrap = $('#theory-list');
-  if (wrap.childElementCount) return;
+  wrap.innerHTML = '';
   for (const p of PRINCIPLES) {
     const item = el('div', 'theory-item');
     item.append(
-      el('h3', null, p.title),
-      el('p', 'muted small', p.body),
+      el('h3', null, tr(p, 'title')),
+      el('p', 'muted small', tr(p, 'body')),
       el('p', 'source muted small', p.source),
     );
     wrap.append(item);
@@ -998,18 +1337,18 @@ function wireSettings() {
 
   $('#key-save').addEventListener('click', () => {
     settings = saveSettings({ unsplashKey: $('#unsplash-key').value.trim() });
-    $('#key-status').textContent = '保存しました';
+    $('#key-status').textContent = t('common.save');
   });
 
   $('#key-test').addEventListener('click', async () => {
     const key = $('#unsplash-key').value.trim();
     const status = $('#key-status');
-    if (!key) return void (status.textContent = 'キーを入れてください');
-    status.textContent = '接続中…';
+    if (!key) return void (status.textContent = t('set.key'));
+    status.textContent = '…';
     try {
       const { remaining } = await testUnsplashKey(key);
       settings = saveSettings({ unsplashKey: key });
-      status.textContent = `OK（この時間あと ${remaining ?? '?'} 回）`;
+      status.textContent = `OK（${remaining ?? '?'}）`;
     } catch (err) {
       status.textContent = `NG：${err.message}`;
     }
@@ -1018,7 +1357,7 @@ function wireSettings() {
   $('#local-btn').addEventListener('click', () => $('#local-input').click());
   $('#local-input').addEventListener('change', (e) => {
     const count = localFiles.set(e.target.files || []);
-    $('#local-count').textContent = `${count}枚`;
+    $('#local-count').textContent = fmtCount(count);
   });
 
   const bind = (sel, key) => $(sel).addEventListener('change', (e) => {
@@ -1030,22 +1369,22 @@ function wireSettings() {
     settings = saveSettings({ theme: e.target.value });
     applyTheme();
   });
+  $('#opt-alpha').addEventListener('input', (e) => {
+    settings = saveSettings({ penAlpha: Number(e.target.value) / 100 });
+  });
   bind('#opt-autoflip', 'autoFlip');
   bind('#opt-keepawake', 'keepAwake');
   bind('#opt-orientation', 'orientation');
 
   $('#export-btn').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify({ settings: { ...settings, unsplashKey: '' }, history: getHistory() }, null, 2)],
+    const blob = new Blob(
+      [JSON.stringify({ settings: { ...settings, unsplashKey: '' }, history: getHistory() }, null, 2)],
       { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `croqui-${dateKey()}.json`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    downloadBlob(blob, `drawpamine-${dateKey()}.json`);
   });
 
   $('#reset-btn').addEventListener('click', async () => {
-    if (!confirm('練習記録と設定をすべて消します。元に戻せません。')) return;
+    if (!confirm(t('set.resetConfirm'))) return;
     clearAll();
     resetGame();
     await deleteAllDrawings().catch(() => {});
@@ -1053,7 +1392,7 @@ function wireSettings() {
     settings = getSettings();
     renderSettings();
     renderHome();
-    toast('消しました');
+    toast(t('set.erased'));
   });
 }
 
@@ -1063,21 +1402,21 @@ function wireNav() {
   $$('[data-nav]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const target = btn.dataset.nav;
-      if (target === 'log') renderLog();
       if (target === 'library') { openLibrary(); return; }
+      if (target === 'log') renderLog();
       if (target === 'home') renderHome();
       if (target === 'settings') renderSettings();
-      if (target === 'home') renderHome();
       showScreen(target);
     });
   });
+
+  $('#lang-btn').addEventListener('click', () => switchLang(getLang() === 'ja' ? 'en' : 'ja'));
 }
 
 const THEME_COLORS = { light: '#f7f7f5', dark: '#000000', paper: '#f5f4ee' };
 
 function applyTheme() {
   document.body.dataset.theme = settings.theme;
-  // ブラウザのUI（アドレスバー）の色も合わせる
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = THEME_COLORS[settings.theme] || THEME_COLORS.light;
 }
@@ -1091,24 +1430,41 @@ function wireCalendar() {
   });
 }
 
+/** 苦手な部位のレッスンは、部位練習から辿れるようにしておく。 */
+function wireLessonLinks() {
+  window.addEventListener('hashchange', () => {
+    if (location.hash.replace('#', '') === 'admin') openAdmin();
+  });
+}
+
 function init() {
   applyTheme();
+  applyI18n();
   paintIcons();
+  $('#lang-btn').textContent = getLang() === 'ja' ? 'EN' : 'JA';
+
   wireNav();
   wireReview();
+  wireDrawingLightbox();
   wireLesson();
   wireSetup();
+  wirePartSheet();
   wireLibrary();
   wireCalendar();
   wireSettings();
-  primeBadges();          // 初回は既存の達成を黙って既読にする
-  renderHome();
-  showScreen('home');
+  wireAdmin();
+  wireLessonLinks();
 
-  // ブラウザは操作なしに音を出せないので、最初のタップで鳴らせるようにしておく
+  renderHome();
+
+  // /admin でも #admin でも入れるようにしておく（GitHub Pages では 404.html が #admin に流す）
+  const wantsAdmin = location.hash.replace('#', '') === 'admin'
+                     || /\/admin\/?$/.test(location.pathname);
+  if (wantsAdmin) openAdmin();
+  else showScreen('home');
+
   document.addEventListener('pointerdown', () => { if (settings.sfx) sfx.unlock(); }, { once: true });
 
-  // ボタンはすべて押した瞬間に鳴らす（キャンバスの道具だけは連打するので鳴らさない）
   document.addEventListener('pointerdown', (e) => {
     if (!settings.sfx) return;
     const button = e.target.closest('button');
@@ -1122,3 +1478,6 @@ function init() {
 }
 
 init();
+
+// レッスンは部位練習から開く。外からも呼べるようにしておく（テストと将来の導線用）
+export { openLesson };

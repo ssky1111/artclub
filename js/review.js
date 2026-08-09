@@ -116,7 +116,7 @@ export function reminderFor(lessonId, today = dateKey()) {
  */
 export function injectWeakStep(menu, lesson) {
   if (!lesson) return menu;
-  const step = { drill: 'landmark', source: `weak:${lesson.id}`, count: 2, seconds: 60 };
+  const step = { drill: 'mass', source: `weak:${lesson.id}`, count: 2, seconds: 60 };
   // ウォームアップの直後に入れる（手が温まる前に苦手をやっても崩れるだけなので）
   const steps = [...menu.steps];
   const insertAt = Math.min(1, steps.length);
@@ -131,7 +131,7 @@ export function buildReviewMenu(lesson) {
     title: `${lesson.name}の復習`,
     weakLessonId: lesson.id,
     steps: [
-      { drill: 'landmark', source: `weak:${lesson.id}`, count: 2, seconds: 60 },
+      { drill: 'mass', source: `weak:${lesson.id}`, count: 2, seconds: 60 },
       { drill: 'gesture',  source: `weak:${lesson.id}`, count: 3, seconds: 30 },
       { drill: 'memory',   source: `weak:${lesson.id}`, count: 1, seconds: 120 },
     ],

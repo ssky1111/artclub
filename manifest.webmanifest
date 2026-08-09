@@ -1,7 +1,7 @@
 {
-  "name": "クロッキー — 毎日3分の絵の練習",
-  "short_name": "クロッキー",
-  "description": "写真をお題に、クロッキーと模写を毎日3分から続けるための練習アプリ。",
+  "name": "DRAWPAMINE — 毎日3分の絵の練習",
+  "short_name": "DRAWPAMINE",
+  "description": "写真をお題に、ジェスチャードローイングとクロッキーを毎日3分から続けるための練習アプリ。",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -10,9 +10,28 @@
   "theme_color": "#f7f7f5",
   "lang": "ja",
   "icons": [
-    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
-    { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
   ]
 }

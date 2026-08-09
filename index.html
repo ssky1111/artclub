@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f7f7f5">
-<title>クロッキー — 毎日3分の絵の練習</title>
+<title>DRAWPAMINE — 毎日3分の絵の練習</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
@@ -37,9 +37,11 @@
 <!-- ============ ホーム ============ -->
 <main id="screen-home" class="screen is-active">
   <header class="topbar">
-    <h1 class="brand">クロッキー</h1>
+    <h1 class="brand">DRAWPAMINE<span class="beta" data-i18n="app.beta">β版</span></h1>
     <div class="topbar-actions">
-      <button class="icon-btn" data-nav="settings" data-icon="settings" title="設定"></button>
+      <button id="lang-btn" class="lang-btn" title="日本語 / English">EN</button>
+      <button class="icon-btn" data-nav="settings" data-icon="settings"
+              data-i18n-title="common.settings"></button>
     </div>
   </header>
 
@@ -48,7 +50,7 @@
       <div class="streak-main">
         <span class="streak-flame" data-icon="flame" data-icon-size="26"></span>
         <span id="streak-count" class="streak-num">0</span>
-        <span class="streak-unit">日</span>
+        <span id="streak-unit" class="streak-unit" data-i18n="home.streakUnit">日</span>
       </div>
       <div class="level-chip">
         <span id="level-num">Lv.1</span>
@@ -61,48 +63,30 @@
     </div>
 
     <div class="streak-sub">
-      <span id="today-status" class="pill">今日はまだ</span>
+      <span id="today-status" class="pill" data-i18n="home.todayYet">今日はまだ</span>
+      <span id="total-drawings" class="pill count-pill">0</span>
     </div>
-    <div id="streak-dots" class="streak-dots" aria-label="直近2週間"></div>
-  </section>
 
-  <section class="card quest-card">
-    <div class="section-head"><h2>きょうのめあて</h2></div>
-    <ul id="quest-list" class="quest-list"></ul>
-  </section>
-
-  <section class="focus-card">
-    <div class="label">今日の観察テーマ</div>
-    <div id="focus-title" class="focus-title">—</div>
-    <p id="focus-desc" class="focus-desc muted"></p>
+    <!-- 直近1週間、1日に何枚描いたか -->
+    <div class="week-block">
+      <div class="label" data-i18n="home.week">この1週間</div>
+      <div id="week-bars" class="week-bars" aria-label="この1週間に描いた枚数"></div>
+    </div>
   </section>
 
   <div id="menu-primary"></div>
 
   <section class="menu-list">
-    <div class="section-head"><h2>ほかのメニュー</h2></div>
-    <div id="menu-cards"></div>
+    <div class="section-head"><h2 data-i18n="home.modes">モード</h2></div>
+    <div id="mode-cards"></div>
   </section>
 
-  <button id="library-cta" class="menu-card slim">
-    <div class="menu-title">写真をいれる・タグをつける</div>
-    <div class="menu-time"><span id="library-count">0</span>枚</div>
-  </button>
-
-  <section class="card lesson-cta">
-    <div class="section-head"><h2>苦手な部位をつぶす</h2></div>
-    <p class="muted small">手や脚は、中身を知らないと見ても描けません。</p>
-    <div id="lesson-chips" class="chips"></div>
+  <section class="menu-list">
+    <div class="section-head"><h2 data-i18n="home.more">そのほか</h2></div>
+    <div id="extra-cards"></div>
   </section>
 
-  <section class="card">
-    <div class="section-head">
-      <h2>あつめたバッジ</h2>
-      <span id="badge-count" class="badge">0 / 0</span>
-    </div>
-    <div id="badge-grid" class="badge-grid"></div>
-  </section>
-
+  <p class="credit-note muted small" data-i18n="home.unsplash"></p>
 </main>
 
 <!-- ============ セッション ============ -->
@@ -113,8 +97,10 @@
       <div id="grid-overlay" class="grid-overlay" hidden></div>
       <div id="memory-cover" class="memory-cover" hidden>
         <div class="memory-cover-inner">
-          <p>記憶で描く時間</p>
-          <button id="peek-btn" class="btn ghost small">3秒だけ見る（<span id="peek-left">2</span>）</button>
+          <p data-i18n="sess.memory">記憶で描く時間</p>
+          <button id="peek-btn" class="btn ghost small">
+            <span data-i18n="sess.peek">3秒だけ見る</span>（<span id="peek-left">2</span>）
+          </button>
         </div>
       </div>
     </div>
@@ -122,7 +108,7 @@
     <div id="stage-message" class="stage-message" hidden></div>
 
     <div class="hud-top">
-      <button id="quit-btn" class="icon-btn" data-icon="close" title="やめる"></button>
+      <button id="quit-btn" class="icon-btn" data-icon="close" data-i18n-title="common.cancel"></button>
       <div class="hud-center">
         <div id="drill-name" class="drill-name">—</div>
         <div id="drill-progress" class="drill-progress muted">1 / 5</div>
@@ -146,39 +132,62 @@
       </div>
     </div>
 
+    <!--
+      描くモード。
+      上の帯にタイマーを真ん中で出し、その下を「左＝お題／右＝キャンバス」に割る。
+      画面が狭いときは左を畳んで、お題は小窓（ref-mini）に退避する。
+    -->
     <div id="pad-wrap" class="pad-wrap" hidden>
-      <canvas id="pad" class="pad"></canvas>
-
-      <button id="ref-mini" class="ref-mini" title="お題を大きく見る">
-        <img id="ref-mini-img" alt="お題">
-      </button>
-
       <div class="pad-hud">
-        <button id="pad-quit" class="pad-icon" data-icon="close" title="やめる"></button>
-        <div class="pad-hud-mid">
+        <button id="pad-quit" class="pad-icon" data-icon="close" data-i18n-title="common.cancel"></button>
+        <button id="pad-time" class="pad-time" title="押すと一時停止">
+          <span class="pad-time-num">30</span>
+          <span class="pad-time-unit" data-i18n="sess.left">のこり</span>
+        </button>
+        <div class="pad-hud-right">
           <span id="pad-drill" class="pad-drill">—</span>
           <span id="pad-progress" class="muted small">1 / 5</span>
         </div>
-        <button id="pad-time" class="pad-time" title="押すと一時停止">
-          <span class="pad-time-num">30</span>
-          <span class="pad-time-unit">のこり</span>
-        </button>
       </div>
       <div class="pad-timebar"><div id="pad-timebar-fill" class="pad-timebar-fill"></div></div>
 
-      <ol id="pad-steps" class="pad-steps"></ol>
+      <div class="pad-body">
+        <div class="pad-ref">
+          <img id="pad-ref-img" alt="お題の写真">
+        </div>
+
+        <div class="pad-canvas">
+          <canvas id="pad" class="pad"></canvas>
+
+          <button id="ref-mini" class="ref-mini" title="お題を大きく見る">
+            <img id="ref-mini-img" alt="お題">
+          </button>
+
+          <!-- 手順は右上。閉じられるので、写真の邪魔になったら畳める -->
+          <div id="pad-hint" class="pad-hint">
+            <button id="hint-toggle" class="hint-toggle">
+              <span data-i18n="sess.hint">ヒント</span><i></i>
+            </button>
+            <ol id="pad-steps" class="pad-steps"></ol>
+          </div>
+        </div>
+      </div>
 
       <div class="pad-tools">
-        <button class="pad-btn on" data-pad="pen" data-icon="pencil" title="ペン"></button>
-        <button class="pad-btn" data-pad="eraser" data-icon="eraser" title="消しゴム"></button>
+        <button class="pad-btn on" data-pad="pen" data-icon="pencil" data-i18n-title="sess.pen"></button>
+        <button class="pad-btn" data-pad="eraser" data-icon="eraser" data-i18n-title="sess.eraser"></button>
         <div class="pad-sizes">
           <button class="pad-size" data-size="2" title="細い"><i style="width:3px;height:3px"></i></button>
           <button class="pad-size on" data-size="5" title="ふつう"><i style="width:6px;height:6px"></i></button>
           <button class="pad-size" data-size="10" title="太い"><i style="width:11px;height:11px"></i></button>
         </div>
-        <button class="pad-btn" data-pad="undo" data-icon="undo" title="元に戻す"></button>
-        <button class="pad-btn" data-pad="clear" data-icon="trash" title="全部消す"></button>
-        <button id="pad-next" class="pad-next" data-icon="check" data-icon-label="保存してつぎへ"></button>
+        <label class="pad-alpha" data-i18n-title="sess.opacity">
+          <span class="pad-alpha-mark"></span>
+          <input type="range" id="pad-opacity" min="15" max="100" step="5" value="100">
+        </label>
+        <button class="pad-btn" data-pad="undo" data-i18n-title="sess.undo" data-icon="undo"></button>
+        <button class="pad-btn" data-pad="clear" data-i18n-title="sess.clear" data-icon="trash"></button>
+        <button id="pad-next" class="pad-next" data-icon="check" data-i18n-label="sess.saveNext"></button>
       </div>
     </div>
 
@@ -192,54 +201,66 @@
     <div class="label" id="bridge-label">つぎは</div>
     <h2 id="bridge-title">—</h2>
     <p id="bridge-cue" class="cue-text"></p>
+    <p id="bridge-about" class="muted small"></p>
     <p id="bridge-reminder" class="reminder-text" hidden></p>
     <div class="bridge-meta muted small" id="bridge-meta"></div>
-    <button id="bridge-start" class="btn primary big">はじめる</button>
+    <button id="bridge-start" class="btn primary big" data-i18n="sess.begin">はじめる</button>
     <details class="why">
-      <summary>なぜこれをやるの？</summary>
+      <summary data-i18n="sess.why">なぜこれをやるの？</summary>
       <p id="bridge-theory"></p>
     </details>
-    <button id="bridge-skip" class="btn ghost small">これは飛ばす</button>
+    <button id="bridge-skip" class="btn ghost small" data-i18n="sess.skipDrill">これは飛ばす</button>
   </div>
 </main>
 
 <!-- ============ ふりかえり ============ -->
 <main id="screen-review" class="screen">
-  <header class="topbar"><h1 class="brand">おつかれさま</h1></header>
+  <header class="topbar"><h1 class="brand" data-i18n="rev.title">おつかれさま</h1></header>
   <section class="card">
     <div id="review-summary" class="review-summary"></div>
   </section>
 
   <section class="card" id="review-checks-card" hidden>
-    <div class="section-head"><h2>セルフチェック</h2></div>
-    <p class="muted small">描いたものを見ながら、できているものだけ押してください。</p>
+    <div class="section-head"><h2 data-i18n="rev.selfCheck">セルフチェック</h2></div>
+    <p class="muted small" data-i18n="rev.selfCheckNote"></p>
     <ul id="review-checks" class="check-list"></ul>
   </section>
 
   <section class="card">
-    <div class="label">今日の観察テーマ</div>
-    <div id="review-focus" class="focus-title small-title">—</div>
-    <p class="muted small">意図的練習は「直後のふりかえり」で伸びます。20秒だけ。</p>
-    <div id="rating-row" class="rating-row">
-      <button class="rate-btn" data-rate="1">むずかしかった</button>
-      <button class="rate-btn" data-rate="2">まあまあ</button>
-      <button class="rate-btn" data-rate="3">つかめた</button>
+    <div class="label" data-i18n="rev.drawn">きょう描いたもの</div>
+    <p class="muted small" data-i18n="rev.drawnNote"></p>
+    <div id="drawing-strip" class="drawing-strip" hidden></div>
+    <div class="row">
+      <input type="file" id="drawing-input" accept="image/*" multiple hidden>
+      <button id="drawing-btn" class="btn ghost small" data-icon="camera"
+              data-i18n-label="rev.addPhoto"></button>
+      <button id="dl-all" class="btn ghost small" data-i18n="rev.downloadAll">全部ダウンロード</button>
+      <button id="make-sheet" class="btn ghost small" data-i18n="rev.sheet">1枚にまとめて出力</button>
     </div>
-    <textarea id="review-note" class="note" rows="3" placeholder="気づいたことを一言（例：肩のラインをいつも水平に描いてしまう）"></textarea>
+    <div id="sheet-preview" class="sheet-preview" hidden>
+      <img id="sheet-img" alt="まとめ画像">
+      <div class="row">
+        <button id="sheet-dl" class="btn small" data-i18n="common.download">ダウンロード</button>
+        <button id="share-x" class="btn small" data-i18n="rev.shareX">X に投稿する</button>
+      </div>
+      <p class="muted small" data-i18n="rev.shareNote"></p>
+    </div>
   </section>
 
   <section class="card">
-    <div class="label">きょう描いたもの</div>
-    <p class="muted small">画面で描いた分はここに入っています。紙に描いたものは写真で足せます。端末内にだけ保存されます。</p>
-    <input type="file" id="drawing-input" accept="image/*" multiple hidden>
-    <button id="drawing-btn" class="btn ghost" data-icon="camera" data-icon-label="写真を追加"></button>
-    <span id="drawing-count" class="muted small"></span>
-    <div id="drawing-strip" class="drawing-strip" hidden></div>
+    <div class="label" data-i18n="rev.howWas">今日はどうだった？</div>
+    <p class="muted small" data-i18n="rev.reflectNote"></p>
+    <div id="rating-row" class="rating-row">
+      <button class="rate-btn" data-rate="1" data-i18n="rev.rate1">むずかしかった</button>
+      <button class="rate-btn" data-rate="2" data-i18n="rev.rate2">まあまあ</button>
+      <button class="rate-btn" data-rate="3" data-i18n="rev.rate3">つかめた</button>
+    </div>
+    <textarea id="review-note" class="note" rows="3" data-i18n-ph="rev.notePh"></textarea>
   </section>
 
   <div class="stack">
-    <button id="review-save" class="btn primary big">保存して終わる</button>
-    <button id="review-again" class="btn ghost">もう1セットやる</button>
+    <button id="review-save" class="btn primary big" data-i18n="rev.save">保存して終わる</button>
+    <button id="review-again" class="btn ghost" data-i18n="rev.again">もう1セットやる</button>
   </div>
 </main>
 
@@ -257,64 +278,101 @@
   </section>
 
   <section class="card">
-    <div class="section-head"><h2>塊に置き換える順番</h2></div>
+    <div class="section-head"><h2 data-i18n="lesson.masses">塊に置き換える順番</h2></div>
     <div id="lesson-steps" class="lesson-steps"></div>
   </section>
 
   <section class="card">
-    <div class="section-head"><h2>ランドマーク（骨のでっぱり）</h2></div>
-    <p class="muted small">体型や角度が変わっても位置が動かない場所。ここを先に点で打つ。</p>
-    <ul id="lesson-landmarks" class="tick-list"></ul>
-  </section>
-
-  <section class="card">
-    <div class="section-head"><h2>比率</h2></div>
+    <div class="section-head"><h2 data-i18n="lesson.proportions">比率</h2></div>
     <ul id="lesson-proportions" class="tick-list"></ul>
   </section>
 
   <section class="card">
-    <div class="section-head"><h2>よくある失敗と直し方</h2></div>
+    <div class="section-head"><h2 data-i18n="lesson.mistakes">よくある失敗と直し方</h2></div>
     <div id="lesson-mistakes" class="mistake-list"></div>
   </section>
 
   <section class="card">
     <div class="section-head">
-      <h2>参考図版</h2>
-      <button id="plate-reload" class="btn ghost small">読み込む</button>
+      <h2 data-i18n="lesson.plates">参考図版</h2>
+      <button id="plate-reload" class="btn ghost small" data-i18n="books.load">読み込む</button>
     </div>
-    <p class="muted small">
-      著作権の切れた美術解剖書から Wikimedia Commons 経由で取得します（PD / CC0 / CC BY のみ）。
-      図の中の文字は英語ですが、読む必要はありません。形だけ見てください。
-    </p>
     <div id="plate-gallery" class="plate-gallery"></div>
     <div id="plate-status" class="muted small"></div>
     <div id="lesson-books" class="books"></div>
   </section>
 
   <div class="stack sticky-cta">
-    <button id="lesson-practice" class="btn primary big">この部位を練習する</button>
-    <button id="lesson-review" class="btn ghost small" hidden>前にできなかったところをやる</button>
+    <button id="lesson-practice" class="btn primary big" data-i18n="lesson.practice">この部位を練習する</button>
+    <button id="lesson-review" class="btn ghost small" hidden data-i18n="lesson.review"></button>
   </div>
+</main>
+
+<!-- ============ 解剖学の本（図版と日本語訳） ============ -->
+<main id="screen-books" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" data-nav="home" data-icon="back"></button>
+    <h1 class="brand plain" data-i18n="books.title">解剖学の本</h1>
+    <span></span>
+  </header>
+
+  <p class="muted small" data-i18n="books.note"></p>
+
+  <div id="book-tabs" class="chips book-tabs"></div>
+
+  <section class="card">
+    <div class="section-head">
+      <h2 id="book-title">—</h2>
+      <button id="book-reload" class="btn ghost small" data-i18n="books.load">図版を読み込む</button>
+    </div>
+    <p id="book-note" class="muted small"></p>
+    <div id="book-gallery" class="plate-gallery"></div>
+    <div id="book-status" class="muted small"></div>
+  </section>
 </main>
 
 <!-- 練習をはじめる前の設定 -->
 <div id="setup-sheet" class="sheet" hidden>
   <div class="sheet-inner">
     <button id="setup-close" class="icon-btn sheet-close" data-icon="close"></button>
-    <div class="label">なにを描く</div>
+    <div class="label" data-i18n="setup.what">なにを描く</div>
     <div id="setup-tags" class="chips"></div>
 
-    <div class="label setup-label">1まい何分</div>
+    <div class="label setup-label" data-i18n="setup.howLong">1まい何分</div>
     <div id="setup-time" class="chips"></div>
 
-    <div class="label setup-label">何まい</div>
+    <div class="label setup-label" data-i18n="setup.howMany">何まい</div>
     <div id="setup-count" class="chips"></div>
 
-    <div class="label setup-label">描きかた</div>
+    <div class="label setup-label" data-i18n="setup.how">描きかた</div>
     <div id="setup-drill" class="chips"></div>
     <p id="setup-drill-note" class="muted small"></p>
 
-    <button id="setup-start" class="btn primary big">はじめる（<span id="setup-total">約3分</span>）</button>
+    <button id="setup-start" class="btn primary big">はじめる</button>
+  </div>
+</div>
+
+<!-- 部位練習でどこをやるか -->
+<div id="part-sheet" class="sheet" hidden>
+  <div class="sheet-inner">
+    <button id="part-close" class="icon-btn sheet-close" data-icon="close"></button>
+    <div class="label" data-i18n="setup.part">どこを練習する？</div>
+    <div id="part-chips" class="chips big-chips"></div>
+    <p id="part-note" class="muted small"></p>
+    <button id="part-start" class="btn primary big" data-i18n="home.startPlain">はじめる</button>
+    <!-- 手や脚は、見ても描けない。先に中身を読めるようにしておく -->
+    <button id="part-lesson" class="btn ghost small" hidden></button>
+  </div>
+</div>
+
+<!-- 2周目の課金導線（いまは無料開放中） -->
+<div id="pay-sheet" class="sheet" hidden>
+  <div class="sheet-inner">
+    <button id="pay-close" class="icon-btn sheet-close" data-icon="close"></button>
+    <span class="free-badge" data-i18n="home.freeNow">無料開放中</span>
+    <h2 data-i18n="home.paywallTitle">2周目からは、いずれ有料になります</h2>
+    <p class="muted small" data-i18n="home.paywallBody"></p>
+    <button id="pay-continue" class="btn primary big" data-i18n="home.paywallCta"></button>
   </div>
 </div>
 
@@ -322,21 +380,18 @@
 <main id="screen-library" class="screen">
   <header class="topbar">
     <button class="icon-btn" data-nav="home" data-icon="back"></button>
-    <h1 class="brand plain">写真</h1>
+    <h1 class="brand plain" data-i18n="lib.title">写真</h1>
     <button id="lib-add" class="icon-btn" data-icon="plus" title="追加"></button>
   </header>
   <input type="file" id="lib-input" accept="image/*" multiple hidden>
 
-  <p class="muted small">
-    アンスプラッシュなどで集めた写真をいれて、タグを付けておくと、
-    そのタグでお題を出せます。写真は端末のなかにだけ残ります。
-  </p>
+  <p class="muted small" data-i18n="lib.note"></p>
 
-  <div class="section-head"><h2>しぼりこみ</h2></div>
+  <div class="section-head"><h2 data-i18n="lib.filter">しぼりこみ</h2></div>
   <div id="lib-filter" class="chips"></div>
 
   <div id="lib-grid" class="lib-grid"></div>
-  <p id="lib-empty" class="muted small" hidden>まだ1枚もありません。右上の＋から入れてください。</p>
+  <p id="lib-empty" class="muted small" hidden data-i18n="lib.empty"></p>
 </main>
 
 <!-- 写真1枚の詳細（タグと、これまでの記録） -->
@@ -344,11 +399,11 @@
   <div class="sheet-inner">
     <button id="photo-close" class="icon-btn sheet-close" data-icon="close"></button>
     <img id="photo-big" class="photo-big" alt="">
-    <div class="label">タグ</div>
+    <div class="label" data-i18n="lib.tags">タグ</div>
     <div id="photo-tags" class="chips"></div>
-    <div class="section-head"><h2>この写真で描いたもの</h2></div>
+    <div class="section-head"><h2 data-i18n="lib.pastWork">この写真で描いたもの</h2></div>
     <div id="photo-history" class="photo-history"></div>
-    <button id="photo-delete" class="btn danger small">この写真を消す</button>
+    <button id="photo-delete" class="btn danger small" data-i18n="lib.deleteOne">この写真を消す</button>
   </div>
 </div>
 
@@ -358,7 +413,7 @@
     <button id="sheet-close" class="icon-btn sheet-close" data-icon="close"></button>
     <div id="sheet-date" class="label"></div>
     <h2 id="sheet-title">—</h2>
-    <img id="sheet-image" class="sheet-image" hidden alt="この日の絵">
+    <div id="sheet-shots" class="drawing-strip"></div>
     <div id="sheet-body"></div>
   </div>
 </div>
@@ -370,18 +425,33 @@
   <div id="lightbox-caption" class="lightbox-caption"></div>
 </div>
 
+<!-- 描いた絵の拡大。押したら消える、ではなく、押したら大きくなる -->
+<div id="draw-lightbox" class="lightbox" hidden>
+  <button id="draw-close" class="icon-btn lightbox-close" data-icon="close"></button>
+  <img id="draw-img" alt="描いた絵">
+  <div class="lightbox-actions">
+    <button id="draw-dl" class="btn small" data-i18n="common.download">ダウンロード</button>
+    <button id="draw-remove" class="btn ghost small" data-i18n="common.delete">消す</button>
+  </div>
+</div>
+
 <!-- ============ 記録 ============ -->
 <main id="screen-log" class="screen">
   <header class="topbar">
-    <h1 class="brand plain">きろく</h1>
-    <button class="icon-btn" data-nav="settings" data-icon="settings" title="設定"></button>
+    <h1 class="brand plain" data-i18n="log.title">きろく</h1>
+    <button class="icon-btn" data-nav="settings" data-icon="settings"></button>
   </header>
 
   <section class="card">
     <div class="stat-grid">
-      <div class="stat"><div id="st-streak" class="stat-num">0</div><div class="stat-label">連続日数</div></div>
-      <div class="stat"><div id="st-best" class="stat-num">0</div><div class="stat-label">最長記録</div></div>
-      <div class="stat"><div id="st-minutes" class="stat-num">0</div><div class="stat-label">合計(分)</div></div>
+      <div class="stat"><div id="st-streak" class="stat-num">0</div>
+        <div class="stat-label" data-i18n="log.streak">連続日数</div></div>
+      <div class="stat"><div id="st-best" class="stat-num">0</div>
+        <div class="stat-label" data-i18n="log.best">最長記録</div></div>
+      <div class="stat"><div id="st-minutes" class="stat-num">0</div>
+        <div class="stat-label" data-i18n="log.minutes">合計(分)</div></div>
+      <div class="stat"><div id="st-drawings" class="stat-num">0</div>
+        <div class="stat-label" data-i18n="log.drawings">描いた枚数</div></div>
     </div>
   </section>
 
@@ -391,56 +461,123 @@
       <h2 id="cal-title">—</h2>
       <button id="cal-next" class="icon-btn" data-icon="forward" data-icon-size="18"></button>
     </div>
-    <div class="cal-dow">
-      <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
-    </div>
+    <div id="cal-dow" class="cal-dow"></div>
     <div id="calendar" class="calendar" aria-label="練習カレンダー"></div>
-    <p class="muted small">描いた絵を撮っておくと、その日のマスに貼られます。</p>
+    <p class="muted small" data-i18n="log.calNote"></p>
   </section>
 
   <section class="card">
-    <div class="section-head"><h2>なにを練習したか</h2></div>
+    <div class="section-head"><h2 data-i18n="log.whatPractised">なにを練習したか</h2></div>
     <div id="drill-bars" class="drill-bars"></div>
   </section>
 
   <section class="card">
-    <div class="section-head"><h2>ふりかえりノート</h2></div>
+    <div class="section-head"><h2 data-i18n="log.notes">ふりかえりノート</h2></div>
     <div id="note-list" class="note-list"></div>
   </section>
+</main>
+
+<!-- ============ 管理（#admin で入る） ============ -->
+<main id="screen-admin" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" data-nav="home" data-icon="back"></button>
+    <h1 class="brand plain" data-i18n="admin.title">管理</h1>
+    <button id="admin-lock" class="btn ghost small" data-i18n="admin.lockAgain">ロックする</button>
+  </header>
+
+  <!-- 鍵をかけるところ -->
+  <section class="card" id="admin-gate">
+    <div class="section-head"><h2 data-i18n="admin.lock">パスワード</h2></div>
+    <p id="admin-gate-note" class="muted small"></p>
+    <input type="password" id="admin-pass" class="input" autocomplete="current-password">
+    <div class="row">
+      <button id="admin-enter" class="btn primary small" data-i18n="admin.unlock">ひらく</button>
+      <span id="admin-msg" class="muted small"></span>
+    </div>
+    <p class="muted small" data-i18n="admin.passNote"></p>
+  </section>
+
+  <div id="admin-body" hidden>
+    <section class="card">
+      <div class="section-head">
+        <h2 data-i18n="admin.localOnly">この端末だけにある写真</h2>
+        <button id="admin-add" class="btn ghost small">＋</button>
+      </div>
+      <input type="file" id="admin-input" accept="image/*" multiple hidden>
+      <p id="admin-untagged" class="muted small"></p>
+      <div id="admin-grid" class="lib-grid"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-head"><h2 data-i18n="admin.repo">リポジトリに入れる</h2></div>
+      <p class="muted small" data-i18n="admin.repoNote"></p>
+
+      <label class="label" for="repo-path" data-i18n="admin.repoPath">owner/repo</label>
+      <input type="text" id="repo-path" class="input" placeholder="ssky1111/artclub" autocomplete="off">
+
+      <label class="label" for="repo-branch" data-i18n="admin.branch">ブランチ</label>
+      <input type="text" id="repo-branch" class="input" placeholder="main" autocomplete="off">
+
+      <label class="label" for="repo-token" data-i18n="admin.token">GitHub のトークン</label>
+      <input type="password" id="repo-token" class="input" placeholder="ghp_..." autocomplete="off">
+      <p class="muted small" data-i18n="admin.tokenNote"></p>
+
+      <div class="row">
+        <button id="repo-test" class="btn ghost small" data-i18n="set.keyTest">接続テスト</button>
+        <button id="repo-push" class="btn primary small">プッシュする</button>
+      </div>
+      <p id="repo-status" class="muted small"></p>
+
+      <div class="subcard">
+        <p class="muted small" data-i18n="admin.exportNote"></p>
+        <button id="repo-export" class="btn ghost small" data-i18n="admin.exportZip"></button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-head"><h2 data-i18n="admin.published">リポジトリに入っている写真</h2></div>
+      <div id="admin-bundled" class="lib-grid"></div>
+    </section>
+  </div>
 </main>
 
 <!-- ============ 設定 ============ -->
 <main id="screen-settings" class="screen">
   <header class="topbar">
     <button class="icon-btn" data-nav="home" data-icon="back"></button>
-    <h1 class="brand">設定</h1>
+    <h1 class="brand" data-i18n="set.title">設定</h1>
     <span></span>
   </header>
 
   <section class="card">
-    <div class="section-head"><h2>お題のジャンル</h2></div>
-    <div id="category-chips" class="chips"></div>
-    <p class="muted small">選んだジャンルからランダムに出題します。</p>
+    <div class="section-head"><h2 data-i18n="common.language">言語</h2></div>
+    <div id="lang-chips" class="chips"></div>
   </section>
 
   <section class="card">
-    <div class="section-head"><h2>お題をどこから持ってくるか</h2></div>
+    <div class="section-head"><h2 data-i18n="set.genres">お題のジャンル</h2></div>
+    <div id="category-chips" class="chips"></div>
+    <p class="muted small" data-i18n="set.genresNote"></p>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2 data-i18n="set.source">お題をどこから持ってくるか</h2></div>
     <div id="source-radios" class="radios">
-      <label><input type="radio" name="source" value="unsplash"> アンスプラッシュ（ジャンルを選べる・キーが必要）</label>
-      <label><input type="radio" name="source" value="picsum"> おためし（キー不要。ただし写真はランダムで、人物は出ません）</label>
-      <label><input type="radio" name="source" value="local"> 端末のなかの画像</label>
+      <label><input type="radio" name="source" value="unsplash"> <span data-i18n="set.srcUnsplash"></span></label>
+      <label><input type="radio" name="source" value="picsum"> <span data-i18n="set.srcPicsum"></span></label>
+      <label><input type="radio" name="source" value="local"> <span data-i18n="set.srcLocal"></span></label>
     </div>
 
     <div id="unsplash-config" class="subcard">
-      <label class="label" for="unsplash-key">アンスプラッシュのキー</label>
+      <label class="label" for="unsplash-key" data-i18n="set.key">アンスプラッシュのキー</label>
       <input type="password" id="unsplash-key" class="input" placeholder="xxxxxxxx..." autocomplete="off">
       <div class="row">
-        <button id="key-save" class="btn small">保存</button>
-        <button id="key-test" class="btn ghost small">接続テスト</button>
+        <button id="key-save" class="btn small" data-i18n="common.save">保存</button>
+        <button id="key-test" class="btn ghost small" data-i18n="set.keyTest">接続テスト</button>
         <span id="key-status" class="muted small"></span>
       </div>
       <details class="why">
-        <summary>キーの取り方</summary>
+        <summary data-i18n="set.keyHow">キーの取り方</summary>
         <p class="muted small">
           <a href="https://unsplash.com/oauth/applications" target="_blank" rel="noopener">unsplash.com/developers</a>
           で無料のアプリを1つ作ると、キーがもらえます。
@@ -451,58 +588,65 @@
 
     <div id="local-config" class="subcard">
       <input type="file" id="local-input" accept="image/*" multiple hidden>
-      <button id="local-btn" class="btn">画像を選ぶ</button>
-      <span id="local-count" class="muted small">0枚</span>
-      <p class="muted small">選んだ画像は、いま開いている間だけ使います。</p>
+      <button id="local-btn" class="btn" data-i18n="set.pick">画像を選ぶ</button>
+      <span id="local-count" class="muted small">0</span>
     </div>
   </section>
 
   <section class="card">
-    <div class="section-head"><h2>苦手な部位</h2></div>
-    <p class="muted small">選ぶと、ふだんの練習にその部位がすこしずつ混ざります。</p>
-    <div id="weak-chips" class="chips"></div>
-  </section>
-
-  <section class="card">
-    <div class="section-head"><h2>練習の設定</h2></div>
-    <label class="label" for="opt-theme">見た目</label>
+    <div class="section-head"><h2 data-i18n="set.practice">練習の設定</h2></div>
+    <label class="label" for="opt-theme" data-i18n="set.look">見た目</label>
     <select id="opt-theme" class="input">
-      <option value="light">ライト（デフォルト）</option>
-      <option value="dark">ダーク（夜向け）</option>
-      <option value="paper">ペーパー</option>
+      <option value="light" data-i18n="set.themeLight">ライト（デフォルト）</option>
+      <option value="dark" data-i18n="set.themeDark">ダーク（夜向け）</option>
+      <option value="paper" data-i18n="set.themePaper">ペーパー</option>
     </select>
-    <label class="switch"><input type="checkbox" id="opt-sound"> 残り3秒でカチッと鳴らす</label>
-    <label class="switch"><input type="checkbox" id="opt-sfx"> 効果音を鳴らす（レベルアップ・バッジ）</label>
-    <label class="switch"><input type="checkbox" id="opt-autoflip"> 毎回ランダムに左右反転する</label>
-    <label class="switch"><input type="checkbox" id="opt-keepawake"> 練習中に画面を消さない</label>
-    <label class="label" for="opt-orientation">写真の向き</label>
+
+    <label class="label" for="opt-alpha" data-i18n="set.penAlpha">線の透明度</label>
+    <input type="range" id="opt-alpha" class="range" min="15" max="100" step="5" value="100">
+    <p class="muted small" data-i18n="set.penAlphaNote"></p>
+
+    <label class="switch"><input type="checkbox" id="opt-sound"> <span data-i18n="set.tick"></span></label>
+    <label class="switch"><input type="checkbox" id="opt-sfx"> <span data-i18n="set.sfx"></span></label>
+    <label class="switch"><input type="checkbox" id="opt-autoflip"> <span data-i18n="set.autoflip"></span></label>
+    <label class="switch"><input type="checkbox" id="opt-keepawake"> <span data-i18n="set.keepawake"></span></label>
+
+    <label class="label" for="opt-orientation" data-i18n="set.orientation">写真の向き</label>
     <select id="opt-orientation" class="input">
-      <option value="any">おまかせ</option>
-      <option value="portrait">縦</option>
-      <option value="landscape">横</option>
+      <option value="any" data-i18n="set.orAny">おまかせ</option>
+      <option value="portrait" data-i18n="set.orPortrait">縦</option>
+      <option value="landscape" data-i18n="set.orLandscape">横</option>
     </select>
   </section>
 
   <section class="card">
-    <div class="section-head"><h2>データ</h2></div>
+    <div class="section-head"><h2 data-i18n="set.data">データ</h2></div>
     <div class="row">
-      <button id="export-btn" class="btn ghost small">記録を書き出す</button>
-      <button id="reset-btn" class="btn danger small">すべて消す</button>
+      <button id="export-btn" class="btn ghost small" data-i18n="set.export">記録を書き出す</button>
+      <button id="reset-btn" class="btn danger small" data-i18n="set.reset">すべて消す</button>
     </div>
+    <div class="row">
+      <button id="admin-open" class="btn ghost small" data-i18n="set.admin">管理画面をひらく</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><h2 data-i18n="set.credits">クレジット</h2></div>
+    <p class="muted small" data-i18n="set.creditsBody"></p>
   </section>
 
   <section class="card">
     <details class="why">
-      <summary>この練習メニューの根拠</summary>
+      <summary data-i18n="set.basis">この練習メニューの根拠</summary>
       <div id="theory-list" class="theory-list"></div>
     </details>
   </section>
 </main>
 
 <nav class="tabbar">
-  <button data-nav="home" data-tab="home">ホーム</button>
-  <button data-nav="library" data-tab="library">しゃしん</button>
-  <button data-nav="log" data-tab="log">きろく</button>
+  <button data-nav="home" data-tab="home" data-i18n="tab.home">ホーム</button>
+  <button data-nav="library" data-tab="library" data-i18n="tab.library">しゃしん</button>
+  <button data-nav="log" data-tab="log" data-i18n="tab.log">きろく</button>
 </nav>
 
 <div id="toast" class="toast" hidden></div>

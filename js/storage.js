@@ -17,6 +17,8 @@ const DEFAULT_SETTINGS = {
   autoFlip: false,
   keepAwake: true,
   orientation: 'any',
+  penAlpha: 1,               // キャンバスの線の濃さ（0.1〜1）
+  hintOpen: true,            // 描いている最中の手順ヒントを開いておくか
 };
 
 function read(key, fallback) {
@@ -109,6 +111,26 @@ export function dailyTotals(history = getHistory()) {
     map.set(s.date, (map.get(s.date) || 0) + (s.seconds || 0));
   }
   return map;
+}
+
+/** 日付 -> その日に描いた枚数 */
+export function drawingsByDay(history = getHistory()) {
+  const map = new Map();
+  for (const s of history) {
+    map.set(s.date, (map.get(s.date) || 0) + (s.drawingCount || 0));
+  }
+  return map;
+}
+
+/** 通算で描いた枚数。レベルの横に出す。 */
+export function totalDrawings(history = getHistory()) {
+  return history.reduce((sum, s) => sum + (s.drawingCount || 0), 0);
+}
+
+/** 今日そのメニューを何周したか。デイリーの「完了 / 1周」に使う。 */
+export function roundsToday(menuId = 'daily', history = getHistory()) {
+  const today = dateKey();
+  return history.filter((s) => s.date === today && s.menuId === menuId).length;
 }
 
 /** 今日（まだ未練習なら昨日）から遡って連続日数を数える。 */

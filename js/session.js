@@ -11,6 +11,8 @@ import { createTimer, sfx } from './timer.js';
 import { createPad } from './draw.js';
 import { $, $$, showScreen, toast, fmtClock } from './ui.js';
 import { paintIcons } from './icons.js';
+import { t, tr, fmtDur } from './i18n.js';
+import { saveSettings } from './storage.js';
 
 export function createSessionRunner({ onFinish, onQuit }) {
   const dom = {
@@ -32,6 +34,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     bridgeTitle: $('#bridge-title'),
     bridgeTheory: $('#bridge-theory'),
     bridgeCue: $('#bridge-cue'),
+    bridgeAbout: $('#bridge-about'),
     bridgeMeta: $('#bridge-meta'),
     bridgeReminder: $('#bridge-reminder'),
     stage: document.querySelector('.stage'),
@@ -44,6 +47,10 @@ export function createSessionRunner({ onFinish, onQuit }) {
     padTimeNum: $('.pad-time-num'),
     padTimebar: $('#pad-timebar-fill'),
     padSteps: $('#pad-steps'),
+    padRef: document.querySelector('.pad-ref'),
+    padRefImg: $('#pad-ref-img'),
+    padHint: $('#pad-hint'),
+    padOpacity: $('#pad-opacity'),
   };
 
   const pad = createPad($('#pad'));
@@ -148,12 +155,14 @@ export function createSessionRunner({ onFinish, onQuit }) {
   async function showBridge(item, isFirst) {
     const drill = DRILLS[item.drillId];
     timer.stop();
-    dom.bridgeLabel.textContent = isFirst ? 'はじめのドリル' : '次のドリル';
-    dom.bridgeTitle.textContent = drill.name;
-    dom.bridgeTheory.textContent = drill.theory;
-    dom.bridgeCue.textContent = drill.cue;
+    dom.bridgeLabel.textContent = isFirst ? t('sess.first') : t('sess.next');
+    dom.bridgeTitle.textContent = tr(drill, 'name');
+    dom.bridgeTheory.textContent = tr(drill, 'theory');
+    dom.bridgeCue.textContent = tr(drill, 'cue');
+    // 名前だけでは何をするのか分からないドリルがあるので、説明を1段落そのまま出す
+    dom.bridgeAbout.textContent = tr(drill, 'about') || '';
     dom.bridgeMeta.textContent =
-      `${item.countInStep}枚 × ${fmtClock(item.seconds)}${item.seconds >= 60 ? '' : '秒'}`;
+      t('sess.sheetsBy', { n: item.countInStep, t: fmtDur(item.seconds) });
 
     // 復習対象のドリルのときだけ「前回の宿題」を1行出す
     const reminder = item.source.startsWith('weak:') ? state.reminder : null;
@@ -175,29 +184,33 @@ export function createSessionRunner({ onFinish, onQuit }) {
     dom.peekBtn.hidden = state.peeksLeft === 0;
 
     const drill = DRILLS[item.drillId];
-    dom.drillName.textContent = drill.name;
+    dom.drillName.textContent = tr(drill, 'name');
     dom.drillProgress.textContent = `${item.indexInStep} / ${item.countInStep}`;
-    dom.drillCue.textContent = drill.cue;
+    dom.drillCue.textContent = tr(drill, 'cue');
     dom.attrBox.hidden = true;
 
     showScreen('session');
+    setPad(true);              // 紙に描く人は上の道具から閉じられる
     dom.stageMessage.hidden = false;
-    dom.stageMessage.textContent = item.source === 'plate' ? '図版を読み込み中…' : '写真を読み込み中…';
+    dom.stageMessage.textContent =
+      item.source === 'plate' ? t('sess.loadingPlate') : t('sess.loading');
 
     const photo = await takePhoto(item);
     prefetch(state.plan[state.cursor + 1]);
 
     if (!photo) {
-      dom.stageMessage.textContent = '絵を取得できませんでした。設定の取得元を確認してください。';
+      dom.stageMessage.textContent = t('sess.loadFail');
       return;
     }
 
     dom.stageMessage.hidden = true;
     dom.img.src = photo.url;
     dom.refMiniImg.src = photo.url;
-    dom.padDrill.textContent = drill.name;
+    dom.padRefImg.src = photo.url;      // 広い画面では左半分にそのまま出す
+    dom.padDrill.textContent = tr(drill, 'name');
     dom.padProgress.textContent = `${item.indexInStep} / ${item.countInStep}`;
-    dom.padSteps.innerHTML = (drill.steps || []).map((t) => `<li>${t}</li>`).join('');
+    dom.padSteps.innerHTML = (tr(drill, 'steps') || [])
+      .map((line) => `<li>${escapeHtml(line)}</li>`).join('');
     state.currentPhotoId = photo.photoId || null;
     renderAttribution(photo);
 
@@ -231,7 +244,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     if (blob) state.drawings.push({ blob, photoId: state.currentPhotoId, seconds: state.itemSeconds });
     pad.clear();
     if (state.settings.sfx) sfx.check();
-    toast(`${state.drawings.length}枚目を保存しました`, 1400);
+    toast(t('sess.saved', { n: state.drawings.length }), 1400);
   }
 
   function record(item, seconds) {
@@ -319,15 +332,20 @@ export function createSessionRunner({ onFinish, onQuit }) {
     paintIcons(dom.pauseBtn.parentNode);
   }
 
-  /** 画面内に描くモード。紙が手元にない日でも始められるように。 */
-  function togglePad() {
-    const open = dom.padWrap.hidden;
+  /**
+   * 画面内に描くモード。
+   * 以前は「写真だけ出て、透明のボタンを押すとペンが出る」形にしていたが、
+   * 押すものが見えないので誰も気づかなかった。最初から開いた状態で始める。
+   */
+  function setPad(open) {
     dom.padWrap.hidden = !open;
     dom.stage.classList.toggle('with-pad', open);
     $('#tool-pad').classList.toggle('on', open);
     if (open) requestAnimationFrame(() => pad.resize());
     else dom.refMini.classList.remove('big');
   }
+
+  function togglePad() { setPad(dom.padWrap.hidden); }
 
   function closePad() {
     dom.padWrap.hidden = true;
@@ -387,6 +405,23 @@ export function createSessionRunner({ onFinish, onQuit }) {
     pad.setEraser(tool === 'eraser');
     $$('.pad-btn[data-pad="pen"], .pad-btn[data-pad="eraser"]')
       .forEach((b) => b.classList.toggle('on', b.dataset.pad === tool));
+  });
+
+  /*
+   * 線の濃さ。あたりを薄く取ってから本線を乗せたい人向け。
+   * 道具をいじる時間は描く時間から引かれるので、スライダー1本だけにしてある。
+   */
+  dom.padOpacity.addEventListener('input', (e) => {
+    const alpha = Number(e.target.value) / 100;
+    pad.setAlpha(alpha);
+    dom.padOpacity.style.setProperty('--a', String(alpha));
+    if (state) state.settings = saveSettings({ penAlpha: alpha });
+  });
+
+  // 手順は写真の上に乗るので、邪魔になったら畳めるようにする
+  $('#hint-toggle').addEventListener('click', () => {
+    const open = dom.padHint.classList.toggle('open');
+    if (state) state.settings = saveSettings({ hintOpen: open });
   });
 
   window.addEventListener('resize', () => { if (!dom.padWrap.hidden) pad.resize(); });
@@ -454,6 +489,10 @@ export function createSessionRunner({ onFinish, onQuit }) {
         awaitingBridge: false,
       };
       pad.clear();
+      pad.setAlpha(settings.penAlpha ?? 1);
+      dom.padOpacity.value = String(Math.round((settings.penAlpha ?? 1) * 100));
+      dom.padOpacity.style.setProperty('--a', String(settings.penAlpha ?? 1));
+      dom.padHint.classList.toggle('open', settings.hintOpen !== false);
       Object.values(queues).forEach((q) => q.prime?.());
       if (settings.source === 'unsplash' && !settings.unsplashKey) {
         toast('Unsplash のキーが未設定です。設定から入れてください');
