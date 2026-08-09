@@ -99,7 +99,6 @@ function renderHome() {
   renderWeekBars(history);
   renderDaily(history);
   renderModes();
-  renderExtras();
 }
 
 /**
