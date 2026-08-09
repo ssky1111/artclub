@@ -9,7 +9,7 @@
 
 import { putPhoto, getPhoto, listPhotos, deletePhoto, shrinkImage } from './db.js';
 import { loadManifest, manifestPhotoUrl } from './repo.js';
-import { supabasePhotos, loadCustomTags } from './supabase.js';
+import { supabasePhotos, loadCustomTags, loadHiddenTags } from './supabase.js';
 
 /** よく使うタグ。これ以外も自由に足せる。 */
 export const TAG_GROUPS = [
@@ -22,16 +22,20 @@ export const TAG_GROUPS = [
 export const ALL_TAGS = TAG_GROUPS.flatMap((g) => g.tags);
 
 let customTags = [];
+let hiddenTags = [];
 
 export async function refreshCustomTags() {
   customTags = await loadCustomTags();
+  hiddenTags = await loadHiddenTags();
   return customTags;
 }
 
 export function getCustomTags() { return customTags; }
+export function getHiddenTags() { return hiddenTags; }
 
 export function allTagsWithCustom() {
-  return [...ALL_TAGS, ...customTags.filter((t) => !ALL_TAGS.includes(t))];
+  const all = [...ALL_TAGS, ...customTags.filter((t) => !ALL_TAGS.includes(t))];
+  return all.filter((t) => !hiddenTags.includes(t));
 }
 
 let cache = null;

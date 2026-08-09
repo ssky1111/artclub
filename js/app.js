@@ -23,7 +23,7 @@ import { putDrawing, getDrawing, deleteAllDrawings, deleteAllPhotos } from './db
 import {
   TAG_GROUPS, ALL_TAGS, allPhotos, everyPhoto, bundledPhotos, photoUrl,
   addFiles, setTags, removePhoto, createLibraryQueue,
-  refreshCustomTags, getCustomTags, allTagsWithCustom,
+  refreshCustomTags, getCustomTags, getHiddenTags, allTagsWithCustom,
 } from './library.js';
 import {
   loadManifest, getRepoConfig, saveRepoConfig, pushPhotos, testRepo,
@@ -33,6 +33,7 @@ import {
   loadManifest as sbLoadManifest, pushToSupabase, testConnection as sbTest,
   supabasePhotos, updateTags as sbUpdateTags, bulkUpdateTags, bulkRemoveTags,
   removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
+  saveHiddenTags, invalidateTagConfig,
 } from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp, resetGame } from './game.js';
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
@@ -520,7 +521,15 @@ function wireLibrary() {
 /* ==================== 管理画面（#admin） ==================== */
 
 const PASS_KEY = 'drawpamine.admin.v1';
+const SESSION_KEY = 'drawpamine.admin.session';
 let adminOpen = false;
+
+function isSessionAuth() {
+  try { return sessionStorage.getItem(SESSION_KEY) === '1'; } catch { return false; }
+}
+function setSessionAuth() {
+  try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* */ }
+}
 
 async function hash(text) {
   if (!crypto?.subtle) return `plain:${text}`;      // file:// では subtle が無いことがある
@@ -534,7 +543,7 @@ function storedPass() {
 
 async function openAdmin() {
   showScreen('admin');
-  const hasPass = !!storedPass();
+  if (!adminOpen && isSessionAuth()) adminOpen = true;
   $('#admin-gate-note').textContent = t('admin.enterPass');
   $('#admin-pass').value = '';
   $('#admin-msg').textContent = '';
@@ -683,21 +692,38 @@ async function renderTagManager() {
   const wrap = $('#tag-manage-list');
   wrap.innerHTML = '';
 
-  const builtIn = ALL_TAGS;
   const custom = getCustomTags();
+  const hidden = getHiddenTags();
+  const visible = allTagsWithCustom();
 
-  for (const tag of builtIn) {
-    wrap.append(el('span', 'chip on', tag));
-  }
-  for (const tag of custom) {
+  for (const tag of visible) {
     const chip = el('button', 'chip on', `${tag} ×`);
     chip.addEventListener('click', async () => {
       if (!confirm(`「${tag}」を削除しますか？`)) return;
-      const next = custom.filter((t2) => t2 !== tag);
-      await saveCustomTags(next);
+      invalidateTagConfig();
+      if (custom.includes(tag)) {
+        await saveCustomTags(custom.filter((t2) => t2 !== tag));
+      } else {
+        await saveHiddenTags([...hidden, tag]);
+      }
       await renderTagManager();
+      renderUploadTagChips();
+      toast(`「${tag}」を削除しました`);
     });
     wrap.append(chip);
+  }
+
+  if (hidden.length) {
+    const restore = el('button', 'btn ghost small', `非表示のタグを復元（${hidden.length}件）`);
+    restore.style.marginTop = '8px';
+    restore.addEventListener('click', async () => {
+      invalidateTagConfig();
+      await saveHiddenTags([]);
+      await renderTagManager();
+      renderUploadTagChips();
+      toast('すべてのタグを復元しました');
+    });
+    wrap.append(restore);
   }
 }
 
@@ -722,6 +748,7 @@ function wireAdmin() {
       return;
     }
     adminOpen = true;
+    setSessionAuth();
     await openAdmin();
   });
 

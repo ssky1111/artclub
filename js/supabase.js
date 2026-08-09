@@ -65,19 +65,24 @@ async function saveManifest(entries) {
 
 const TAGS_FILE = 'custom-tags.json';
 
-export async function loadCustomTags() {
+let tagConfig = null;
+
+export async function loadTagConfig() {
+  if (tagConfig) return tagConfig;
   try {
     const res = await fetch(publicUrl(TAGS_FILE), { cache: 'reload' });
-    if (!res.ok) return [];
+    if (!res.ok) return { custom: [], hidden: [] };
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    if (Array.isArray(data)) return { custom: data, hidden: [] };
+    return { custom: data.custom || [], hidden: data.hidden || [] };
   } catch {
-    return [];
+    return { custom: [], hidden: [] };
   }
 }
 
-export async function saveCustomTags(tags) {
-  const body = JSON.stringify(tags);
+async function saveTagConfig(cfg) {
+  tagConfig = cfg;
+  const body = JSON.stringify(cfg);
   const res = await fetch(storageUrl(TAGS_FILE), {
     method: 'POST',
     headers: hdrs({
@@ -87,8 +92,32 @@ export async function saveCustomTags(tags) {
     body,
   });
   if (!res.ok) throw new Error(`tags save failed: ${res.status}`);
-  return tags;
+  return cfg;
 }
+
+export async function loadCustomTags() {
+  const cfg = await loadTagConfig();
+  return cfg.custom;
+}
+
+export async function loadHiddenTags() {
+  const cfg = await loadTagConfig();
+  return cfg.hidden;
+}
+
+export async function saveCustomTags(tags) {
+  const cfg = await loadTagConfig();
+  cfg.custom = tags;
+  return saveTagConfig(cfg);
+}
+
+export async function saveHiddenTags(hidden) {
+  const cfg = await loadTagConfig();
+  cfg.hidden = hidden;
+  return saveTagConfig(cfg);
+}
+
+export function invalidateTagConfig() { tagConfig = null; }
 
 /* ---------- 写真のアップロード ---------- */
 
