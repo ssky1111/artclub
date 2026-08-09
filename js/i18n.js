@@ -148,10 +148,8 @@ const DICT = {
   'admin.wrong':         { ja: 'ちがいます',           en: 'Wrong password' },
   'admin.unlock':        { ja: 'ひらく',               en: 'Unlock' },
   'admin.lockAgain':     { ja: 'ロックする',           en: 'Lock' },
-  'admin.passNote':      { ja: 'このアプリはサーバーを持たないので、これは「フタ」であって鍵ではありません。' +
-                               '端末を人に渡さないでください。',
-                           en: 'This app has no server, so the password is a lid, not a lock. ' +
-                               "Don't hand the device to someone else." },
+  'admin.passNote':      { ja: '管理画面のパスワードです。',
+                           en: 'Admin password.' },
   'admin.repo':          { ja: 'リポジトリに入れる',   en: 'Publish to the repository' },
   'admin.repoNote':      { ja: '端末の写真とタグを、そのままリポジトリの photos/ に置きます。' +
                                '置いたものは、この端末以外でもお題として出ます。',

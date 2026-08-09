@@ -699,7 +699,7 @@ function wireAdmin() {
   $('#admin-enter').addEventListener('click', async () => {
     const value = $('#admin-pass').value;
     if (!value) return void ($('#admin-msg').textContent = t('admin.enterPass'));
-    const fixed = await hash('admin1989');
+    const fixed = await hash('vg5!E8MNMX!OISEm');
     const digest = await hash(value);
     if (digest !== fixed) {
       $('#admin-msg').textContent = t('admin.wrong');

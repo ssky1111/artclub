@@ -3,7 +3,7 @@
  * （毎回ちがう写真が出ることに意味があるし、端末を圧迫したくないので）。
  */
 
-const CACHE = 'artclub-v11';
+const CACHE = 'artclub-v12';
 const SHELL = [
   './',
   './index.html',
@@ -26,6 +26,7 @@ const SHELL = [
   './js/i18n.js',
   './js/export.js',
   './js/repo.js',
+  './js/supabase.js',
   './js/glossary.js',
   './manifest.webmanifest',
   './icons/icon.svg',
@@ -52,7 +53,19 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin) return;   // Unsplash / Picsum は素通し
+  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
+    event.respondWith(
+      caches.match(request).then((hit) =>
+        hit || fetch(request).then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {});
+          return res;
+        }),
+      ),
+    );
+    return;
+  }
+  if (url.origin !== self.location.origin) return;
 
   /*
    * アプリ本体はネットワーク優先・失敗したらキャッシュ。
