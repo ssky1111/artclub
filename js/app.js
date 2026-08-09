@@ -23,11 +23,17 @@ import { putDrawing, getDrawing, deleteAllDrawings, deleteAllPhotos } from './db
 import {
   TAG_GROUPS, ALL_TAGS, allPhotos, everyPhoto, bundledPhotos, photoUrl,
   addFiles, setTags, removePhoto, createLibraryQueue,
+  refreshCustomTags, getCustomTags, allTagsWithCustom,
 } from './library.js';
 import {
   loadManifest, getRepoConfig, saveRepoConfig, pushPhotos, testRepo,
   manifestJson, fileNameFor, manifestPhotoUrl,
 } from './repo.js';
+import {
+  loadManifest as sbLoadManifest, pushToSupabase, testConnection as sbTest,
+  supabasePhotos, updateTags as sbUpdateTags, bulkUpdateTags, bulkRemoveTags,
+  removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
+} from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp, resetGame } from './game.js';
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
@@ -551,6 +557,132 @@ async function renderAdmin() {
   $('#repo-branch').value = cfg.branch || 'main';
   $('#repo-token').value = cfg.token || '';
   $('#repo-push').textContent = t('admin.push', { n: mine.length });
+
+  await renderSupabaseGrid();
+  await renderTagManager();
+}
+
+/* ---------- Supabase 写真グリッド ---------- */
+
+const sbSelected = new Set();
+
+async function renderSupabaseGrid() {
+  const grid = $('#sb-grid');
+  grid.innerHTML = '';
+  sbSelected.clear();
+  updateSelectBar();
+
+  try {
+    const photos = await supabasePhotos();
+    $('#sb-status').textContent = `${photos.length} 枚`;
+
+    for (const photo of photos) {
+      const btn = el('button', 'lib-item');
+      btn.dataset.file = photo.id.replace('sb:', '');
+      const img = document.createElement('img');
+      img.src = photo.url;
+      img.alt = photo.name || '';
+      img.loading = 'lazy';
+      btn.append(img);
+      if (photo.tags.length) {
+        btn.append(el('div', 'lib-tags', photo.tags.join(' ')));
+      }
+      btn.addEventListener('click', (e) => {
+        if (e.shiftKey || grid.classList.contains('selecting')) {
+          e.preventDefault();
+          toggleSelect(btn, photo);
+        } else {
+          openSbPhoto(photo);
+        }
+      });
+      btn.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        grid.classList.add('selecting');
+        toggleSelect(btn, photo);
+      });
+      grid.append(btn);
+    }
+  } catch (err) {
+    $('#sb-status').textContent = `読み込みエラー: ${err.message}`;
+  }
+}
+
+function toggleSelect(btn, photo) {
+  const file = photo.id.replace('sb:', '');
+  if (sbSelected.has(file)) {
+    sbSelected.delete(file);
+    btn.classList.remove('selected');
+  } else {
+    sbSelected.add(file);
+    btn.classList.add('selected');
+  }
+  updateSelectBar();
+}
+
+function updateSelectBar() {
+  const bar = $('#sb-select-bar');
+  const n = sbSelected.size;
+  bar.hidden = n === 0;
+  $('#sb-select-count').textContent = `${n}枚選択中`;
+  $('#sb-grid').classList.toggle('selecting', n > 0);
+}
+
+function openSbPhoto(photo) {
+  const sheet = $('#photo-sheet');
+  sheet.hidden = false;
+  $('#photo-big').src = photo.url;
+
+  const tagsWrap = $('#photo-tags');
+  tagsWrap.innerHTML = '';
+  const allT = allTagsWithCustom();
+  for (const tag of allT) {
+    const chip = el('button', `chip${photo.tags.includes(tag) ? ' on' : ''}`, tag);
+    chip.addEventListener('click', async () => {
+      const current = photo.tags.includes(tag)
+        ? photo.tags.filter((t2) => t2 !== tag)
+        : [...photo.tags, tag];
+      chip.classList.toggle('on');
+      const file = photo.id.replace('sb:', '');
+      await sbUpdateTags(file, current);
+      photo.tags = current;
+    });
+    tagsWrap.append(chip);
+  }
+
+  const delBtn = $('#photo-delete');
+  delBtn.hidden = false;
+  delBtn.onclick = async () => {
+    if (!confirm('この写真を Supabase から消しますか？')) return;
+    const file = photo.id.replace('sb:', '');
+    await removeFromSupabase(file);
+    sheet.hidden = true;
+    await renderSupabaseGrid();
+  };
+}
+
+/* ---------- タグ管理 ---------- */
+
+async function renderTagManager() {
+  await refreshCustomTags();
+  const wrap = $('#tag-manage-list');
+  wrap.innerHTML = '';
+
+  const builtIn = ALL_TAGS;
+  const custom = getCustomTags();
+
+  for (const tag of builtIn) {
+    wrap.append(el('span', 'chip on', tag));
+  }
+  for (const tag of custom) {
+    const chip = el('button', 'chip on', `${tag} ×`);
+    chip.addEventListener('click', async () => {
+      if (!confirm(`「${tag}」を削除しますか？`)) return;
+      const next = custom.filter((t2) => t2 !== tag);
+      await saveCustomTags(next);
+      await renderTagManager();
+    });
+    wrap.append(chip);
+  }
 }
 
 function readRepoForm() {
@@ -634,6 +766,111 @@ function wireAdmin() {
       await new Promise((r) => setTimeout(r, 350));
       downloadBlob(mine[i].blob, fileNameFor(mine[i]));
     }
+  });
+
+  /* ---------- Supabase ---------- */
+
+  $('#sb-add').addEventListener('click', () => $('#sb-input').click());
+  $('#sb-input').addEventListener('change', async (e) => {
+    const files = [...(e.target.files || [])];
+    if (!files.length) return;
+    const status = $('#sb-status');
+    status.textContent = `${files.length} 枚をアップロード中…`;
+    try {
+      const { shrinkImage } = await import('./db.js');
+      const photos = [];
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        const blob = await shrinkImage(file);
+        photos.push({
+          id: `p${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+          blob,
+          tags: [],
+          name: file.name,
+          addedAt: Date.now(),
+        });
+      }
+      await pushToSupabase(photos, (i, n) => {
+        status.textContent = `アップロード中… ${i}/${n}`;
+      });
+      e.target.value = '';
+      status.textContent = `${photos.length} 枚をアップロードしました`;
+      await renderSupabaseGrid();
+    } catch (err) {
+      status.textContent = `エラー: ${err.message}`;
+    }
+  });
+
+  $('#sb-select-all').addEventListener('click', () => {
+    for (const btn of $$('#sb-grid .lib-item')) {
+      const file = btn.dataset.file;
+      if (file && !sbSelected.has(file)) {
+        sbSelected.add(file);
+        btn.classList.add('selected');
+      }
+    }
+    updateSelectBar();
+  });
+
+  $('#sb-deselect').addEventListener('click', () => {
+    sbSelected.clear();
+    for (const btn of $$('#sb-grid .lib-item')) btn.classList.remove('selected');
+    updateSelectBar();
+  });
+
+  $('#sb-bulk-tag-btn').addEventListener('click', () => {
+    if (!sbSelected.size) return;
+    const sheet = $('#bulk-tag-sheet');
+    sheet.hidden = false;
+    const chips = $('#bulk-tag-chips');
+    chips.innerHTML = '';
+    const allT = allTagsWithCustom();
+    const chosen = new Set();
+    for (const tag of allT) {
+      const chip = el('button', 'chip', tag);
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('on');
+        if (chosen.has(tag)) chosen.delete(tag); else chosen.add(tag);
+      });
+      chips.append(chip);
+    }
+    $('#bulk-tag-apply').onclick = async () => {
+      if (!chosen.size) return;
+      await bulkUpdateTags([...sbSelected], [...chosen]);
+      sheet.hidden = true;
+      toast(`${sbSelected.size}枚にタグを付けました`);
+      sbSelected.clear();
+      await renderSupabaseGrid();
+    };
+    $('#bulk-tag-remove').onclick = async () => {
+      if (!chosen.size) return;
+      await bulkRemoveTags([...sbSelected], [...chosen]);
+      sheet.hidden = true;
+      toast(`${sbSelected.size}枚からタグを外しました`);
+      sbSelected.clear();
+      await renderSupabaseGrid();
+    };
+  });
+
+  $('#bulk-tag-close').addEventListener('click', () => { $('#bulk-tag-sheet').hidden = true; });
+
+  /* ---------- タグ管理 ---------- */
+
+  $('#tag-add-btn').addEventListener('click', async () => {
+    const input = $('#tag-new-input');
+    const name = input.value.trim();
+    if (!name) return;
+    const existing = [...ALL_TAGS, ...getCustomTags()];
+    if (existing.includes(name)) return toast('そのタグはすでにあります');
+    const next = [...getCustomTags(), name];
+    await saveCustomTags(next);
+    input.value = '';
+    await renderTagManager();
+    toast(`「${name}」を追加しました`);
+  });
+
+  $('#tag-new-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') $('#tag-add-btn').click();
   });
 }
 

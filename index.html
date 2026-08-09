@@ -508,6 +508,53 @@
   </section>
 
   <div id="admin-body" hidden>
+    <!-- Supabase 写真管理 -->
+    <section class="card">
+      <div class="section-head">
+        <h2>Supabase の写真</h2>
+        <div class="row">
+          <button id="sb-add" class="btn ghost small">＋ 追加</button>
+          <button id="sb-bulk-tag" class="btn ghost small" hidden>タグ付け</button>
+        </div>
+      </div>
+      <input type="file" id="sb-input" accept="image/*" multiple hidden>
+      <p id="sb-status" class="muted small"></p>
+      <div id="sb-grid" class="lib-grid selectable-grid"></div>
+      <div id="sb-select-bar" class="select-bar" hidden>
+        <span id="sb-select-count">0枚選択中</span>
+        <button id="sb-select-all" class="btn ghost small">全選択</button>
+        <button id="sb-deselect" class="btn ghost small">解除</button>
+        <button id="sb-bulk-tag-btn" class="btn primary small">一括タグ付け</button>
+      </div>
+    </section>
+
+    <!-- タグ管理 -->
+    <section class="card">
+      <div class="section-head"><h2>タグ管理</h2></div>
+      <p class="muted small">タグを追加・削除できます</p>
+      <div id="tag-manage-list" class="chips"></div>
+      <div class="row" style="margin-top:8px">
+        <input type="text" id="tag-new-input" class="input" placeholder="新しいタグ名" style="flex:1">
+        <button id="tag-add-btn" class="btn primary small">追加</button>
+      </div>
+    </section>
+
+    <!-- 一括タグ付けシート -->
+    <div id="bulk-tag-sheet" class="sheet" hidden>
+      <div class="sheet-inner">
+        <button id="bulk-tag-close" class="icon-btn sheet-close" data-icon="close"></button>
+        <div class="label">選択した写真にタグをつける</div>
+        <div id="bulk-tag-chips" class="chips"></div>
+        <div class="row" style="margin-top:12px">
+          <button id="bulk-tag-apply" class="btn primary big">適用する</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button id="bulk-tag-remove" class="btn danger small">選択したタグを外す</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- この端末の写真 -->
     <section class="card">
       <div class="section-head">
         <h2 data-i18n="admin.localOnly">この端末だけにある写真</h2>

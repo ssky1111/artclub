@@ -9,6 +9,7 @@
 
 import { putPhoto, getPhoto, listPhotos, deletePhoto, shrinkImage } from './db.js';
 import { loadManifest, manifestPhotoUrl } from './repo.js';
+import { supabasePhotos, loadCustomTags } from './supabase.js';
 
 /** よく使うタグ。これ以外も自由に足せる。 */
 export const TAG_GROUPS = [
@@ -19,6 +20,19 @@ export const TAG_GROUPS = [
 ];
 
 export const ALL_TAGS = TAG_GROUPS.flatMap((g) => g.tags);
+
+let customTags = [];
+
+export async function refreshCustomTags() {
+  customTags = await loadCustomTags();
+  return customTags;
+}
+
+export function getCustomTags() { return customTags; }
+
+export function allTagsWithCustom() {
+  return [...ALL_TAGS, ...customTags.filter((t) => !ALL_TAGS.includes(t))];
+}
 
 let cache = null;
 
@@ -84,10 +98,14 @@ export async function bundledPhotos() {
   }));
 }
 
-/** 端末の写真＋同梱の写真。お題を出すときはこちらを使う。 */
+/** 端末の写真＋同梱の写真＋Supabaseの写真。お題を出すときはこちらを使う。 */
 export async function everyPhoto({ fresh = false } = {}) {
-  const [mine, bundled] = await Promise.all([allPhotos({ fresh }), bundledPhotos()]);
-  return [...mine, ...bundled];
+  const [mine, bundled, sb] = await Promise.all([
+    allPhotos({ fresh }),
+    bundledPhotos(),
+    supabasePhotos().catch(() => []),
+  ]);
+  return [...mine, ...bundled, ...sb];
 }
 
 /** タグでしぼる。タグを1つも選んでいなければ全部。 */
