@@ -54,7 +54,7 @@ import { uploadArtwork, fetchArtworks, deleteArtwork } from './gallery.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '20';
+const BUILD = '21';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1964,6 +1964,8 @@ function updateAuthUI(u) {
   if (levelChip) levelChip.hidden = !loggedIn;
   const streakSub = $('.streak-sub');
   if (streakSub) streakSub.hidden = !loggedIn;
+  const weekBlock = $('.week-block');
+  if (weekBlock) weekBlock.hidden = !loggedIn;
   const logTab = $('[data-tab="log"]');
   if (logTab) logTab.hidden = !loggedIn;
 }
