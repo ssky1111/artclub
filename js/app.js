@@ -622,19 +622,13 @@ async function renderSupabaseGrid() {
       if (photo.tags.length) {
         btn.append(el('div', 'lib-tags', photo.tags.join(' ')));
       }
-      btn.addEventListener('click', (e) => {
-        if (e.shiftKey || grid.classList.contains('selecting')) {
-          e.preventDefault();
-          toggleSelect(btn, photo);
-        } else {
-          openSbPhoto(photo);
-        }
-      });
-      btn.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        grid.classList.add('selecting');
-        toggleSelect(btn, photo);
-      });
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'sb-check';
+      cb.addEventListener('click', (e) => e.stopPropagation());
+      cb.addEventListener('change', () => toggleSelect(btn, photo, cb.checked));
+      btn.append(cb);
+      btn.addEventListener('click', () => openSbPhoto(photo));
       grid.append(btn);
     }
   } catch (err) {
@@ -642,14 +636,18 @@ async function renderSupabaseGrid() {
   }
 }
 
-function toggleSelect(btn, photo) {
+function toggleSelect(btn, photo, force) {
   const file = photo.id.replace('sb:', '');
-  if (sbSelected.has(file)) {
-    sbSelected.delete(file);
-    btn.classList.remove('selected');
-  } else {
+  const checked = force !== undefined ? force : !sbSelected.has(file);
+  const cb = btn.querySelector('.sb-check');
+  if (checked) {
     sbSelected.add(file);
     btn.classList.add('selected');
+    if (cb) cb.checked = true;
+  } else {
+    sbSelected.delete(file);
+    btn.classList.remove('selected');
+    if (cb) cb.checked = false;
   }
   updateSelectBar();
 }
@@ -864,6 +862,8 @@ function wireAdmin() {
       if (file && !sbSelected.has(file)) {
         sbSelected.add(file);
         btn.classList.add('selected');
+        const cb = btn.querySelector('.sb-check');
+        if (cb) cb.checked = true;
       }
     }
     updateSelectBar();
@@ -871,7 +871,11 @@ function wireAdmin() {
 
   $('#sb-deselect').addEventListener('click', () => {
     sbSelected.clear();
-    for (const btn of $$('#sb-grid .lib-item')) btn.classList.remove('selected');
+    for (const btn of $$('#sb-grid .lib-item')) {
+      btn.classList.remove('selected');
+      const cb = btn.querySelector('.sb-check');
+      if (cb) cb.checked = false;
+    }
     updateSelectBar();
   });
 
@@ -910,6 +914,21 @@ function wireAdmin() {
   });
 
   $('#bulk-tag-close').addEventListener('click', () => { $('#bulk-tag-sheet').hidden = true; });
+
+  $('#sb-bulk-delete').addEventListener('click', async () => {
+    const n = sbSelected.size;
+    if (!n) return;
+    if (!confirm(`${n}枚の写真を削除しますか？`)) return;
+    const status = $('#sb-status');
+    let done = 0;
+    for (const file of [...sbSelected]) {
+      status.textContent = `削除中… ${++done}/${n}`;
+      try { await removeFromSupabase(file); } catch { /* 個別の失敗は飛ばす */ }
+    }
+    sbSelected.clear();
+    status.textContent = `${n}枚を削除しました`;
+    await renderSupabaseGrid();
+  });
 
   /* ---------- タグ管理 ---------- */
 
