@@ -277,11 +277,31 @@
     <textarea id="review-note" class="note" rows="3" data-i18n-ph="rev.notePh"></textarea>
   </section>
 
+  <section class="card" id="gallery-card" hidden>
+    <div class="section-head">
+      <h2 data-i18n="gal.title">みんなの作品</h2>
+      <span id="gallery-count" class="muted small"></span>
+    </div>
+    <div id="gallery-grid" class="gallery-grid"></div>
+    <p id="gallery-empty" class="muted small" hidden data-i18n="gal.empty"></p>
+    <p id="gallery-loading" class="muted small" hidden data-i18n="gal.loading"></p>
+  </section>
+
   <div class="stack">
     <button id="review-save" class="btn primary big" data-i18n="rev.save">保存して終わる</button>
+    <button id="gallery-btn" class="btn ghost" data-i18n="gal.showAll">みんなの作品を見る</button>
     <button id="review-again" class="btn ghost" data-i18n="rev.again">もう1セットやる</button>
   </div>
 </main>
+
+<!-- ギャラリー作品の拡大 -->
+<div id="gallery-lightbox" class="lightbox" hidden>
+  <button id="gallery-lb-close" class="icon-btn lightbox-close" data-icon="close"></button>
+  <img id="gallery-lb-img" alt="">
+  <div class="lightbox-actions">
+    <button id="gallery-lb-delete" class="btn danger small" data-i18n="gal.delete" hidden>この作品を消す</button>
+  </div>
+</div>
 
 <!-- ============ 解剖レッスン ============ -->
 <main id="screen-lesson" class="screen">

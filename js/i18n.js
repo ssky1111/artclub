@@ -40,6 +40,22 @@ const DICT = {
   'auth.withGoogle':      { ja: 'Google でログイン',      en: 'Log in with Google' },
   'auth.loggedIn':        { ja: 'ログイン中',            en: 'Logged in' },
 
+  /* ---------- ギャラリー ---------- */
+  'gal.showAll':          { ja: 'みんなの作品を見る',     en: 'See what others drew' },
+  'gal.title':            { ja: 'みんなの作品',           en: "Everyone's Work" },
+  'gal.empty':            { ja: 'まだ誰も描いていません。最初の1人になろう！',
+                            en: 'No one has drawn this yet. Be the first!' },
+  'gal.upload':           { ja: '作品を投稿する',         en: 'Share your drawing' },
+  'gal.uploading':        { ja: '投稿中…',               en: 'Uploading…' },
+  'gal.uploaded':         { ja: '投稿しました！',         en: 'Shared!' },
+  'gal.uploadFail':       { ja: '投稿に失敗しました',     en: 'Upload failed' },
+  'gal.loginToShare':     { ja: 'ログインして作品を保存',  en: 'Log in to save your work' },
+  'gal.delete':           { ja: 'この作品を消す',         en: 'Delete this artwork' },
+  'gal.deleteConfirm':    { ja: 'この作品を消しますか？', en: 'Delete this artwork?' },
+  'gal.close':            { ja: '閉じる',                en: 'Close' },
+  'gal.count':            { ja: '{n}人が描きました',      en: '{n} people drew this' },
+  'gal.loading':          { ja: '読み込み中…',           en: 'Loading…' },
+
   /* ---------- タブ ---------- */
   'tab.home':            { ja: 'ホーム',   en: 'Home' },
   'tab.library':         { ja: 'しゃしん', en: 'Photos' },

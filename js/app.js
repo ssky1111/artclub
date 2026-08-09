@@ -43,6 +43,7 @@ import { $, $$, el, showScreen, toast } from './ui.js';
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, userAvatar } from './auth.js';
+import { uploadArtwork, fetchArtworks, deleteArtwork } from './gallery.js';
 
 /*
  * index.html の data-build と揃えておく番号。
@@ -1253,6 +1254,8 @@ async function finishSession(result) {
   if (settings.sfx) sfx.fanfare();
 
   pendingDrawings = result.drawings || [];
+  galleryPromptIds = pendingDrawings.map((d) => d.photoId).filter(Boolean);
+  $('#gallery-card').hidden = true;
   renderDrawingStrip();
   $('#review-note').value = '';
   $$('.rate-btn').forEach((b) => b.classList.remove('on'));
@@ -1421,6 +1424,99 @@ function wireReview() {
   });
 
   $('#review-again').addEventListener('click', () => lastStart?.());
+
+  wireGallery();
+}
+
+/* ==================== みんなの作品ギャラリー ==================== */
+
+let galleryPromptIds = [];
+
+function wireGallery() {
+  const card = $('#gallery-card');
+  const grid = $('#gallery-grid');
+  const empty = $('#gallery-empty');
+  const loading = $('#gallery-loading');
+  const countEl = $('#gallery-count');
+  const lb = $('#gallery-lightbox');
+  let currentArtwork = null;
+
+  $('#gallery-btn').addEventListener('click', async () => {
+    if (!galleryPromptIds.length) return;
+
+    card.hidden = false;
+    grid.innerHTML = '';
+    empty.hidden = true;
+    loading.hidden = false;
+    countEl.textContent = '';
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    const user = getUser();
+    const userId = user?.id;
+
+    if (pendingDrawings.length && userId) {
+      for (const shot of pendingDrawings) {
+        if (!shot.uploaded && shot.photoId) {
+          try {
+            shot.uploading = true;
+            await uploadArtwork(shot.blob, shot.photoId);
+            shot.uploaded = true;
+          } catch { /* continue */ }
+        }
+      }
+    }
+
+    const uniqueIds = [...new Set(galleryPromptIds.filter(Boolean))];
+    let allWorks = [];
+    for (const pid of uniqueIds) {
+      const works = await fetchArtworks(pid).catch(() => []);
+      allWorks.push(...works);
+    }
+    allWorks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    loading.hidden = true;
+
+    if (!allWorks.length) {
+      empty.hidden = false;
+      return;
+    }
+
+    countEl.textContent = t('gal.count', { n: allWorks.length });
+
+    for (const work of allWorks) {
+      const item = el('button', `gallery-item${work.user_id === userId ? ' is-mine' : ''}`);
+      const img = el('img');
+      img.src = work.image_url;
+      img.loading = 'lazy';
+      item.append(img);
+      if (work.user_id === userId) {
+        item.append(el('span', 'gallery-mine-badge', getLang() === 'ja' ? '自分' : 'You'));
+      }
+      item.addEventListener('click', () => openGalleryLightbox(work, userId));
+      grid.append(item);
+    }
+  });
+
+  function openGalleryLightbox(work, userId) {
+    currentArtwork = work;
+    $('#gallery-lb-img').src = work.image_url;
+    const delBtn = $('#gallery-lb-delete');
+    delBtn.hidden = work.user_id !== userId;
+    lb.hidden = false;
+  }
+
+  $('#gallery-lb-close').addEventListener('click', () => { lb.hidden = true; });
+  lb.addEventListener('click', (e) => { if (e.target === lb) lb.hidden = true; });
+
+  $('#gallery-lb-delete').addEventListener('click', async () => {
+    if (!currentArtwork) return;
+    if (!confirm(t('gal.deleteConfirm'))) return;
+    try {
+      await deleteArtwork(currentArtwork.id, currentArtwork.storage_path);
+      lb.hidden = true;
+      $('#gallery-btn').click();
+    } catch { toast(t('gal.uploadFail')); }
+  });
 }
 
 let sheetBlob = null;

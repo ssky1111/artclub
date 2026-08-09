@@ -10,6 +10,7 @@ const SHELL = [
   './css/styles.css',
   './js/app.js',
   './js/auth.js',
+  './js/gallery.js',
   './js/theory.js',
   './js/session.js',
   './js/storage.js',
