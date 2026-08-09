@@ -971,3 +971,57 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 }
 .range { width: 100%; accent-color: var(--accent); margin: 6px 0 2px; }
 #screen-admin .input { margin-bottom: 6px; }
+
+/* ---------- ログイン ---------- */
+
+.auth-btn {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+  background: var(--surface); color: var(--text); border: none;
+  height: 40px; padding: 0 14px; border-radius: 999px;
+  font: inherit; font-size: 12px; font-weight: 800; letter-spacing: .06em;
+}
+.auth-btn:hover { background: var(--surface-2); }
+.auth-avatar-wrap { display: flex; }
+.auth-avatar {
+  width: 26px; height: 26px; border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--brand);
+}
+.auth-login-label { white-space: nowrap; }
+
+.auth-sheet-inner { text-align: center; }
+.auth-sheet-inner h2 { margin-bottom: 8px; }
+
+.auth-buttons { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+.auth-provider-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding: 14px 20px; border-radius: var(--radius-sm);
+  font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+  border: none; transition: opacity .15s;
+}
+.auth-provider-btn:hover { opacity: .85; }
+.auth-provider-icon { flex: none; }
+
+.x-btn {
+  background: #000; color: #fff;
+}
+body[data-theme='dark'] .x-btn {
+  background: #fff; color: #000;
+}
+.google-btn {
+  background: #fff; color: #3c4043;
+  border: 1px solid #dadce0;
+}
+body[data-theme='dark'] .google-btn {
+  background: #131314; color: #e3e3e3;
+  border-color: #5f6368;
+}
+
+.auth-user-info { margin-top: 24px; }
+.auth-user-row {
+  display: flex; align-items: center; gap: 12px;
+  justify-content: center; margin-bottom: 16px;
+}
+.auth-info-avatar {
+  width: 44px; height: 44px; border-radius: 50%; object-fit: cover;
+}
+.auth-info-name { font-weight: 700; font-size: 16px; }

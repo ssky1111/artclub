@@ -42,6 +42,7 @@ import { sfx } from './timer.js';
 import { $, $$, el, showScreen, toast } from './ui.js';
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
+import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, userAvatar } from './auth.js';
 
 /*
  * index.html の data-build と揃えておく番号。
@@ -52,7 +53,7 @@ import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js'
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '11';
+const BUILD = '13';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1146,7 +1147,19 @@ const notice = (msg) => toast(msg);
  * ふだんのメニュー。期限の来た復習があれば、その部位のドリルを1本ねじ込む。
  * 復習を別画面のタスクにすると誰もやらないので、いつもの導線に混ぜてしまう。
  */
+let pendingStart = null;
+
+function requireLogin(onSuccess) {
+  if (getUser()) { onSuccess(); return; }
+  pendingStart = onSuccess;
+  $('#auth-sheet').hidden = false;
+}
+
 async function startSession(menu, { tags = null, part = null } = {}) {
+  if (!getUser()) {
+    requireLogin(() => startSession(menu, { tags, part }));
+    return;
+  }
   lastStart = () => startSession(menu, { tags, part });
   settings = getSettings();
   const weak = weakestLesson();
@@ -1187,6 +1200,10 @@ async function startSession(menu, { tags = null, part = null } = {}) {
 
 /** 解剖レッスンの練習：図版の模写と、同じ部位の写真を混ぜて回す。 */
 function startLesson(lesson) {
+  if (!getUser()) {
+    requireLogin(() => startLesson(lesson));
+    return;
+  }
   lastStart = () => startLesson(lesson);
   settings = getSettings();
   const partPhotos = createPhotoQueue(settings, notice, { queryOverride: lesson.photoQuery });
@@ -1770,6 +1787,76 @@ function wireLessonLinks() {
   });
 }
 
+function updateAuthUI(u) {
+  const avatarWrap = $('#auth-avatar-wrap');
+  const label = $('#auth-login-label');
+  const btn = $('#auth-btn');
+  if (u) {
+    const src = userAvatar(u);
+    if (src) {
+      $('#auth-avatar').src = src;
+      avatarWrap.hidden = false;
+    } else {
+      avatarWrap.hidden = true;
+    }
+    label.textContent = userName(u);
+    btn.title = userName(u);
+  } else {
+    avatarWrap.hidden = true;
+    label.textContent = t('auth.login');
+    btn.title = t('auth.login');
+  }
+}
+
+function wireAuth() {
+  const sheet = $('#auth-sheet');
+  const buttons = sheet.querySelector('.auth-buttons');
+  const userInfo = $('#auth-user-info');
+
+  function renderSheet() {
+    const u = getUser();
+    if (u) {
+      buttons.hidden = true;
+      userInfo.hidden = false;
+      const src = userAvatar(u);
+      if (src) $('#auth-info-avatar').src = src;
+      $('#auth-info-name').textContent = userName(u);
+    } else {
+      buttons.hidden = false;
+      userInfo.hidden = true;
+    }
+  }
+
+  $('#auth-btn').addEventListener('click', () => {
+    renderSheet();
+    sheet.hidden = false;
+  });
+
+  $('#auth-close').addEventListener('click', () => {
+    sheet.hidden = true;
+  });
+
+  $('#login-x').addEventListener('click', () => loginWithProvider('twitter'));
+  $('#login-google').addEventListener('click', () => loginWithProvider('google'));
+
+  $('#auth-logout').addEventListener('click', async () => {
+    await logout();
+    sheet.hidden = true;
+  });
+
+  onAuthChange((u) => {
+    updateAuthUI(u);
+    if (u && pendingStart) {
+      sheet.hidden = true;
+      const fn = pendingStart;
+      pendingStart = null;
+      fn();
+    }
+  });
+
+  initAuth().then((u) => updateAuthUI(u));
+}
+
 function init() {
   applyTheme();
   applyI18n();
@@ -1777,6 +1864,7 @@ function init() {
   $('#lang-btn').textContent = getLang() === 'ja' ? 'EN' : 'JA';
 
   wireNav();
+  wireAuth();
   wireReview();
   wireDrawingLightbox();
   wireLesson();

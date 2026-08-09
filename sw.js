@@ -3,12 +3,13 @@
  * （毎回ちがう写真が出ることに意味があるし、端末を圧迫したくないので）。
  */
 
-const CACHE = 'artclub-v12';
+const CACHE = 'artclub-v13';
 const SHELL = [
   './',
   './index.html',
   './css/styles.css',
   './js/app.js',
+  './js/auth.js',
   './js/theory.js',
   './js/session.js',
   './js/storage.js',

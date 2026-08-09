@@ -6,8 +6,8 @@
  * SDK は使わず REST API を直接叩く。
  */
 
-const SUPABASE_URL = 'https://clifnylwatvtrikrfpft.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_kzKAxV0nVjU4ts-ewGHgRg_HmaQPFRj';
+export const SUPABASE_URL = 'https://clifnylwatvtrikrfpft.supabase.co';
+export const SUPABASE_KEY = 'sb_publishable_kzKAxV0nVjU4ts-ewGHgRg_HmaQPFRj';
 const BUCKET = 'photos';
 
 function hdrs(extra = {}) {

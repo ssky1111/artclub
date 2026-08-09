@@ -30,6 +30,16 @@ const DICT = {
   'common.sec':          { ja: '秒',                 en: 's' },
   'common.hour':         { ja: '時間',               en: 'h' },
 
+  /* ---------- ログイン ---------- */
+  'auth.login':           { ja: 'ログイン',             en: 'Log in' },
+  'auth.logout':          { ja: 'ログアウト',           en: 'Log out' },
+  'auth.loginTitle':      { ja: 'ログイン',             en: 'Log in' },
+  'auth.loginNote':       { ja: 'アカウントを連携すると、記録をクラウドに保存できるようになります。',
+                            en: 'Link an account to save your records to the cloud.' },
+  'auth.withX':           { ja: 'X（Twitter）でログイン', en: 'Log in with X (Twitter)' },
+  'auth.withGoogle':      { ja: 'Google でログイン',      en: 'Log in with Google' },
+  'auth.loggedIn':        { ja: 'ログイン中',            en: 'Logged in' },
+
   /* ---------- タブ ---------- */
   'tab.home':            { ja: 'ホーム',   en: 'Home' },
   'tab.library':         { ja: 'しゃしん', en: 'Photos' },
