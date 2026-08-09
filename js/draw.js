@@ -155,7 +155,7 @@ export function createPad(canvas) {
     get hasContent() { return dirty; },
 
     /** 記録に残すときは、透明のままだと真っ黒に見えるので紙の色を敷く。 */
-    toBlob(background = '#fffdf8') {
+    toBlob(background = '#ffffff') {
       return new Promise((resolve) => {
         if (!dirty) return resolve(null);
         const out = document.createElement('canvas');
