@@ -50,6 +50,9 @@ export function createSessionRunner({ onFinish, onQuit }) {
     padRefImg: $('#pad-ref-img'),
     padHint: $('#pad-hint'),
     padOpacity: $('#pad-opacity'),
+    padOpacityNum: $('#pad-opacity-num'),
+    padSwap: $('#pad-swap'),
+    bridgeDesc: $('#bridge-desc'),
   };
 
   const pad = createPad($('#pad'));
@@ -161,16 +164,27 @@ export function createSessionRunner({ onFinish, onQuit }) {
   }
 
   async function showBridge(item, isFirst) {
+    if (isFirst) {
+      prefetch(item);
+      requestWakeLock();
+      return runItem(item);
+    }
     const drill = DRILLS[item.drillId];
     timer.stop();
     dom.bridgeLabel.textContent = t('sess.next');
     dom.bridgeTitle.textContent = stepTitle(item, drill);
     dom.bridgeTheory.textContent = tr(drill, 'theory');
-    const cue = tr(drill, 'cue');
-    dom.bridgeCue.hidden = !cue;
-    dom.bridgeCue.textContent = cue || '';
+
+
+    const isGesture = item.drillId === 'gesture';
+    dom.bridgeDesc.hidden = !isGesture;
+    if (isGesture) {
+      dom.bridgeDesc.textContent = getLang() === 'en'
+        ? 'Capture the movement and centre of gravity. Impression over accuracy — exaggerate a little, be bold, and start with a single line.'
+        : '動きと重心を捉えよう。正確性より印象を大切に、少し誇張して大胆に、一本の線からはじめよう。';
+    }
     dom.bridgeMeta.textContent =
-      t('sess.sheetsBy', { n: item.countInStep, t: fmtDur(item.seconds) });
+      `${item.countInStep}枚×${item.seconds < 60 ? item.seconds + '秒' : (item.seconds / 60) + '分'}`;
 
     // 復習対象のドリルのときだけ「前回の宿題」を1行出す
     const reminder = item.source.startsWith('weak:') ? state.reminder : null;
@@ -261,11 +275,17 @@ export function createSessionRunner({ onFinish, onQuit }) {
   }
 
   async function advance(skipped = false) {
-    await harvestDrawing();          // 次の絵に移る前に、描いたものを1枚として確定する
+    if (!skipped) await harvestDrawing();
+    pad.resetHistory();
     const done = state.current;
     if (done) {
-      const spent = skipped ? Math.max(0, done.seconds - timer.remaining) : done.seconds;
-      record(done, Math.round(spent));
+      if (!skipped) {
+        const spent = done.seconds;
+        record(done, Math.round(spent));
+      } else {
+        const spent = Math.max(0, done.seconds - timer.remaining);
+        if (spent > 0) record(done, Math.round(spent));
+      }
     }
     state.cursor++;
     const item = state.plan[state.cursor];
@@ -419,12 +439,18 @@ export function createSessionRunner({ onFinish, onQuit }) {
    * 線の濃さ。あたりを薄く取ってから本線を乗せたい人向け。
    * 道具をいじる時間は描く時間から引かれるので、スライダー1本だけにしてある。
    */
-  dom.padOpacity.addEventListener('input', (e) => {
-    const alpha = Number(e.target.value) / 100;
+  function updateOpacity(val) {
+    const clamped = Math.max(15, Math.min(100, Math.round(val)));
+    const alpha = clamped / 100;
     pad.setAlpha(alpha);
-    dom.padOpacity.style.setProperty('--a', String(alpha));
+    dom.padOpacity.value = String(clamped);
+    dom.padOpacityNum.value = String(clamped);
+    dom.padOpacity.parentElement.style.setProperty('--a', String(alpha));
     if (state) state.settings = saveSettings({ penAlpha: alpha });
-  });
+  }
+
+  dom.padOpacity.addEventListener('input', (e) => updateOpacity(Number(e.target.value)));
+  dom.padOpacityNum.addEventListener('change', (e) => updateOpacity(Number(e.target.value)));
 
   // 手順は写真の上に乗るので、邪魔になったら畳めるようにする
   $('#hint-toggle').addEventListener('click', () => {
@@ -434,11 +460,24 @@ export function createSessionRunner({ onFinish, onQuit }) {
 
   window.addEventListener('resize', () => { if (!dom.padWrap.hidden) pad.resize(); });
 
-  $('#pad-next').addEventListener('click', () => advance(true));
+  $('#pad-next').addEventListener('click', () => advance(false));
+  $('#pad-skip').addEventListener('click', () => advance(true));
   $('#pad-quit').addEventListener('click', quit);
   $('#pad-time').addEventListener('click', togglePause);
   dom.refMini.addEventListener('click', () => dom.refMini.classList.toggle('big'));
   $('#attr-btn').addEventListener('click', () => { dom.attrBox.hidden = !dom.attrBox.hidden; });
+
+  dom.padSwap?.addEventListener('click', async () => {
+    if (!state?.current) return;
+    const item = state.current;
+    const photo = await queueFor(item).next().catch(() => null);
+    if (!photo) return;
+    dom.img.src = photo.url;
+    dom.refMiniImg.src = photo.url;
+    dom.padRefImg.src = photo.url;
+    state.currentPhotoId = photo.photoId || null;
+    renderAttribution(photo);
+  });
 
   $('#bridge-start').addEventListener('click', () => {
     if (!state?.awaitingBridge) return;
@@ -496,10 +535,13 @@ export function createSessionRunner({ onFinish, onQuit }) {
         pending: {},
         awaitingBridge: false,
       };
-      pad.clear();
-      pad.setAlpha(settings.penAlpha ?? 1);
-      dom.padOpacity.value = String(Math.round((settings.penAlpha ?? 1) * 100));
-      dom.padOpacity.style.setProperty('--a', String(settings.penAlpha ?? 1));
+      pad.resetHistory();
+      const initAlpha = settings.penAlpha ?? 0.6;
+      pad.setAlpha(initAlpha);
+      const initVal = String(Math.round(initAlpha * 100));
+      dom.padOpacity.value = initVal;
+      dom.padOpacityNum.value = initVal;
+      dom.padOpacity.parentElement.style.setProperty('--a', String(initAlpha));
       dom.padHint.classList.toggle('open', settings.hintOpen !== false);
       Object.values(queues).forEach((q) => q.prime?.());
       if (settings.source === 'unsplash' && !settings.unsplashKey) {
