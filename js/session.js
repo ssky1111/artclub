@@ -317,8 +317,15 @@ export function createSessionRunner({ onFinish, onQuit }) {
     timer.stop();
     releaseWakeLock();
     await harvestDrawing();
+
+    if (state?.drawings.length > 0) {
+      if (!confirm(t('sess.quitConfirm'))) {
+        timer.resume();
+        return;
+      }
+    }
+
     closePad();
-    // 途中でやめても、そこまでの分は記録する（1分でも「やった」に入れる）
     if (state?.current) record(state.current, Math.round(state.current.seconds - timer.remaining));
     const partial = state && state.drawings.length > 0
       ? { menuId: state.menu.id, menuTitle: state.menu.title, seconds: state.totalSeconds,

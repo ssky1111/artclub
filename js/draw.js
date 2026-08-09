@@ -118,7 +118,10 @@ export function createPad(canvas) {
 
     setSize(size) { state.size = size; },
     setEraser(on) { state.eraser = on; },
-    setAlpha(alpha) { state.alpha = Math.min(1, Math.max(0.1, Number(alpha) || 1)); },
+    setAlpha(alpha) {
+      const v = Math.min(1, Math.max(0.05, Number(alpha) || 1));
+      state.alpha = v * v;
+    },
     setColor(color) { state.color = color; state.eraser = false; },
 
     undo() {
