@@ -38,6 +38,7 @@
   --lift-accent: none;
   --font-display: 'Special Gothic Expanded One', 'Arial Black', 'Helvetica Neue',
                   'Hiragino Maru Gothic ProN', 'Yu Gothic UI', system-ui, sans-serif;
+  --font-ja: 'DotGothic16', 'Hiragino Sans', 'Noto Sans JP', system-ui, sans-serif;
 }
 
 /* 夜用。同じ設計のまま地と文字を入れ替える */
@@ -121,6 +122,15 @@ a { color: var(--accent); }
 .muted { color: var(--muted); }
 .small { font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif; }
 .label { font-size: 12px; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
+
+html:lang(ja) h2,
+html:lang(ja) .bridge-card h2,
+html:lang(ja) .sheet-inner h2,
+html:lang(ja) .btn.big,
+html:lang(ja) .menu-title,
+html:lang(ja) .drill-name,
+html:lang(ja) .bridge-meta,
+html:lang(ja) .chip { font-family: var(--font-ja); }
 
 /* ---------- 画面 ---------- */
 
@@ -359,16 +369,11 @@ a { color: var(--accent); }
   background: var(--surface); border: 1px solid var(--accent-dim);
   border-radius: var(--radius); padding: 12px; margin: 4px 0; color: var(--accent);
 }
-.bridge-desc {
-  font-size: 18px; line-height: 1.6; margin: 8px 0;
-  color: var(--text);
+.bridge-cue {
+  font-size: 17px; font-weight: 700; font-family: var(--font-ja);
+  color: var(--text-soft); margin: 0; line-height: 1.7;
 }
-.bridge-meta {
-  margin-bottom: 6px;
-  font-size: 22px; font-weight: 700;
-  font-family: var(--font-display); letter-spacing: .02em;
-  color: var(--text);
-}
+.bridge-meta { margin-bottom: 6px; font-size: 22px; font-weight: 800; font-family: var(--font-ja); color: var(--text); }
 
 /* ---------- ふりかえり ---------- */
 
@@ -966,6 +971,11 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
   width: 100%; border-radius: var(--radius-sm); background: #fffdf8; display: block;
 }
 .sheet-actions { margin-top: 12px; justify-content: center; }
+.sheet-actions .btn {
+  background: var(--text); color: var(--bg);
+  border-color: var(--text); font-size: 17px; font-weight: 800;
+  padding: 16px 28px; border-radius: 999px;
+}
 
 /* ---------- 解剖学の本 ---------- */
 
@@ -1031,7 +1041,7 @@ body[data-theme='dark'] .google-btn {
   border-color: #5f6368;
 }
 
-.auth-user-info { margin-top: 24px; }
+.auth-user-info { margin-top: 24px; display: flex; flex-direction: column; gap: 10px; }
 .auth-user-row {
   display: flex; align-items: center; gap: 12px;
   justify-content: center; margin-bottom: 16px;

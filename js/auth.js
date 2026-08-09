@@ -9,6 +9,7 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
 
 const STORAGE_KEY = 'artclub.auth';
+const USERNAME_KEY = 'artclub.username';
 const REDIRECT_URL = 'https://artclub.space';
 
 let session = null;
@@ -168,16 +169,24 @@ export function onAuthChange(fn) {
 
 export function userName(u = user) {
   if (!u) return '';
-  return u.user_metadata?.full_name
-    || u.user_metadata?.name
-    || u.user_metadata?.preferred_username
-    || u.email?.split('@')[0]
-    || '';
+  const custom = getUsername();
+  if (custom) return custom;
+  return u.email?.split('@')[0] || '';
 }
 
-export function userAvatar(u = user) {
-  if (!u) return '';
-  return u.user_metadata?.avatar_url
-    || u.user_metadata?.picture
-    || '';
+export function userAvatar() {
+  return '';
+}
+
+export function getUsername() {
+  try { return localStorage.getItem(USERNAME_KEY) || ''; } catch { return ''; }
+}
+
+export function setUsername(name) {
+  try { localStorage.setItem(USERNAME_KEY, name); } catch {}
+  notify();
+}
+
+export function hasUsername() {
+  return !!getUsername();
 }

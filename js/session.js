@@ -32,6 +32,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     stageMessage: $('#stage-message'),
     bridgeLabel: $('#bridge-label'),
     bridgeTitle: $('#bridge-title'),
+    bridgeCue: $('#bridge-cue'),
     bridgeTheory: $('#bridge-theory'),
     bridgeMeta: $('#bridge-meta'),
     bridgeReminder: $('#bridge-reminder'),
@@ -173,6 +174,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     dom.bridgeLabel.textContent = t('sess.next');
     dom.bridgeTitle.textContent = stepTitle(item, drill);
     dom.bridgeTheory.textContent = tr(drill, 'theory');
+
 
     const isGesture = item.drillId === 'gesture';
     dom.bridgeDesc.hidden = !isGesture;

@@ -59,7 +59,7 @@ export async function composeSheet(blobs, { date = '' } = {}) {
   if (date) {
     ctx.fillStyle = INK;
     ctx.textBaseline = 'top';
-    ctx.font = '700 36px ui-rounded, "Hiragino Maru Gothic ProN", system-ui, sans-serif';
+    ctx.font = '700 36px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
     const dateW = ctx.measureText(date).width;
     ctx.fillText(date, (canvas.width - dateW) / 2, pad);
   }
@@ -79,7 +79,7 @@ export async function composeSheet(blobs, { date = '' } = {}) {
 
   ctx.fillStyle = SOFT;
   ctx.textBaseline = 'bottom';
-  ctx.font = '600 18px ui-rounded, "Hiragino Maru Gothic ProN", system-ui, sans-serif';
+  ctx.font = '600 18px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
   const label = 'ARTCLUB';
   const labelW = ctx.measureText(label).width;
   ctx.fillText(label, (canvas.width - labelW) / 2, canvas.height - 16);
