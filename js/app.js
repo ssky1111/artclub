@@ -54,7 +54,7 @@ import { uploadArtwork, fetchArtworks, deleteArtwork } from './gallery.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '19';
+const BUILD = '20';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -647,7 +647,33 @@ async function renderSupabaseGrid() {
         if (!e.isTrusted) toggleSelect(btn, photo, cb.checked);
       });
       btn.append(cb);
-      btn.addEventListener('click', () => openSbPhoto(photo));
+      btn.addEventListener('click', (e) => {
+        const items = [...grid.querySelectorAll('.lib-item')];
+        const idx = items.indexOf(btn);
+        if (e.shiftKey) {
+          e.preventDefault();
+          if (sbLastClickedIndex >= 0 && sbLastClickedIndex !== idx) {
+            const from = Math.min(sbLastClickedIndex, idx);
+            const to = Math.max(sbLastClickedIndex, idx);
+            for (let i = from; i <= to; i++) {
+              const item = items[i];
+              const itemCb = item.querySelector('.sb-check');
+              if (itemCb && !itemCb.checked) {
+                itemCb.checked = true;
+                sbSelected.add(item.dataset.file);
+                item.classList.add('selected');
+              }
+            }
+            updateSelectBar();
+          } else {
+            cb.checked = !cb.checked;
+            toggleSelect(btn, photo, cb.checked);
+          }
+          sbLastClickedIndex = idx;
+          return;
+        }
+        openSbPhoto(photo);
+      });
       grid.append(btn);
     }
   } catch (err) {
