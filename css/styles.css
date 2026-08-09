@@ -36,7 +36,7 @@
   --pad: 18px;
   --lift: none;
   --lift-accent: none;
-  --font-display: 'Dela Gothic One', 'Arial Black', 'Helvetica Neue',
+  --font-display: 'Special Gothic Expanded One', 'Arial Black', 'Helvetica Neue',
                   'Hiragino Maru Gothic ProN', 'Yu Gothic UI', system-ui, sans-serif;
 }
 
@@ -88,7 +88,7 @@ body[data-theme='paper'] {
   --danger: #b3503c;
   --radius: 12px;
   --radius-sm: 9px;
-  --font-display: 'Dela Gothic One', ui-serif, Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  --font-display: 'Special Gothic Expanded One', ui-serif, Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
 }
 
 * { box-sizing: border-box; }
@@ -859,7 +859,7 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand-mark { height: 26px; width: auto; display: block; fill: currentColor; }
 .brand-mark text {
-  font-family: 'Dela Gothic One', 'Arial Black', 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
+  font-family: 'Special Gothic Expanded One', 'Arial Black', 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
   font-size: 30px; font-weight: 400; letter-spacing: .04em;
 }
 .beta {
