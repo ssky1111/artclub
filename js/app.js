@@ -3,7 +3,7 @@
  */
 
 import {
-  buildDaily, partForDate, MODES, PARTS, DRILLS, PRINCIPLES, PICKABLE_DRILLS,
+  buildDaily, MODES, PARTS, DRILLS, PRINCIPLES, PICKABLE_DRILLS,
   TIME_CHOICES, COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu,
   levelLabel, menuDuration, availableCategories,
 } from './theory.js';
@@ -19,7 +19,7 @@ import {
   grade, reminderFor, injectWeakStep, buildReviewMenu,
 } from './review.js';
 import { createSessionRunner } from './session.js';
-import { putDrawing, getDrawing, deleteAllDrawings, deleteAllPhotos, shrinkImage } from './db.js';
+import { putDrawing, getDrawing, deleteAllDrawings, deleteAllPhotos } from './db.js';
 import {
   TAG_GROUPS, ALL_TAGS, allPhotos, everyPhoto, bundledPhotos, photoUrl,
   addFiles, setTags, removePhoto, createLibraryQueue,
@@ -45,7 +45,7 @@ import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js'
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '10';
+const BUILD = '11';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -92,8 +92,9 @@ function renderHome() {
   status.textContent = doneToday ? t('home.todayDone') : t('home.todayYet');
   status.classList.toggle('done', doneToday);
 
-  // 「レベル」の隣に、これまで何枚描いてきたか。時間より枚数のほうが実感が出る
-  $('#total-drawings').textContent = t('home.totalDrawings', { n: totalDrawings(history) });
+  const s = stats(history);
+  $('#total-drawings').textContent = String(totalDrawings(history));
+  $('#total-time').textContent = String(s.minutes);
 
   renderWeekBars(history);
   renderDaily(history);
@@ -122,7 +123,8 @@ function renderWeekBars(history) {
   for (const day of days) {
     const count = byDay.get(day) || 0;
     const col = el('div', `week-col${count ? ' on' : ''}${day === today ? ' today' : ''}`);
-    const box = el('div', 'week-box', count ? String(count) : '');
+    const label = count ? (getLang() === 'ja' ? `${count}枚` : String(count)) : '';
+    const box = el('div', 'week-box', label);
     // 枚数が多い日ほど濃くする。0枚の日は色を付けない
     if (count) box.style.setProperty('--fill', String(0.35 + 0.65 * (count / max)));
     col.append(box, el('div', 'week-dow', dow[new Date(`${day}T00:00:00`).getDay()]));
@@ -142,32 +144,32 @@ function renderWeekBars(history) {
  */
 function renderDaily(history) {
   const rounds = roundsToday('daily', history);
-  const part = partForDate(dateKey());
-  const daily = buildDaily(part);
+  const daily = buildDaily();
 
   const top = $('#menu-primary');
   top.innerHTML = '';
 
   const hero = el('div', 'card primary-card');
-  hero.append(
-    el('div', 'menu-kicker', t('home.todayLabel')),
-    el('div', 'menu-title big', tr(daily, 'title')),
-  );
 
+  const headRow = el('div', 'primary-head');
+  headRow.append(el('div', 'menu-kicker', t('home.todayLabel')));
   if (rounds > 0) {
-    const done = el('div', 'done-row');
+    const done = el('div', 'done-badge');
     done.append(
       el('span', 'done-check', '\u2713'),
       el('span', 'done-text', rounds === 1 ? t('home.roundDone') : t('home.roundN', { n: rounds })),
     );
-    hero.append(done);
+    headRow.append(done);
   }
+  hero.append(headRow);
+
+  hero.append(el('div', 'menu-title big', tr(daily, 'title')));
 
   const cta = el('button', 'btn primary big', t('home.startPlain'));
   cta.addEventListener('click', () => {
     // 2周目からは、いずれ課金の壁になるところ。いまは説明を出して素通しする
     if (rounds > 0) return openPaywall();
-    startSession(daily, { part });
+    startSession(daily);
   });
   hero.append(cta);
 
@@ -309,8 +311,7 @@ function wirePartSheet() {
   });
   $('#pay-continue').addEventListener('click', () => {
     $('#pay-sheet').hidden = true;
-    const part = partForDate(dateKey());
-    startSession(buildDaily(part), { part });
+    startSession(buildDaily());
   });
 }
 
@@ -936,14 +937,13 @@ function saveResult(result) {
   });
 }
 
-function finishSession(result) {
+async function finishSession(result) {
   const entry = saveResult(result);
   if (settings.sfx) sfx.fanfare();
 
   pendingDrawings = result.drawings || [];
   renderDrawingStrip();
   $('#review-note').value = '';
-  $('#sheet-preview').hidden = true;
   $$('.rate-btn').forEach((b) => b.classList.remove('on'));
 
   renderReviewChecks(entry.lessonId, entry.lessonMode);
@@ -960,6 +960,19 @@ function finishSession(result) {
     `<div class="muted small">${t('rev.streakLine', { s: s.streak, n: s.sessions })}</div>`;
 
   showScreen('review');
+
+  if (pendingDrawings.length > 0) {
+    const blob = await composeSheet(pendingDrawings.map((s) => s.blob), {
+      date: dateKey(),
+    });
+    if (blob) {
+      sheetBlob = blob;
+      $('#sheet-img').src = URL.createObjectURL(blob);
+      $('#sheet-preview').hidden = false;
+    }
+  } else {
+    $('#sheet-preview').hidden = true;
+  }
 }
 
 /* ==================== ふりかえり ==================== */
@@ -1000,15 +1013,16 @@ function renderReviewChecks(lessonId, lessonMode) {
 function renderDrawingStrip() {
   const strip = $('#drawing-strip');
   strip.innerHTML = '';
-  strip.hidden = pendingDrawings.length === 0;
-  $('#dl-all').disabled = pendingDrawings.length === 0;
-  $('#make-sheet').disabled = pendingDrawings.length === 0;
+  const has = pendingDrawings.length > 0;
+  strip.hidden = !has;
+  $('#strip-actions').hidden = !has;
+  $('#dl-all').disabled = !has;
 
   pendingDrawings.forEach((shot, i) => {
     const item = el('button', 'strip-item');
     const img = el('img');
     img.src = URL.createObjectURL(shot.blob);
-    item.append(img, el('span', 'strip-num', String(i + 1)));
+    item.append(img);
     item.addEventListener('click', () => openDrawing(i));
     strip.append(item);
   });
@@ -1051,32 +1065,8 @@ function wireReview() {
     });
   });
 
-  $('#drawing-btn').addEventListener('click', () => $('#drawing-input').click());
-  $('#drawing-input').addEventListener('change', async (e) => {
-    const files = [...(e.target.files || [])];
-    for (const file of files) {
-      try { pendingDrawings.push({ blob: await shrinkImage(file), photoId: null, seconds: null }); }
-      catch { toast(t('toast.imgFail')); }
-    }
-    renderDrawingStrip();
-    e.target.value = '';
-  });
-
   $('#dl-all').addEventListener('click', () => {
     downloadEach(pendingDrawings.map((s) => s.blob), `artclub-${dateKey()}`);
-  });
-
-  // その回の全部を1枚に。シェアするとき、絵が何枚も並んでいるほうが伝わる
-  $('#make-sheet').addEventListener('click', async () => {
-    const blob = await composeSheet(pendingDrawings.map((s) => s.blob), {
-      title: 'ARTCLUB',
-      subtitle: `${dateKey()} · ${fmtCount(pendingDrawings.length)}`,
-    });
-    if (!blob) return;
-    sheetBlob = blob;
-    $('#sheet-img').src = URL.createObjectURL(blob);
-    $('#sheet-preview').hidden = false;
-    toast(t('rev.sheetDone'));
   });
 
   $('#sheet-dl').addEventListener('click', () => {

@@ -14,7 +14,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="10">
+<body data-build="11">
 
 <!-- 明暗ポスタライズ用のSVGフィルタ（ノタン練習で使う） -->
 <svg class="filter-defs" aria-hidden="true" focusable="false">
@@ -76,9 +76,18 @@
       <div class="xp-track"><div id="xp-fill" class="xp-fill"></div></div>
     </div>
 
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <span id="total-drawings" class="hero-stat-num">0</span>
+        <span class="hero-stat-label" data-i18n="home.totalLabel">枚</span>
+      </div>
+      <div class="hero-stat">
+        <span id="total-time" class="hero-stat-num">0</span>
+        <span class="hero-stat-label" data-i18n="home.totalTimeLabel">分</span>
+      </div>
+    </div>
     <div class="streak-sub">
       <span id="today-status" class="pill" data-i18n="home.todayYet">今日はまだ</span>
-      <span id="total-drawings" class="pill count-pill">0</span>
     </div>
 
     <!-- 直近1週間、1日に何枚描いたか -->
@@ -214,12 +223,10 @@
   <div class="bridge-card">
     <div class="label" id="bridge-label">つぎは</div>
     <h2 id="bridge-title">—</h2>
-    <p id="bridge-cue" class="cue-text"></p>
-    <p id="bridge-about" class="muted small"></p>
     <p id="bridge-reminder" class="reminder-text" hidden></p>
     <div class="bridge-meta muted small" id="bridge-meta"></div>
     <button id="bridge-start" class="btn primary big" data-i18n="sess.begin">はじめる</button>
-    <details class="why">
+    <details class="why" hidden>
       <summary data-i18n="sess.why">なぜこれをやるの？</summary>
       <p id="bridge-theory"></p>
     </details>
@@ -240,24 +247,18 @@
     <ul id="review-checks" class="check-list"></ul>
   </section>
 
-  <section class="card">
-    <div class="label" data-i18n="rev.drawn">きょう描いたもの</div>
-    <p class="muted small" data-i18n="rev.drawnNote"></p>
-    <div id="drawing-strip" class="drawing-strip" hidden></div>
-    <div class="row">
-      <input type="file" id="drawing-input" accept="image/*" multiple hidden>
-      <button id="drawing-btn" class="btn ghost small" data-icon="camera"
-              data-i18n-label="rev.addPhoto"></button>
-      <button id="dl-all" class="btn ghost small" data-i18n="rev.downloadAll">全部ダウンロード</button>
-      <button id="make-sheet" class="btn ghost small" data-i18n="rev.sheet">1枚にまとめて出力</button>
-    </div>
+  <section class="card" id="sheet-card">
     <div id="sheet-preview" class="sheet-preview" hidden>
       <img id="sheet-img" alt="まとめ画像">
-      <div class="row">
+      <div class="row sheet-actions">
         <button id="sheet-dl" class="btn small" data-i18n="common.download">ダウンロード</button>
         <button id="share-x" class="btn small" data-i18n="rev.shareX">X に投稿する</button>
       </div>
       <p class="muted small" data-i18n="rev.shareNote"></p>
+    </div>
+    <div id="drawing-strip" class="drawing-strip" hidden></div>
+    <div class="row" id="strip-actions" hidden>
+      <button id="dl-all" class="btn ghost small" data-i18n="rev.downloadAll">全部ダウンロード</button>
     </div>
   </section>
 

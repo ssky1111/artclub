@@ -338,33 +338,15 @@ export const PARTS = [
   { id: 'full',   label: '全身',     en: 'Full body',  tags: ['全身'], lessonId: null,        query: 'full body standing pose' },
 ];
 
-/**
- * デイリー。1日1周がこれ。
- * 中身は3つのモードをそのまま順番に通す：
- *   ジェスチャードローイング（流れを掴む）→ 部位練習（苦手を1つ）→ クロッキー（形にする）
- *
- * 真ん中に部位を挟んでいるのは、手や脚だけを別の日にやろうとすると
- * ふつうやらないため。全身の練習の中に混ぜてしまうほうが確実に回る。
- */
-export function buildDaily(part) {
+export function buildDaily() {
   return {
     id: 'daily',
-    title: 'デイリー',
-    subtitle: 'ジェスチャードローイング → 部位練習 → クロッキー',
-    partId: part.id,
+    title: 'DAILY',
     steps: [
-      { drill: 'gesture', count: 3, seconds: 60 },
-      {
-        drill: 'croquis', count: 2, seconds: 60, source: 'part',
-        label: `部位練習：${part.label}`,
-        labelEn: `Body part: ${part.en}`,
-      },
-      { drill: 'croquis', count: 2, seconds: 180 },
+      { drill: 'gesture', count: 2, seconds: 30 },
+      { drill: 'croquis', count: 3, seconds: 180 },
     ],
-    en: {
-      title: 'Daily',
-      subtitle: 'Gesture → body part → croquis',
-    },
+    en: { title: 'DAILY' },
   };
 }
 

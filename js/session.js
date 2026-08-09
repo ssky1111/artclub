@@ -33,8 +33,6 @@ export function createSessionRunner({ onFinish, onQuit }) {
     bridgeLabel: $('#bridge-label'),
     bridgeTitle: $('#bridge-title'),
     bridgeTheory: $('#bridge-theory'),
-    bridgeCue: $('#bridge-cue'),
-    bridgeAbout: $('#bridge-about'),
     bridgeMeta: $('#bridge-meta'),
     bridgeReminder: $('#bridge-reminder'),
     stage: document.querySelector('.stage'),
@@ -167,9 +165,6 @@ export function createSessionRunner({ onFinish, onQuit }) {
     dom.bridgeLabel.textContent = isFirst ? t('sess.first') : t('sess.next');
     dom.bridgeTitle.textContent = stepTitle(item, drill);
     dom.bridgeTheory.textContent = tr(drill, 'theory');
-    dom.bridgeCue.textContent = tr(drill, 'cue');
-    // 名前だけでは何をするのか分からないドリルがあるので、説明を1段落そのまま出す
-    dom.bridgeAbout.textContent = tr(drill, 'about') || '';
     dom.bridgeMeta.textContent =
       t('sess.sheetsBy', { n: item.countInStep, t: fmtDur(item.seconds) });
 
