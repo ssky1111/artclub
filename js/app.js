@@ -45,7 +45,7 @@ import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js'
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '8';
+const BUILD = '10';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -101,13 +101,18 @@ function renderHome() {
   renderExtras();
 }
 
-/** 直近7日、1日に何枚描いたか。棒の高さがそのまま枚数。 */
+/**
+ * 直近7日。マスの中にその日の枚数をそのまま書く。
+ * 棒の高さで表すと、1枚と2枚の違いが読み取れないうえに、
+ * 「何枚描いたか」を知りたいだけなのに目盛りを探すことになる。
+ */
 function renderWeekBars(history) {
   const byDay = drawingsByDay(history);
   const wrap = $('#week-bars');
   wrap.innerHTML = '';
+  const today = dateKey();
   const days = [];
-  for (let i = 6; i >= 0; i--) days.push(addDays(dateKey(), -i));
+  for (let i = 6; i >= 0; i--) days.push(addDays(today, -i));
   const max = Math.max(1, ...days.map((d) => byDay.get(d) || 0));
 
   const dow = getLang() === 'ja'
@@ -116,25 +121,22 @@ function renderWeekBars(history) {
 
   for (const day of days) {
     const count = byDay.get(day) || 0;
-    const col = el('div', `week-col${count ? ' on' : ''}`);
-    const track = el('div', 'week-track');
-    const bar = el('div', 'week-bar');
-    bar.style.height = `${count ? Math.max(12, (count / max) * 100) : 3}%`;
-    track.append(bar);
-    col.append(
-      el('div', 'week-num', count ? String(count) : ''),
-      track,
-      el('div', 'week-dow', dow[new Date(`${day}T00:00:00`).getDay()]),
-    );
-    col.title = `${day}：${count}`;
+    const col = el('div', `week-col${count ? ' on' : ''}${day === today ? ' today' : ''}`);
+    const box = el('div', 'week-box', count ? String(count) : '');
+    // 枚数が多い日ほど濃くする。0枚の日は色を付けない
+    if (count) box.style.setProperty('--fill', String(0.35 + 0.65 * (count / max)));
+    col.append(box, el('div', 'week-dow', dow[new Date(`${day}T00:00:00`).getDay()]));
+    col.title = `${day}：${fmtCount(count)}`;
     wrap.append(col);
   }
 }
 
 /**
  * きょうのデイリー。
- * 中身は3つのモードをそのまま順番に通す。何をやるのかカードの上で見えるようにしておく
- * （「デイリー」とだけ書いてあると、押すまで中身が分からない）。
+ *
+ * 中身（ジェスチャードローイング → 部位練習 → クロッキー）も、かかる時間も書かない。
+ * 「11分」と書いてあると、11分ある日にしか押さなくなる。
+ * 押してから中身が出てくるほうが、実際には手が動く。
  *
  * 1日1周までは無料、2周目から先はいずれ有料にする。いまは全部開けてある。
  */
@@ -152,21 +154,6 @@ function renderDaily(history) {
     el('div', 'menu-title big', tr(daily, 'title')),
   );
 
-  // 3つの内訳。今日の部位もここで分かる
-  const list = el('ol', 'daily-steps');
-  for (const step of daily.steps) {
-    const row = el('li');
-    const name = step.label
-      ? (getLang() === 'en' ? step.labelEn : step.label)
-      : tr(DRILLS[step.drill], 'name');
-    row.append(
-      el('span', 'daily-step-name', name),
-      el('span', 'daily-step-meta', t('sess.sheetsBy', { n: step.count, t: fmtDur(step.seconds) })),
-    );
-    list.append(row);
-  }
-  hero.append(list);
-
   if (rounds > 0) {
     const done = el('div', 'done-row');
     done.append(
@@ -176,8 +163,7 @@ function renderDaily(history) {
     hero.append(done);
   }
 
-  const cta = el('button', 'btn primary big',
-    t('home.start', { d: fmtDur(menuDuration(daily)) }));
+  const cta = el('button', 'btn primary big', t('home.startPlain'));
   cta.addEventListener('click', () => {
     // 2周目からは、いずれ課金の壁になるところ。いまは説明を出して素通しする
     if (rounds > 0) return openPaywall();
