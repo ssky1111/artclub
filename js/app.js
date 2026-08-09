@@ -39,9 +39,10 @@ import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } fro
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
-import { $, $$, el, showScreen, toast } from './ui.js';
+import { $, $$, el, showScreen, toast, confirmDialog } from './ui.js';
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
+window.__i18n = { t };
 import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, userAvatar, hasUsername, setUsername, getUsername } from './auth.js';
 import { uploadArtwork, fetchArtworks, deleteArtwork } from './gallery.js';
 
@@ -463,7 +464,7 @@ function openPhoto(photo) {
   const del = $('#photo-delete');
   del.hidden = !!photo.bundled;
   del.onclick = async () => {
-    if (!confirm(t('lib.deleteConfirm'))) return;
+    if (!(await confirmDialog(t('lib.deleteConfirm')))) return;
     await removePhoto(photo.id);
     $('#photo-sheet').hidden = true;
     renderLibrary();
@@ -736,7 +737,7 @@ function openSbPhoto(photo) {
   const delBtn = $('#photo-delete');
   delBtn.hidden = false;
   delBtn.onclick = async () => {
-    if (!confirm('この写真を Supabase から消しますか？')) return;
+    if (!(await confirmDialog('この写真を Supabase から消しますか？'))) return;
     const file = photo.id.replace('sb:', '');
     await removeFromSupabase(file);
     sheet.hidden = true;
@@ -758,7 +759,7 @@ async function renderTagManager() {
   for (const tag of visible) {
     const chip = el('button', 'chip on', `${tag} ×`);
     chip.addEventListener('click', async () => {
-      if (!confirm(`「${tag}」を削除しますか？`)) return;
+      if (!(await confirmDialog(`「${tag}」を削除しますか？`))) return;
       invalidateTagConfig();
       if (custom.includes(tag)) {
         await saveCustomTags(custom.filter((t2) => t2 !== tag));
@@ -970,7 +971,7 @@ function wireAdmin() {
     const entries = await sbLoadManifest({ fresh: true });
     const targets = [...sbSelected].filter((f) => !f.endsWith('.webp'));
     if (!targets.length) return toast('すべてWebPです');
-    if (!confirm(`${targets.length}枚をWebP変換しますか？`)) return;
+    if (!(await confirmDialog(`${targets.length}枚をWebP変換しますか？`))) return;
     const status = $('#sb-status');
     let done = 0;
     for (const file of targets) {
@@ -988,7 +989,7 @@ function wireAdmin() {
   $('#sb-bulk-delete').addEventListener('click', async () => {
     const n = sbSelected.size;
     if (!n) return;
-    if (!confirm(`${n}枚の写真を削除しますか？`)) return;
+    if (!(await confirmDialog(`${n}枚の写真を削除しますか？`))) return;
     const status = $('#sb-status');
     let done = 0;
     for (const file of [...sbSelected]) {
@@ -1633,7 +1634,7 @@ function wireGallery() {
 
   $('#gallery-lb-delete').addEventListener('click', async () => {
     if (!currentArtwork) return;
-    if (!confirm(t('gal.deleteConfirm'))) return;
+    if (!(await confirmDialog(t('gal.deleteConfirm')))) return;
     try {
       await deleteArtwork(currentArtwork.id, currentArtwork.storage_path);
       lb.hidden = true;
@@ -1858,7 +1859,7 @@ function renderSettings() {
   $('#opt-autoflip').checked = settings.autoFlip;
   $('#opt-keepawake').checked = settings.keepAwake;
   $('#opt-orientation').value = settings.orientation;
-  $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 0.6) * 100));
+  $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 0.4) * 100));
   renderLangChips();
 }
 

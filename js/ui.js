@@ -46,3 +46,34 @@ export function el(tag, className, text) {
   if (text != null) node.textContent = text;
   return node;
 }
+
+export function confirmDialog(message, { okLabel, cancelLabel } = {}) {
+  const { t } = window.__i18n ?? {};
+  const wrap = $('#confirm-dialog');
+  const msgEl = $('#confirm-dialog-msg');
+  const okBtn = $('#confirm-dialog-ok');
+  const cancelBtn = $('#confirm-dialog-cancel');
+
+  msgEl.textContent = message;
+  okBtn.textContent = okLabel ?? (t ? t('common.ok') : 'OK');
+  cancelBtn.textContent = cancelLabel ?? (t ? t('common.cancel') : 'やめる');
+  wrap.hidden = false;
+
+  return new Promise((resolve) => {
+    function done(result) {
+      wrap.hidden = true;
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      wrap.removeEventListener('click', onBackdrop);
+      resolve(result);
+    }
+    function onOk() { done(true); }
+    function onCancel() { done(false); }
+    function onBackdrop(e) { if (e.target === wrap) done(false); }
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    wrap.addEventListener('click', onBackdrop);
+    okBtn.focus();
+  });
+}

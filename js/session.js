@@ -9,7 +9,7 @@
 import { DRILLS } from './theory.js';
 import { createTimer, sfx } from './timer.js';
 import { createPad } from './draw.js';
-import { $, $$, showScreen, toast, fmtClock } from './ui.js';
+import { $, $$, showScreen, toast, fmtClock, confirmDialog } from './ui.js';
 import { paintIcons } from './icons.js';
 import { t, tr, fmtDur, getLang } from './i18n.js';
 import { saveSettings } from './storage.js';
@@ -319,7 +319,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     await harvestDrawing();
 
     if (state?.drawings.length > 0) {
-      if (!confirm(t('sess.quitConfirm'))) {
+      if (!(await confirmDialog(t('sess.quitConfirm')))) {
         timer.resume();
         return;
       }
@@ -448,7 +448,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
    * 道具をいじる時間は描く時間から引かれるので、スライダー1本だけにしてある。
    */
   function updateOpacity(val) {
-    const clamped = Math.max(15, Math.min(100, Math.round(val)));
+    const clamped = Math.max(5, Math.min(100, Math.round(val)));
     const alpha = clamped / 100;
     pad.setAlpha(alpha);
     dom.padOpacity.value = String(clamped);
@@ -546,7 +546,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
         awaitingBridge: false,
       };
       pad.resetHistory();
-      const initAlpha = settings.penAlpha ?? 0.6;
+      const initAlpha = settings.penAlpha ?? 0.4;
       pad.setAlpha(initAlpha);
       const initVal = String(Math.round(initAlpha * 100));
       dom.padOpacity.value = initVal;
