@@ -1687,12 +1687,12 @@ body[data-theme='dark'] .google-btn {
 .atelier-topbar-spacer { width: 40px; height: 40px; }
 .atelier-brand {
   margin: 0;
+  justify-content: center;
   text-align: center;
-  font-family: var(--font-display);
+}
+.atelier-brand .brand-text {
   font-size: 22px;
-  font-weight: 800;
-  letter-spacing: .12em;
-  color: var(--text);
+  letter-spacing: .06em;
 }
 .atelier-tabs {
   display: grid;

@@ -27,7 +27,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="86" data-theme="light" data-skin="pastel-rpg">
+<body data-build="87" data-theme="light" data-skin="pastel-rpg">
 <script>
 /* 設定があれば先に当てる。無ければ上の data-skin でパステルのまま */
 (function () {
@@ -772,7 +772,9 @@
 <main id="screen-atelier" class="screen">
   <header class="topbar atelier-topbar">
     <span class="atelier-topbar-spacer" aria-hidden="true"></span>
-    <h1 class="atelier-brand">ATELIER</h1>
+    <h1 class="brand atelier-brand">
+      <span class="brand-text">ARTCLUB</span>
+    </h1>
     <button class="icon-btn" data-nav="settings" data-icon="settings"></button>
   </header>
 
