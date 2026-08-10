@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '171';
+const BUILD = '172';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -346,7 +346,7 @@ function createArtworkQueue(work) {
     photoId: `artwork:${work.id}`,
     credit: {
       kind: getLang() === 'en' ? 'Sketch' : 'スケッチ',
-      name: artworkDisplayName(work, { mineLabel: t('log.me') }),
+      name: artworkDisplayName(work),
       link: workPageUrl(work),
       photoLink: workPageUrl(work),
       source: 'ARTCLUB',
@@ -411,7 +411,7 @@ function renderCopyGrid() {
     img.alt = work.username || '';
     img.loading = 'lazy';
     const meta = el('div', 'copy-pick-meta');
-    meta.append(el('span', 'copy-pick-user', artworkDisplayName(work, { mineLabel: t('log.me') })));
+    meta.append(el('span', 'copy-pick-user', artworkDisplayName(work)));
     meta.append(el('span', 'copy-pick-likes', `♥ ${work.like_count || 0}`));
     btn.append(img, meta);
     btn.addEventListener('click', () => {
@@ -420,7 +420,7 @@ function renderCopyGrid() {
       const startBtn = $('#copy-start');
       if (startBtn) startBtn.disabled = false;
       const status = $('#copy-status');
-      if (status) status.textContent = t('copy.selected', { n: artworkDisplayName(work, { mineLabel: t('log.me') }) });
+      if (status) status.textContent = t('copy.selected', { n: artworkDisplayName(work) });
     });
     grid.append(btn);
   }
@@ -2069,7 +2069,7 @@ function renderGalleryCard(work, userId) {
   thumb.addEventListener('click', () => openWorkPage(work));
 
   const meta = el('div', 'gallery-item-meta');
-  meta.append(el('span', 'gallery-username', artworkDisplayName(work, { mineLabel: t('log.me') })));
+  meta.append(el('span', 'gallery-username', artworkDisplayName(work)));
 
   const likeBtn = el('button', `gallery-like-btn${work.liked_by_me ? ' on' : ''}`);
   likeBtn.type = 'button';
@@ -2171,7 +2171,7 @@ function fillWorkPage(work, userId = getUser()?.id) {
     img.alt = work.username || '';
   }
   const userEl = $('#work-user');
-  if (userEl) userEl.textContent = artworkDisplayName(work, { mineLabel: t('log.me') });
+  if (userEl) userEl.textContent = artworkDisplayName(work);
 
   const delBtn = $('#work-delete');
   if (delBtn) delBtn.hidden = work.user_id !== userId;
@@ -2750,7 +2750,7 @@ function privateBadge() {
 function renderArtworkTlPost(work, { mine = false } = {}) {
   const post = el('article', 'tl-post');
   post.dataset.artworkId = work.id || '';
-  const name = artworkDisplayName(work, { mineLabel: t('log.me') });
+  const name = artworkDisplayName(work);
   const main = el('div', 'tl-main');
 
   const meta = el('header', 'tl-meta');
