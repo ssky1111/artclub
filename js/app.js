@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '180';
+const BUILD = '181';
 const SITE_PASS_SESSION = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 
@@ -2765,6 +2765,10 @@ function wireSettings() {
   $('#profile-save').addEventListener('click', () => {
     const name = $('#profile-username').value.trim();
     if (!name) return;
+    if (name.includes('@')) {
+      toast(t('auth.usernameNoEmail'));
+      return;
+    }
     setUsername(name);
     updateAuthUI(getUser());
     toast(t('auth.saved'));
@@ -3292,6 +3296,12 @@ function showUsernameSheet(onDone) {
   function submit() {
     const name = input.value.trim();
     if (!name) return;
+    if (name.includes('@')) {
+      toast(t('auth.usernameNoEmail') === 'auth.usernameNoEmail'
+        ? 'メールアドレスは使えません'
+        : t('auth.usernameNoEmail'));
+      return;
+    }
     setUsername(name);
     sheet.hidden = true;
     updateAuthUI(getUser());
@@ -3495,6 +3505,7 @@ function wireSiteGate(onUnlock) {
   const input = $('#site-pass');
   const btn = $('#site-pass-btn');
   const msg = $('#site-pass-msg');
+  const note = $('#site-gate-note');
   if (!gate) {
     onUnlock();
     return;
@@ -3504,13 +3515,31 @@ function wireSiteGate(onUnlock) {
     return;
   }
 
+  // data-i18n に頼らずここで文言を入れる（キー生表示を防ぐ）
+  if (note) {
+    const text = t('siteGate.note');
+    note.textContent = text === 'siteGate.note'
+      ? 'テスト公開中です。パスワードを入力してください。'
+      : text;
+  }
+  if (input) {
+    const ph = t('siteGate.ph');
+    input.placeholder = ph === 'siteGate.ph' ? 'パスワード' : ph;
+  }
+  if (btn) {
+    const label = t('siteGate.enter');
+    btn.textContent = label === 'siteGate.enter' ? '入室' : label;
+  }
+
   function tryUnlock() {
     if (!input.value) {
-      msg.textContent = t('siteGate.ph');
+      const ph = t('siteGate.ph');
+      msg.textContent = ph === 'siteGate.ph' ? 'パスワード' : ph;
       return;
     }
     if (input.value !== SITE_PASS) {
-      msg.textContent = t('siteGate.wrong');
+      const wrong = t('siteGate.wrong');
+      msg.textContent = wrong === 'siteGate.wrong' ? 'パスワードが違います' : wrong;
       return;
     }
     markSiteUnlocked();
@@ -3519,6 +3548,11 @@ function wireSiteGate(onUnlock) {
     restorePageScroll();
   }
 
+  // 閉じられない：背景クリック・Esc では閉じない
+  gate.addEventListener('click', (e) => { e.stopPropagation(); });
+  gate.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') e.preventDefault();
+  });
   btn.addEventListener('click', tryUnlock);
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
   input.focus();

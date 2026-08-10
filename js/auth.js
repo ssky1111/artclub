@@ -43,10 +43,16 @@ function clearUsernameCache() {
   usernameMem = '';
 }
 
+function looksLikeEmail(name) {
+  const s = String(name || '').trim();
+  return !s || s.includes('@');
+}
+
 function cacheUsername(name) {
   const trimmed = String(name || '').trim().slice(0, 32);
-  usernameMem = trimmed;
-  return trimmed;
+  // メールアドレスは表示名に使わない（過去に混入した分も捨てる）
+  usernameMem = looksLikeEmail(trimmed) ? '' : trimmed;
+  return usernameMem;
 }
 
 /** ログイン状態の変化だけ UI に伝える。トークン更新で毎回 notify しない。 */
@@ -253,6 +259,10 @@ export function userName(u = user) {
 }
 
 export function getUsername() {
+  if (looksLikeEmail(usernameMem)) {
+    usernameMem = '';
+    return '';
+  }
   return usernameMem || '';
 }
 
@@ -266,21 +276,25 @@ export async function hydrateUsername() {
     const { fetchMyProfile } = await import('./gallery.js');
     const profile = await fetchMyProfile();
     if (profile?.username) {
-      cacheUsername(profile.username);
-      notify();
-      return profile.username;
+      const name = cacheUsername(profile.username);
+      // メールが保存されていた場合はプロフィールから消す
+      if (!name && looksLikeEmail(profile.username)) {
+        import('./gallery.js').then((m) => m.upsertProfile('')).catch(() => {});
+      }
+      return name;
     }
   } catch { /* オフライン等 */ }
   return getUsername();
 }
 
 export function setUsername(name) {
+  if (looksLikeEmail(name)) return getUsername();
   cacheUsername(name);
   // 他ユーザーのスケッチカードに出す名前
   import('./gallery.js')
     .then((m) => m.upsertProfile(name))
     .catch(() => {});
-  notify();
+  return getUsername();
 }
 
 export function hasUsername() {
