@@ -60,7 +60,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '191';
+const BUILD = '192';
 const SITE_PASS_SESSION = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 
@@ -413,8 +413,10 @@ function wirePartSheet() {
   });
   $('#part-start').addEventListener('click', async () => {
     $('#part-sheet').hidden = true;
+    const menu = buildPartMenu(currentPart, partCount);
+    await maybeShowFreePeriodNotice(menu);
     await weekReviewDialog(recentReviewNotes(7));
-    startSession(buildPartMenu(currentPart, partCount), { tags: currentPart.tags, part: currentPart });
+    startSession(menu, { tags: currentPart.tags, part: currentPart, skipFreePeriod: true });
   });
 }
 
@@ -537,15 +539,16 @@ function wireCopySheet() {
 
 /**
  * DAILY 開始。
- * 未ログインなら先にログイン → 振り返りワード → セッション開始。
+ * 未ログインなら先にログイン →（必要なら無料開放中）→ 振り返りワード → セッション開始。
  */
 async function startDaily(daily, part) {
   if (!getUser()) {
     requireLogin(() => startDaily(daily, part));
     return;
   }
+  await maybeShowFreePeriodNotice(daily);
   await weekReviewDialog(recentReviewNotes(7));
-  startSession(daily, { part });
+  startSession(daily, { part, skipFreePeriod: true });
 }
 
 /* ==================== はじめる前の設定 ==================== */
@@ -1435,15 +1438,19 @@ function shouldShowFreePeriodNotice(menu) {
   return roundsToday('daily') >= DAILY_FREE_LIMIT;
 }
 
-async function startSession(menu, { tags = null, part = null } = {}) {
+async function maybeShowFreePeriodNotice(menu) {
+  if (!shouldShowFreePeriodNotice(menu)) return;
+  await freePeriodDialog(menu.id === 'daily' ? 'daily' : 'other');
+}
+
+async function startSession(menu, { tags = null, part = null, skipFreePeriod = false } = {}) {
   if (!getUser()) {
-    requireLogin(() => startSession(menu, { tags, part }));
+    requireLogin(() => startSession(menu, { tags, part, skipFreePeriod }));
     return;
   }
-  if (shouldShowFreePeriodNotice(menu)) {
-    await freePeriodDialog();
-  }
-  lastStart = () => startSession(menu, { tags, part });
+  // 他ダイアログより先に出す（呼び出し側で先出し済みなら skip）
+  if (!skipFreePeriod) await maybeShowFreePeriodNotice(menu);
+  lastStart = () => startSession(menu, { tags, part, skipFreePeriod: true });
   settings = getSettings();
   const weak = weakestLesson();
 

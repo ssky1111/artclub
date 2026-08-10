@@ -174,9 +174,9 @@ export function weekReviewDialog(notes = []) {
 
 /**
  * 本来有料メニューの無料開放中案内。
- * OK で閉じて続行する。
+ * OK で閉じて続行する。variant: 'daily' | 'other'
  */
-export function freePeriodDialog() {
+export function freePeriodDialog(variant = 'other') {
   const { t } = window.__i18n ?? {};
   const wrap = $('#free-period-dialog');
   const title = $('#free-period-title');
@@ -184,8 +184,13 @@ export function freePeriodDialog() {
   const okBtn = $('#free-period-ok');
   if (!wrap || !okBtn) return Promise.resolve();
 
+  const bodyKey = variant === 'daily' ? 'home.freePeriodBodyDaily' : 'home.freePeriodBody';
+  const bodyFallback = variant === 'daily'
+    ? '3周目以降は有料予定／無料開放中です'
+    : '有料予定のメニューを無料開放中です';
+
   if (title) title.textContent = t ? t('home.freePeriodTitle') : '無料開放中';
-  if (body) body.textContent = t ? t('home.freePeriodBody') : '本来は有料のメニューです。いまは無料で開放しています。';
+  if (body) body.textContent = t ? t(bodyKey) : bodyFallback;
   okBtn.textContent = t ? t('home.freePeriodCta') : 'はじめる';
   wrap.hidden = false;
 
