@@ -331,7 +331,8 @@ body.in-session { overflow: hidden; }
 
 .filter-defs { position: absolute; width: 0; height: 0; }
 
-a { color: var(--accent); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: none; }
 
 .muted { color: var(--muted); }
 .small { font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif; }
