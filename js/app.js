@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '144';
+const BUILD = '145';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -2486,39 +2486,94 @@ function formatSessionTime(entry) {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+function historyRecordShowable(entry) {
+  if (!entry) return false;
+  if (entry.note?.trim()) return true;
+  if (entry.hasSheet || entry.sheetArtworkId || entry.sheetShortId) return true;
+  if (entry.hasDrawing || entry.drawingCount) return true;
+  return (entry.shots || []).some((s) => s.artworkId || s.shortId);
+}
+
+/** きろく用。まとめ画像 ID を優先、なければ1枚目。 */
+function historyCoverArtworkId(entry) {
+  if (!entry) return null;
+  const sheetId = entry.sheetArtworkId || entry.sheetShortId;
+  if (sheetId) return sheetId;
+  return coverArtworkId(entry);
+}
+
+async function renderHistoryRecordPost(entry) {
+  const post = el('article', 'tl-post');
+  const main = el('div', 'tl-main');
+
+  const meta = el('header', 'tl-meta');
+  const title = entry.menuTitle || sessionLabel(entry) || '—';
+  meta.append(el('span', 'tl-name', title));
+  meta.append(el('span', 'tl-dot', '·'));
+  meta.append(el('time', 'tl-time', formatTlDate(entry)));
+  const time = formatSessionTime(entry);
+  if (time) {
+    meta.append(el('span', 'tl-dot', '·'));
+    meta.append(el('span', 'tl-time', time));
+  }
+  if (entry.seconds) {
+    meta.append(el('span', 'tl-menu', fmtDur(entry.seconds)));
+  }
+  main.append(meta);
+
+  const note = entry.note?.trim();
+  if (note) main.append(el('p', 'tl-body', note));
+
+  const imageId = historyCoverArtworkId(entry);
+  if (imageId) {
+    const url = await loadArtworkUrl(imageId);
+    if (url) {
+      const media = el('button', 'tl-media');
+      media.type = 'button';
+      const img = el('img');
+      img.src = url;
+      img.alt = '';
+      img.loading = 'lazy';
+      media.append(img);
+      media.addEventListener('click', async () => {
+        try {
+          const work = await fetchArtwork(imageId);
+          if (work) openWorkPage(work);
+        } catch { /* noop */ }
+      });
+      main.append(media);
+    }
+  }
+
+  post.append(main);
+  return post;
+}
+
 async function renderNotes() {
   const wrap = $('#note-list');
   wrap.innerHTML = '';
 
-  if (!getUser()) {
-    wrap.append(el('p', 'muted small tl-empty', t('log.loginNotes')));
-    const btn = el('button', 'btn primary small', t('auth.login'));
-    btn.type = 'button';
-    btn.style.marginTop = '10px';
-    btn.addEventListener('click', () => openAuthSheet());
-    wrap.append(btn);
+  const history = getHistory()
+    .filter(historyRecordShowable)
+    .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+
+  if (!history.length) {
+    wrap.append(el('p', 'muted small tl-empty', t('log.noNotes')));
+    if (!getUser()) {
+      const hint = el('p', 'muted small', t('log.loginNotes'));
+      hint.style.marginTop = '6px';
+      wrap.append(hint);
+      const btn = el('button', 'btn primary small', t('auth.login'));
+      btn.type = 'button';
+      btn.style.marginTop = '10px';
+      btn.addEventListener('click', () => openAuthSheet());
+      wrap.append(btn);
+    }
     return;
   }
 
-  const loading = el('p', 'muted small', t('gal.loading'));
-  wrap.append(loading);
-
-  try {
-    const works = await fetchMyArtworks({ limit: 40 });
-    if (!wrap.isConnected) return;
-    wrap.innerHTML = '';
-    if (!works.length) {
-      wrap.append(el('p', 'muted small tl-empty', t('log.noNotes')));
-      return;
-    }
-    for (const work of works) {
-      wrap.append(renderArtworkTlPost(work, { mine: true }));
-    }
-  } catch (err) {
-    console.error('[log notes]', err);
-    if (!wrap.isConnected) return;
-    wrap.innerHTML = '';
-    wrap.append(el('p', 'muted small tl-empty', t('gal.uploadFail')));
+  for (const entry of history.slice(0, 50)) {
+    wrap.append(await renderHistoryRecordPost(entry));
   }
 }
 
