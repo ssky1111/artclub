@@ -21,7 +21,7 @@ import {
 import { createSessionRunner } from './session.js';
 import { putDrawing, getDrawing } from './db.js';
 import {
-  TAG_GROUPS, ALL_TAGS, allPhotos, everyPhoto, bundledPhotos, photoUrl,
+  TAG_GROUPS, ALL_TAGS, allPhotos, everyPhoto, bundledPhotos, photoUrl, setPhotoSrc,
   addFiles, setTags, removePhoto, createLibraryQueue, createWeightedQueue,
   refreshCustomTags, getCustomTags, getHiddenTags, allTagsWithCustom,
 } from './library.js';
@@ -33,7 +33,7 @@ import {
   loadManifest as sbLoadManifest, pushToSupabase, testConnection as sbTest,
   supabasePhotos, updateTags as sbUpdateTags, bulkUpdateTags, bulkRemoveTags,
   removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
-  saveHiddenTags, invalidateTagConfig, convertToWebp,
+  saveHiddenTags, invalidateTagConfig, convertToWebp, repairManifestExtensions,
 } from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
@@ -571,6 +571,12 @@ async function renderAdmin() {
   $('#repo-token').value = cfg.token || '';
   $('#repo-push').textContent = t('admin.push', { n: mine.length });
 
+  // 旧 JPG 参照が残っていれば、実体の WebP に manifest を直す
+  try {
+    const fixed = await repairManifestExtensions();
+    if (fixed) toast(`${fixed}件の写真URLをWebPに直しました`);
+  } catch { /* 表示は fallbackUrl でも生きる */ }
+
   await renderSupabaseGrid();
   await renderTagManager();
 }
@@ -611,7 +617,7 @@ async function renderSupabaseGrid() {
       const btn = el('button', 'lib-item');
       btn.dataset.file = photo.id.replace('sb:', '');
       const img = document.createElement('img');
-      img.src = photo.url;
+      setPhotoSrc(img, photo);
       img.alt = photo.name || '';
       img.loading = 'lazy';
       btn.append(img);
@@ -881,12 +887,13 @@ function wireAdmin() {
     if (!files.length) return;
     const tags = sbUploadWithTags ? [...sbUploadTags] : [];
     const status = $('#sb-status');
-    status.textContent = `${files.length} 枚をアップロード中…`;
+    status.textContent = `${files.length} 枚を WebP 変換してアップロード中…`;
     try {
       const { shrinkImage } = await import('./db.js');
       const photos = [];
       for (const file of files) {
         if (!file.type.startsWith('image/')) continue;
+        // 長辺1000px・WebP。Storage / manifest とも .webp で揃える
         const blob = await shrinkImage(file);
         photos.push({
           id: `p${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
@@ -897,11 +904,11 @@ function wireAdmin() {
         });
       }
       await pushToSupabase(photos, (i, n) => {
-        status.textContent = `アップロード中… ${i}/${n}`;
+        status.textContent = `WebPアップロード中… ${i}/${n}`;
       });
       e.target.value = '';
       const tagMsg = tags.length ? `（${tags.join('・')}）` : '';
-      status.textContent = `${photos.length} 枚をアップロードしました${tagMsg}`;
+      status.textContent = `${photos.length} 枚を WebP でアップロードしました${tagMsg}`;
       await renderSupabaseGrid();
     } catch (err) {
       status.textContent = `エラー: ${err.message}`;
@@ -1253,48 +1260,46 @@ async function startSession(menu, { tags = null, part = null } = {}) {
   settings = getSettings();
   const weak = weakestLesson();
 
-  // 自分の写真（＋リポジトリ同梱）が1枚でもあればそこから出す。
-  const own = await everyPhoto().catch(() => []);
+  // お題は管理画面（Supabase）に上げた写真だけから出す。外部検索には落とさない。
+  const own = await supabasePhotos().catch(() => []);
   const matching = tags?.length
     ? own.filter((p) => tags.every((tag) => p.tags.includes(tag)))
     : own;
   const useLibrary = matching.length > 0;
+  const emptyNotice = '管理画面の写真に、そのタグが付いたものがありません';
 
+  const fromAdmin = { photos: own };
   const queues = {
-    photo: useLibrary
-      ? createLibraryQueue(tags || [], notice)
-      : createPhotoQueue(settings, notice, part?.query ? { queryOverride: part.query } : {}),
+    photo: createLibraryQueue(useLibrary ? (tags || []) : [], notice, emptyNotice, fromAdmin),
   };
-  // デイリーの真ん中はその日の部位。タグの付いた写真があればそこから、無ければ検索で出す
+  // デイリーの真ん中はその日の部位。タグの付いた写真だけから出す
   if (part) {
-    const tagged = own.filter((p) => part.tags.every((tag) => p.tags.includes(tag)));
-    queues.part = tagged.length
-      ? createLibraryQueue(part.tags, notice)
-      : createPhotoQueue(settings, notice, { queryOverride: part.query });
+    queues.part = createLibraryQueue(part.tags, notice, emptyNotice, fromAdmin);
   }
-  // 部位練習モード用：手7割、足1.5割、上半身1.5割
+  // 部位練習：足タグはまだ無いので手＋上半身だけ
   const partPhotos = own.filter((p) =>
-    p.tags.includes('手') || p.tags.includes('足') || p.tags.includes('上半身'));
+    p.tags.includes('手') || p.tags.includes('上半身'));
   if (partPhotos.length) {
     queues.partMix = createWeightedQueue([
       { tags: ['手'], weight: 7 },
-      { tags: ['足'], weight: 1.5 },
-      { tags: ['上半身'], weight: 1.5 },
-    ], notice);
+      { tags: ['上半身'], weight: 3 },
+    ], notice, fromAdmin);
+  } else {
+    queues.partMix = createLibraryQueue(['手'], notice, emptyNotice, fromAdmin);
   }
-  // ジェスチャードローイング → 動きタグ
+  // ジェスチャードローイング → 動きタグ（無ければ管理写真全体）
   const gesturePhotos = own.filter((p) => p.tags.includes('動き'));
   queues.gesture = gesturePhotos.length
-    ? createLibraryQueue(['動き'], notice)
-    : (useLibrary ? createLibraryQueue(tags || [], notice) : createPhotoQueue(settings, notice));
-  // クロッキー → 全身タグ
+    ? createLibraryQueue(['動き'], notice, emptyNotice, fromAdmin)
+    : createLibraryQueue([], notice, emptyNotice, fromAdmin);
+  // クロッキー → 全身タグ（無ければ管理写真全体）
   const croquisPhotos = own.filter((p) => p.tags.includes('全身'));
   queues.croquis = croquisPhotos.length
-    ? createLibraryQueue(['全身'], notice)
-    : (useLibrary ? createLibraryQueue(tags || [], notice) : createPhotoQueue(settings, notice));
+    ? createLibraryQueue(['全身'], notice, emptyNotice, fromAdmin)
+    : createLibraryQueue([], notice, emptyNotice, fromAdmin);
   if (weak) {
-    queues[`weak:${weak.id}`] =
-      createPhotoQueue(settings, notice, { queryOverride: weak.photoQuery });
+    // 復習も管理写真から。タグが無い部位は全体から出す
+    queues[`weak:${weak.id}`] = createLibraryQueue([], notice, emptyNotice, fromAdmin);
   }
   getRunner().start({
     menu: weak ? injectWeakStep(menu, weak) : menu,
