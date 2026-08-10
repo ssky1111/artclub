@@ -421,18 +421,24 @@ export const MODES = [
   {
     id: 'partMode',
     title: '部位練習',
-    subtitle: '手・上半身など、苦手なところだけ',
+    subtitle: '2分/枚。部位と回数を自分で選ぶ',
     picker: 'part',
     drillId: 'croquis',
-    en: { title: 'Body part', subtitle: 'Hands, torso — just the part you struggle with' },
+    en: {
+      title: 'Body part',
+      subtitle: '2 min each. Choose the part and how many',
+    },
   },
   {
     id: 'croquisMode',
     title: 'クロッキー',
-    subtitle: '3分×2枚。形をきちんと乗せる',
+    subtitle: '3分/枚。何枚やるかは自分で選ぶ',
+    picker: 'croquisCount',
     drillId: 'croquis',
-    steps: [{ drill: 'croquis', count: 2, seconds: 180, source: 'croquis' }],
-    en: { title: 'Croquis', subtitle: '2 × 3 min. Put the shape down properly' },
+    en: {
+      title: 'Croquis',
+      subtitle: '3 min each. Choose how many',
+    },
   },
   {
     id: 'copyMode',
@@ -464,6 +470,22 @@ export function buildGestureMenu(count = 10) {
   };
 }
 
+/** クロッキー。1枚3分（デイリーと同じ）、枚数だけ選ぶ。 */
+export function buildCroquisMenu(count = 2) {
+  const n = Math.max(1, Number(count) || 2);
+  return {
+    id: 'croquisMode',
+    title: 'クロッキー',
+    subtitle: `3分×${n}枚。形をきちんと乗せる`,
+    drillId: 'croquis',
+    steps: [{ drill: 'croquis', count: n, seconds: 180, source: 'croquis' }],
+    en: {
+      title: 'Croquis',
+      subtitle: `${n} × 3 min. Put the shape down properly`,
+    },
+  };
+}
+
 /** 模写モードのメニュー。選んだスケッチ1枚を時間無制限で描く。 */
 export function buildCopyMenu(work) {
   const name = work?.username || 'anonymous';
@@ -483,18 +505,26 @@ export function buildCopyMenu(work) {
   };
 }
 
-/** 部位練習のメニュー。選んだ部位タグの写真だけを出す。 */
-export function buildPartMenu(part) {
+/** 部位練習。デイリーと同じく1枚2分、枚数だけ選ぶ。 */
+export function buildPartMenu(part, count = 1) {
+  const n = Math.max(1, Number(count) || 1);
   return {
     id: `part-${part.id}`,
     title: `${part.label}の練習`,
-    subtitle: `${part.label}だけを 1分×3 → 3分×2`,
+    subtitle: `${part.label}を 2分×${n}`,
     partId: part.id,
-    steps: [
-      { drill: 'gesture', count: 3, seconds: 60, source: 'part' },
-      { drill: 'croquis', count: 2, seconds: 180, source: 'part' },
-    ],
-    en: { title: `${part.en} practice`, subtitle: `${part.en} only — 3 × 1 min, then 2 × 3 min` },
+    steps: [{
+      drill: 'croquis',
+      count: n,
+      seconds: 120,
+      source: 'part',
+      label: `部位練習：${part.label}`,
+      labelEn: `Body part: ${part.en}`,
+    }],
+    en: {
+      title: `${part.en} practice`,
+      subtitle: `${part.en} — ${n} × 2 min`,
+    },
   };
 }
 
@@ -503,6 +533,8 @@ export const TIME_CHOICES = [30, 60, 120, 180, 300, 600];
 export const COUNT_CHOICES = [1, 3, 5, 10, 20];
 /** ジェスチャーモードの体数。1体1分固定なのでここだけ選ぶ。 */
 export const GESTURE_COUNT_CHOICES = [2, 5, 10, 15, 20];
+/** クロッキー / 部位練習の枚数（時間が長いので少なめ）。 */
+export const ROUND_COUNT_CHOICES = [1, 2, 5, 10];
 
 export function timeLabel(seconds) {
   return seconds < 60 ? `${seconds}秒` : `${seconds / 60}分`;
