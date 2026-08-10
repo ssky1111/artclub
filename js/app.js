@@ -56,7 +56,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '133';
+const BUILD = '134';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2886,10 +2886,7 @@ function migrateHashRouteToPath() {
 function navigateTo(route, { replace = false } = {}) {
   const next = String(route || 'home').replace(/^#/, '').replace(/^\/+|\/+$/g, '') || 'home';
   const url = pathForRoute(next);
-  if (currentRouteKey() === next && !location.hash) {
-    applyRoute(routeFromLocation());
-    return;
-  }
+  if (currentRouteKey() === next && !location.hash) return;
   if (replace) history.replaceState(null, '', url);
   else history.pushState(null, '', url);
   applyRoute(routeFromLocation());
@@ -3157,15 +3154,21 @@ function wireAuth() {
     updateAuthUI(null);
   });
 
+  let authHandledUserId = null;
+
   onAuthChange((u) => {
     updateAuthUI(u);
+    const uid = u?.id ?? null;
     if (!u) {
+      authHandledUserId = null;
       resetUserCaches();
       settings = getSettings();
       applyTheme();
       applyRoute(routeFromLocation());
       return;
     }
+    if (uid === authHandledUserId) return;
+    authHandledUserId = uid;
     // 端末に名前が無くても、DB にあれば復元してからユーザーネーム入力を出すか決める
     Promise.all([hydrateUsername(), hydrateUserData()])
       .then(([name, data]) => {
@@ -3264,8 +3267,10 @@ function init() {
   applyRoute(routeFromLocation());
   restorePageScroll();
 
-  window.addEventListener('pageshow', () => {
-    restorePageScroll();
+  window.addEventListener('pageshow', restorePageScroll);
+  window.addEventListener('focus', restorePageScroll);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) restorePageScroll();
   });
 
   document.addEventListener('pointerdown', () => { if (settings.sfx) sfx.unlock(); }, { once: true });

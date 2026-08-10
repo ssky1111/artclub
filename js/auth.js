@@ -49,7 +49,13 @@ function cacheUsername(name) {
   return trimmed;
 }
 
+/** ログイン状態の変化だけ UI に伝える。トークン更新で毎回 notify しない。 */
+let lastNotifyUserId = undefined;
+
 function notify() {
+  const uid = user?.id ?? null;
+  if (lastNotifyUserId !== undefined && uid === lastNotifyUserId) return;
+  lastNotifyUserId = uid;
   for (const fn of listeners) {
     try { fn(user); } catch {}
   }

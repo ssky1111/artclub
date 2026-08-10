@@ -5,22 +5,31 @@ export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 /** 練習終了後やシート閉じたあとに、縦スクロールが戻らないことがあるので明示的に復帰させる */
 export function restorePageScroll() {
-  if (document.body.dataset.screen !== 'session') {
-    document.body.classList.remove('in-session');
+  const onSession = document.body.dataset.screen === 'session';
+  if (!onSession) document.body.classList.remove('in-session');
+  for (const node of [document.documentElement, document.body]) {
+    node.style.overflow = '';
+    node.style.position = '';
+    node.style.height = '';
+    node.style.width = '';
+    node.style.top = '';
+    node.style.touchAction = '';
   }
-  document.body.style.overflow = '';
-  document.body.style.position = '';
-  document.body.style.height = '';
-  document.body.style.width = '';
-  document.documentElement.style.overflow = '';
-  document.documentElement.style.height = '';
+  if (!onSession) {
+    document.documentElement.style.overflowY = 'auto';
+    document.body.style.overflowY = 'auto';
+    document.body.style.setProperty('-webkit-overflow-scrolling', 'touch');
+  }
 }
 
 export function showScreen(name) {
-  $$('.screen').forEach((el) => el.classList.remove('is-active'));
   const screen = document.getElementById(`screen-${name}`);
+  if (document.body.dataset.screen === name && screen?.classList.contains('is-active')) return;
+
+  $$('.screen').forEach((el) => el.classList.remove('is-active'));
   if (screen) screen.classList.add('is-active');
-  document.body.dataset.screen = name;          // 下のタブを出す画面を CSS 側で決める
+  document.body.dataset.screen = name;
+  document.documentElement.dataset.screen = name;
   document.body.classList.toggle('in-session', name === 'session');
   if (name !== 'session') restorePageScroll();
   window.scrollTo(0, 0);

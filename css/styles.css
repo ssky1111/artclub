@@ -327,17 +327,29 @@ html, body {
   overscroll-behavior-y: auto;
 }
 
-body.in-session { overflow: hidden; }
-body:not(.in-session) {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+/*
+ * 練習中だけスクロール止める。in-session クラスは残留することがあるので
+ * data-screen で判定する（showScreen が毎回セットする）。
+ */
+body[data-screen='session'],
+html[data-screen='session'] {
+  overflow: hidden !important;
+  height: 100%;
 }
 
-/* 練習画面を去ったあとも fixed のステージが触れないようにする */
-#screen-session:not(.is-active) .stage,
-#screen-session:not(.is-active) .pad-wrap {
+body:not([data-screen='session']),
+html:not([data-screen='session']) {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  height: auto;
+  min-height: 100%;
+}
+
+/* 練習画面以外では fixed ステージを完全に無効化 */
+body:not([data-screen='session']) #screen-session {
   display: none !important;
   pointer-events: none !important;
+  visibility: hidden !important;
 }
 
 .sheet[hidden],
