@@ -4,7 +4,7 @@
 
 import {
   buildDaily, partForDate, MODES, PARTS, ACTIVE_PARTS, DRILLS, PICKABLE_DRILLS,
-  TIME_CHOICES, COUNT_CHOICES, GESTURE_COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu, buildCopyMenu, buildGestureMenu,
+  TIME_CHOICES, COUNT_CHOICES, GESTURE_COUNT_CHOICES, ROUND_COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu, buildCopyMenu, buildGestureMenu, buildCroquisMenu,
   levelLabel, menuDuration,
 } from './theory.js';
 import {
@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '181';
+const BUILD = '182';
 const SITE_PASS_SESSION = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 
@@ -251,6 +251,7 @@ function renderModes() {
       if (mode.picker === 'part') return openPartSheet();
       if (mode.picker === 'copy') return openCopySheet();
       if (mode.picker === 'gestureCount') return openGestureSheet();
+      if (mode.picker === 'croquisCount') return openCroquisSheet();
       startSession(mode);
     });
     wrap.append(card);
@@ -333,9 +334,49 @@ function wireGestureSheet() {
   });
 }
 
+/* ==================== クロッキー ==================== */
+
+let croquisCount = 2;
+
+function openCroquisSheet() {
+  renderCroquisChips();
+  $('#croquis-sheet').hidden = false;
+}
+
+function renderCroquisChips() {
+  const wrap = $('#croquis-count-chips');
+  wrap.innerHTML = '';
+  for (const n of ROUND_COUNT_CHOICES) {
+    const chip = el('button', `chip${croquisCount === n ? ' on' : ''}`,
+                    getLang() === 'ja' ? `${n}枚` : String(n));
+    chip.addEventListener('click', () => { croquisCount = n; renderCroquisChips(); });
+    wrap.append(chip);
+  }
+  const note = $('#croquis-note');
+  if (note) {
+    note.textContent = getLang() === 'ja'
+      ? `1枚3分 × ${croquisCount}枚（合計 ${croquisCount * 3}分）`
+      : `3 min each × ${croquisCount} (total ${croquisCount * 3} min)`;
+  }
+  const start = $('#croquis-start');
+  if (start) start.textContent = t('setup.start', { d: fmtDur(180 * croquisCount) });
+}
+
+function wireCroquisSheet() {
+  $('#croquis-close').addEventListener('click', () => { $('#croquis-sheet').hidden = true; });
+  $('#croquis-sheet').addEventListener('click', (e) => {
+    if (e.target.id === 'croquis-sheet') $('#croquis-sheet').hidden = true;
+  });
+  $('#croquis-start').addEventListener('click', () => {
+    $('#croquis-sheet').hidden = true;
+    startSession(buildCroquisMenu(croquisCount));
+  });
+}
+
 /* ==================== 部位練習 ==================== */
 
 let currentPart = ACTIVE_PARTS[0] || PARTS[0];
+let partCount = 1;
 
 function openPartSheet() {
   renderPartChips();
@@ -352,8 +393,22 @@ function renderPartChips() {
     chip.addEventListener('click', () => { currentPart = part; renderPartChips(); });
     wrap.append(chip);
   }
-  const menu = buildPartMenu(currentPart);
+
+  const countWrap = $('#part-count-chips');
+  if (countWrap) {
+    countWrap.innerHTML = '';
+    for (const n of ROUND_COUNT_CHOICES) {
+      const chip = el('button', `chip${partCount === n ? ' on' : ''}`,
+                      getLang() === 'ja' ? `${n}枚` : String(n));
+      chip.addEventListener('click', () => { partCount = n; renderPartChips(); });
+      countWrap.append(chip);
+    }
+  }
+
+  const menu = buildPartMenu(currentPart, partCount);
   $('#part-note').textContent = tr(menu, 'subtitle');
+  const start = $('#part-start');
+  if (start) start.textContent = t('setup.start', { d: fmtDur(120 * partCount) });
 }
 
 function wirePartSheet() {
@@ -364,7 +419,7 @@ function wirePartSheet() {
   $('#part-start').addEventListener('click', async () => {
     $('#part-sheet').hidden = true;
     await weekReviewDialog(recentReviewNotes(7));
-    startSession(buildPartMenu(currentPart), { tags: currentPart.tags, part: currentPart });
+    startSession(buildPartMenu(currentPart, partCount), { tags: currentPart.tags, part: currentPart });
   });
 }
 
@@ -2388,7 +2443,8 @@ function coverArtworkId(entry) {
 function menuStepsForEntry(entry) {
   if (!entry?.menuId) return null;
   if (entry.menuId === 'croquisMode') {
-    return MODES.find((m) => m.id === entry.menuId)?.steps || null;
+    const n = Math.max(1, (entry.shots || []).length || Math.round((entry.seconds || 360) / 180));
+    return buildCroquisMenu(n).steps;
   }
   if (entry.menuId === 'gestureMode') {
     // 体数は可変。履歴の枚数から復元（1体1分）
@@ -2398,7 +2454,9 @@ function menuStepsForEntry(entry) {
   if (entry.menuId === 'daily') return buildDaily(partForDate(entry.date)).steps;
   if (entry.menuId.startsWith('part-')) {
     const part = PARTS.find((p) => entry.menuId === `part-${p.id}`);
-    return part ? buildPartMenu(part).steps : null;
+    if (!part) return null;
+    const n = Math.max(1, (entry.shots || []).length || Math.round((entry.seconds || 120) / 120));
+    return buildPartMenu(part, n).steps;
   }
   return null;
 }
@@ -3589,6 +3647,7 @@ function init() {
   wireSetup();
   wirePartSheet();
   wireGestureSheet();
+  wireCroquisSheet();
   wireCopySheet();
   wireLibrary();
   wireCalendar();

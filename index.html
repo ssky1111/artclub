@@ -35,7 +35,7 @@
 </script>
 </head>
 
-<body data-build="181" data-theme="light">
+<body data-build="182" data-theme="light">
 
 <div id="site-gate" class="confirm-dialog site-gate-dialog" role="dialog" aria-modal="true" aria-labelledby="site-gate-title">
   <div class="confirm-dialog-inner site-gate-inner">
@@ -468,6 +468,9 @@
     <button id="part-close" class="icon-btn sheet-close" data-icon="close"></button>
     <div class="label" data-i18n="setup.part">どこを練習する？</div>
     <div id="part-chips" class="chips big-chips"></div>
+    <div class="label setup-label" data-i18n="setup.partCount">何枚やる？</div>
+    <p class="muted small" data-i18n="setup.partNote">1枚あたり2分。デイリーと同じペースです。</p>
+    <div id="part-count-chips" class="chips big-chips"></div>
     <p id="part-note" class="muted small"></p>
     <button id="part-start" class="btn primary big" data-i18n="home.startPlain">はじめる</button>
   </div>
@@ -481,6 +484,17 @@
     <div id="gesture-count-chips" class="chips big-chips"></div>
     <p id="gesture-note" class="muted small"></p>
     <button id="gesture-start" class="btn primary big">はじめる</button>
+  </div>
+</div>
+
+<div id="croquis-sheet" class="sheet" hidden>
+  <div class="sheet-inner">
+    <button id="croquis-close" class="icon-btn sheet-close" data-icon="close"></button>
+    <div class="label" data-i18n="setup.croquisCount">何枚やる？</div>
+    <p class="muted small" data-i18n="setup.croquisNote">1枚あたり3分。デイリーと同じペースです。</p>
+    <div id="croquis-count-chips" class="chips big-chips"></div>
+    <p id="croquis-note" class="muted small"></p>
+    <button id="croquis-start" class="btn primary big">はじめる</button>
   </div>
 </div>
 
