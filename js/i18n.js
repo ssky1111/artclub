@@ -455,6 +455,9 @@ export function fmtCount(n) {
  */
 export function applyI18n(root = document) {
   for (const node of root.querySelectorAll('[data-i18n]')) {
+    if (node.id === 'auth-login-label' || node.id === 'atelier-login-label' || node.id === 'work-login-label') {
+      continue;
+    }
     node.textContent = t(node.dataset.i18n);
   }
   for (const node of root.querySelectorAll('[data-i18n-ph]')) {
