@@ -1245,8 +1245,7 @@ function getRunner() {
         saveResult(partial);
         toast(t('toast.partial', { m: Math.round(partial.seconds / 60) }));
       }
-      renderHome();
-      showScreen('home');
+      navigateTo('home');
     },
   });
   return runner;
@@ -1801,8 +1800,7 @@ function wireReview() {
 
   $('#review-home').addEventListener('click', async () => {
     await finishLeavingReview();
-    renderHome();
-    showScreen('home');
+    navigateTo('home');
     celebrate();
   });
 
@@ -2377,17 +2375,24 @@ async function ensureAtelierPhotoIndex() {
   return map;
 }
 
-function switchAtelierTab(tab) {
-  atelierTab = tab;
+function switchAtelierTab(tab, { syncHash = true } = {}) {
+  atelierTab = (tab === 'mine' || tab === 'prompt') ? tab : 'public';
   $$('[data-atelier-tab]').forEach((btn) => {
-    btn.classList.toggle('on', btn.dataset.atelierTab === tab);
+    btn.classList.toggle('on', btn.dataset.atelierTab === atelierTab);
   });
-  $('#atelier-public').hidden = tab !== 'public';
-  $('#atelier-mine').hidden = tab !== 'mine';
-  $('#atelier-prompt').hidden = tab !== 'prompt';
-  if (tab === 'public') renderAtelierPublic();
-  if (tab === 'mine') renderAtelierMine();
-  if (tab === 'prompt') renderAtelierByPrompt();
+  $('#atelier-public').hidden = atelierTab !== 'public';
+  $('#atelier-mine').hidden = atelierTab !== 'mine';
+  $('#atelier-prompt').hidden = atelierTab !== 'prompt';
+  if (atelierTab === 'public') renderAtelierPublic();
+  if (atelierTab === 'mine') renderAtelierMine();
+  if (atelierTab === 'prompt') renderAtelierByPrompt();
+  if (syncHash) navigateTo(atelierRoute(atelierTab), { replace: true });
+}
+
+function atelierRoute(tab) {
+  if (tab === 'mine') return 'atelier/mine';
+  if (tab === 'prompt') return 'atelier/prompt';
+  return 'atelier';
 }
 
 async function renderAtelierPublic() {
@@ -2499,16 +2504,106 @@ async function renderAtelierByPrompt() {
   }
 }
 
+
 function renderAtelier() {
-  switchAtelierTab(atelierTab || 'public');
+  switchAtelierTab(atelierTab || 'public', { syncHash: false });
 }
 
 function wireAtelier() {
   if (atelierWired) return;
   atelierWired = true;
   $$('[data-atelier-tab]').forEach((btn) => {
-    btn.addEventListener('click', () => switchAtelierTab(btn.dataset.atelierTab));
+    btn.addEventListener('click', () => {
+      navigateTo(atelierRoute(btn.dataset.atelierTab));
+    });
   });
+}
+
+/* ==================== URL ルーティング ==================== */
+
+function parseRoute(hash = location.hash) {
+  const raw = String(hash || '').replace(/^#/, '').trim();
+  if (!raw) return { root: 'home', parts: [] };
+  const parts = raw.split('/').map((p) => {
+    try { return decodeURIComponent(p); } catch { return p; }
+  }).filter(Boolean);
+  return { root: parts[0] || 'home', parts };
+}
+
+function routeFromLocation() {
+  const path = location.pathname.replace(/\/+$/, '');
+  const segs = path.split('/').filter(Boolean);
+  const idx = segs[0] === 'artclub' ? 1 : 0;
+  const root = segs[idx];
+  if (root === 'atelier') {
+    const sub = segs[idx + 1];
+    return { root: 'atelier', parts: sub ? ['atelier', sub] : ['atelier'] };
+  }
+  if (['home', 'log', 'settings', 'admin', 'library'].includes(root) && !segs[idx + 1]) {
+    return { root, parts: [root] };
+  }
+  return parseRoute(location.hash);
+}
+
+function navigateTo(route, { replace = false } = {}) {
+  const clean = String(route || 'home').replace(/^#/, '');
+  const next = clean || 'home';
+  const hash = `#${next}`;
+  const current = (location.hash || '#home').replace(/^#/, '') || 'home';
+  if (current === next) {
+    applyRoute(parseRoute(hash));
+    return;
+  }
+  // replaceState は hashchange が飛ばないので自分で適用。通常遷移は hash 代入に任せる。
+  if (replace) {
+    history.replaceState(null, '', hash);
+    applyRoute(parseRoute(hash));
+    return;
+  }
+  location.hash = next;
+}
+
+function applyRoute(route = routeFromLocation()) {
+  const root = route.root || 'home';
+  const sub = route.parts[1];
+
+  if (root === 'admin') {
+    openAdmin();
+    return;
+  }
+  if (root === 'work') {
+    showScreen('home');
+    renderHome();
+    return;
+  }
+
+  if (root === 'atelier') {
+    atelierTab = (sub === 'mine' || sub === 'prompt') ? sub : 'public';
+    showScreen('atelier');
+    renderAtelier();
+    return;
+  }
+  if (root === 'log') {
+    renderLog();
+    showScreen('log');
+    return;
+  }
+  if (root === 'settings') {
+    renderSettings();
+    showScreen('settings');
+    return;
+  }
+  if (root === 'library') {
+    openLibrary();
+    return;
+  }
+
+  renderHome();
+  showScreen('home');
+}
+
+function wireRoutes() {
+  window.addEventListener('hashchange', () => applyRoute(parseRoute(location.hash)));
 }
 
 /* ==================== 起動 ==================== */
@@ -2517,11 +2612,18 @@ function wireNav() {
   $$('[data-nav]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const target = btn.dataset.nav;
-      if (target === 'library') { openLibrary(); return; }
-      if (target === 'log') renderLog();
-      if (target === 'atelier') renderAtelier();
-      if (target === 'home') renderHome();
-      if (target === 'settings') renderSettings();
+      if (target === 'library') {
+        navigateTo('library');
+        return;
+      }
+      if (target === 'atelier') {
+        navigateTo(atelierRoute(atelierTab || 'public'));
+        return;
+      }
+      if (target === 'log' || target === 'home' || target === 'settings') {
+        navigateTo(target);
+        return;
+      }
       showScreen(target);
     });
   });
@@ -2562,13 +2664,6 @@ function wireCalendar() {
   $('#sheet-close').addEventListener('click', () => { $('#day-sheet').hidden = true; });
   $('#day-sheet').addEventListener('click', (e) => {
     if (e.target.id === 'day-sheet') $('#day-sheet').hidden = true;
-  });
-}
-
-/** 苦手な部位のレッスンは、部位練習から辿れるようにしておく。 */
-function wireLessonLinks() {
-  window.addEventListener('hashchange', () => {
-    if (location.hash.replace('#', '') === 'admin') openAdmin();
   });
 }
 
@@ -2716,15 +2811,9 @@ function init() {
   wireCalendar();
   wireSettings();
   wireAdmin();
-  wireLessonLinks();
+  wireRoutes();
 
-  renderHome();
-
-  // /admin でも #admin でも入れるようにしておく（GitHub Pages では 404.html が #admin に流す）
-  const wantsAdmin = location.hash.replace('#', '') === 'admin'
-                     || /\/admin\/?$/.test(location.pathname);
-  if (wantsAdmin) openAdmin();
-  else showScreen('home');
+  applyRoute(routeFromLocation());
 
   document.addEventListener('pointerdown', () => { if (settings.sfx) sfx.unlock(); }, { once: true });
 
