@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '43';
+const BUILD = '44';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -208,14 +208,6 @@ function renderModes() {
       card.append(el('div', 'menu-time', fmtDur(menuDuration(mode))));
     }
     card.append(el('span', 'free-badge', t('home.freeNow')));
-    const drill = DRILLS[mode.drillId];
-    if (drill?.about) {
-      const why = el('details', 'why');
-      const sum = el('summary', null, getLang() === 'ja' ? 'これって何？' : 'What is this?');
-      why.append(sum, el('p', null, tr(drill, 'about')));
-      why.addEventListener('click', (e) => e.stopPropagation());
-      card.append(why);
-    }
     card.addEventListener('click', () => {
       openPaywall(() => {
         if (mode.picker === 'part') return openPartSheet();
