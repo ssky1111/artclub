@@ -18,7 +18,7 @@ const DEFAULT_SETTINGS = {
   autoFlip: false,
   keepAwake: true,
   orientation: 'any',
-  penAlpha: 0.8,              // キャンバスの線の濃さ（0.05〜1）。既定は80%
+  penAlpha: 0.9,              // キャンバスの線の濃さ（0.05〜1）。既定は90%
   hintOpen: true,            // 描いている最中の手順ヒントを開いておくか
 };
 

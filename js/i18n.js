@@ -71,8 +71,8 @@ const DICT = {
   'gal.exclude':          { ja: '投稿から外す',           en: 'Exclude from post' },
   'gal.include':          { ja: '投稿に含める',           en: 'Include in post' },
   'gal.postThis':         { ja: '公開する',               en: 'Make public' },
-  'gal.allowCopy':        { ja: '模写してOK',             en: 'OK to copy' },
-  'gal.allowCopyHint':    { ja: 'ONにすると、他の人が模写モードで練習できます', en: 'When on, others can practice by copying this drawing' },
+  'gal.allowCopy':        { ja: '模写OK',                 en: 'OK to copy' },
+  'gal.allowCopyHint':    { ja: '模写モードで他の人があなたの絵を模写できるようになります', en: 'Lets others copy your drawings in copy mode' },
   'gal.publishAll':       { ja: '全て公開',               en: 'Publish all' },
   'gal.copyAll':          { ja: '全て模写OK',             en: 'Allow copy on all' },
   'gal.loginToLike':      { ja: 'いいねするにはログインしてね', en: 'Log in to like' },
@@ -159,6 +159,7 @@ const DICT = {
   'sess.memory':         { ja: '記憶で描く時間',       en: 'Draw from memory' },
   'sess.peek':           { ja: '3秒だけ見る',          en: 'Peek 3s' },
   'sess.swap':           { ja: '写真を入れ替え',       en: 'Swap photo' },
+  'sess.swapShort':      { ja: '変更',                 en: 'Change' },
   'sess.sheetsBy':       { ja: '{n}枚 × {t}',          en: '{n} × {t}' },
 
   /* ---------- ふりかえり ---------- */

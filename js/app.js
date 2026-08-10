@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '79';
+const BUILD = '82';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2294,7 +2294,7 @@ function renderSettings() {
   $('#opt-autoflip').checked = settings.autoFlip;
   $('#opt-keepawake').checked = settings.keepAwake;
   $('#opt-orientation').value = settings.orientation;
-  $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 0.8) * 100));
+  $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 0.9) * 100));
   renderLangChips();
 }
 
