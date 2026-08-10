@@ -122,8 +122,9 @@ body[data-skin='pastel-rpg'] {
   --danger: #e8898a;
   --radius: 18px;
   --radius-sm: 12px;
-  --lift: 0 3px 0 #e4d2ea;
-  --lift-accent: 0 3px 0 color-mix(in srgb, var(--accent) 45%, #c8b0d4);
+  --lift: 0 4px 0 #d4bfe0, inset 0 2px 0 rgba(255, 255, 255, .65), inset 0 -2px 0 rgba(90, 60, 120, .08);
+  --lift-accent: 0 4px 0 color-mix(in srgb, var(--cta-ink) 24%, #e8a0b8),
+    inset 0 2px 0 rgba(255, 255, 255, .5), inset 0 -2px 0 rgba(90, 30, 55, .14);
 }
 
 body[data-skin='pastel-rpg'][data-theme='dark'] {
@@ -149,8 +150,8 @@ body[data-skin='pastel-rpg'][data-theme='dark'] {
   --sun: #ffe0a0;
   --good: #c8f090;
   --danger: #f0a0a4;
-  --lift: 0 3px 0 #1e1830;
-  --lift-accent: 0 3px 0 #1e1830;
+  --lift: 0 4px 0 #1e1830, inset 0 2px 0 rgba(255, 255, 255, .12), inset 0 -2px 0 rgba(0, 0, 0, .25);
+  --lift-accent: 0 4px 0 #1e1830, inset 0 2px 0 rgba(255, 255, 255, .28), inset 0 -2px 0 rgba(0, 0, 0, .28);
 }
 
 body[data-skin='pastel-rpg'][data-theme='paper'] {
@@ -170,8 +171,8 @@ body[data-skin='pastel-rpg'][data-theme='paper'] {
   --cta-ink: #4a2034;
   --brand: #f0a8c0;
   --brand-ink: #c45f84;
-  --lift: 0 3px 0 #e6d8c4;
-  --lift-accent: 0 3px 0 #d4c2a8;
+  --lift: 0 4px 0 #e6d8c4, inset 0 2px 0 rgba(255, 255, 255, .7), inset 0 -2px 0 rgba(120, 80, 50, .08);
+  --lift-accent: 0 4px 0 #d4c2a8, inset 0 2px 0 rgba(255, 255, 255, .5), inset 0 -2px 0 rgba(90, 30, 55, .12);
 }
 
 /* パステルRPG：やわらかい水玉の地と、ウィンドウっぽいカード */
@@ -193,13 +194,134 @@ body[data-skin='pastel-rpg'] .primary-card {
   border-width: 2px;
   border-style: solid;
 }
+
+/* RPG風の立体ボタン：上ハイライト＋下のふち＋押すと沈む */
+body[data-skin='pastel-rpg'] .btn {
+  border: 2px solid color-mix(in srgb, var(--text) 14%, transparent);
+  border-radius: 16px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface) 55%, #fff) 0%,
+    var(--surface-2) 100%
+  );
+  box-shadow: var(--lift);
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+body[data-skin='pastel-rpg'] .btn:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--line-strong) 80%, transparent),
+    inset 0 2px 4px rgba(60, 40, 80, .14);
+}
 body[data-skin='pastel-rpg'] .btn.primary,
 body[data-skin='pastel-rpg'] .btn.cta {
-  border: 2px solid color-mix(in srgb, var(--cta-ink) 18%, transparent);
+  color: var(--cta-ink);
+  border-color: color-mix(in srgb, var(--cta-ink) 28%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--cta-bg) 62%, #fff) 0%,
+    var(--cta-bg) 52%,
+    color-mix(in srgb, var(--cta-bg) 78%, var(--cta-ink)) 100%
+  );
   box-shadow: var(--lift-accent);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .28);
+}
+body[data-skin='pastel-rpg'] .btn.primary:active,
+body[data-skin='pastel-rpg'] .btn.cta:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--cta-ink) 22%, #e8a0b8),
+    inset 0 3px 5px rgba(80, 30, 50, .2);
+  text-shadow: none;
+}
+body[data-skin='pastel-rpg'] .btn.ghost {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface) 70%, #fff) 0%,
+    var(--surface) 100%
+  );
+  border-color: var(--line-strong);
+}
+body[data-skin='pastel-rpg'] .btn.big {
+  border-radius: 18px;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+body[data-skin='pastel-rpg'] .chip {
+  border: 2px solid var(--line);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface) 60%, #fff) 0%,
+    var(--surface-2) 100%
+  );
+  box-shadow: 0 3px 0 var(--line), inset 0 1px 0 rgba(255, 255, 255, .55);
+}
+body[data-skin='pastel-rpg'] .chip:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--line), inset 0 2px 3px rgba(60, 40, 80, .12);
 }
 body[data-skin='pastel-rpg'] .chip.on {
   border-width: 2px;
+  border-color: color-mix(in srgb, var(--accent-ink) 28%, transparent);
+  color: var(--accent-ink);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 55%, #fff) 0%,
+    var(--accent) 100%
+  );
+  box-shadow:
+    0 3px 0 color-mix(in srgb, var(--accent) 45%, #6a8f84),
+    inset 0 1px 0 rgba(255, 255, 255, .45);
+}
+body[data-skin='pastel-rpg'] .menu-card {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface) 50%, #fff) 0%,
+    var(--surface) 100%
+  );
+  box-shadow: var(--lift);
+}
+body[data-skin='pastel-rpg'] .menu-card:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 var(--line),
+    inset 0 2px 4px rgba(60, 40, 80, .1);
+}
+body[data-skin='pastel-rpg'] .tabbar button.on {
+  border: 2px solid color-mix(in srgb, var(--cta-ink) 22%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--cta-bg) 65%, #fff) 0%,
+    var(--cta-bg) 100%
+  );
+  box-shadow:
+    0 3px 0 color-mix(in srgb, var(--cta-ink) 20%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, .4);
+}
+body[data-skin='pastel-rpg'] .tabbar button.on:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--cta-ink) 20%, transparent);
+}
+body[data-skin='pastel-rpg'] .confirm-dialog-btn {
+  border: 2px solid color-mix(in srgb, var(--text) 14%, transparent);
+  border-radius: 14px;
+  box-shadow: var(--lift);
+  font-weight: 700;
+}
+body[data-skin='pastel-rpg'] .confirm-dialog-btn.ok {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--cta-bg) 62%, #fff) 0%,
+    var(--cta-bg) 100%
+  );
+  color: var(--cta-ink);
+  border-color: color-mix(in srgb, var(--cta-ink) 28%, transparent);
+  box-shadow: var(--lift-accent);
+}
+body[data-skin='pastel-rpg'] .confirm-dialog-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--line), inset 0 2px 4px rgba(60, 40, 80, .14);
 }
 body[data-skin='pastel-rpg'] .tabbar {
   background: color-mix(in srgb, var(--surface) 92%, transparent);
