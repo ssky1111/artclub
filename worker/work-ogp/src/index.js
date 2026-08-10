@@ -70,6 +70,7 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
     : 'ARTCLUB で描いたクロッキー';
   const image = work.og_image_url || work.image_url;
   const authLink = `${origin}/#auth`;
+  const dailyLink = `${origin}/#daily`;
 
   if (forBot) {
     return `<!DOCTYPE html>
@@ -191,6 +192,32 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
     width: 100%; height: auto; display: block; border-radius: 12px;
     background: #f3eef7; border: 1px solid var(--line);
   }
+  .ctr { margin-top: 28px; }
+  .ctr-lead {
+    margin: 0 0 12px; text-align: center;
+    font-size: 15px; font-weight: 700; letter-spacing: .02em;
+  }
+  .ctr-card {
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: 18px;
+    padding: 20px 18px;
+  }
+  .ctr-kicker {
+    font-size: 12px; letter-spacing: .06em; color: var(--brand-ink); font-weight: 700;
+    margin: 0 0 6px;
+  }
+  .ctr-title {
+    font-family: "Special Gothic Expanded One", sans-serif;
+    font-size: 32px; font-weight: 400; letter-spacing: .04em;
+    margin: 0 0 14px; line-height: 1.2;
+  }
+  .ctr-start {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; padding: 15px 20px; border-radius: 999px;
+    background: #1c1a17; color: #fff; text-decoration: none;
+    font-weight: 700; font-size: 17px;
+  }
 </style>
 </head>
 <body>
@@ -210,6 +237,14 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
       <p class="meta">${escapeHtml(desc)}</p>
       <img class="work" src="${escapeHtml(image)}" alt="${escapeHtml(desc)}">
     </main>
+    <section class="ctr">
+      <p class="ctr-lead">ドローイング練習してみよう</p>
+      <div class="ctr-card">
+        <div class="ctr-kicker">今日の練習</div>
+        <div class="ctr-title">DAILY</div>
+        <a class="ctr-start" href="${escapeHtml(dailyLink)}">はじめる</a>
+      </div>
+    </section>
   </div>
 </body>
 </html>`;

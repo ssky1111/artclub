@@ -27,7 +27,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="93" data-theme="light" data-skin="pastel-rpg">
+<body data-build="94" data-theme="light" data-skin="pastel-rpg">
 <script>
 /* 設定があれば先に当てる。無ければ上の data-skin でパステルのまま */
 (function () {
@@ -360,6 +360,15 @@
       <button id="work-delete" class="btn danger small" data-i18n="gal.delete" hidden>この作品を消す</button>
     </div>
   </div>
+
+  <section id="work-ctr" class="work-ctr">
+    <p class="work-ctr-lead" data-i18n="work.ctrLead">ドローイング練習してみよう</p>
+    <div class="card primary-card work-ctr-card">
+      <div class="menu-kicker" data-i18n="home.todayLabel">今日の練習</div>
+      <div class="menu-title big">DAILY</div>
+      <button id="work-ctr-start" class="btn primary big" type="button" data-i18n="home.startPlain">はじめる</button>
+    </div>
+  </section>
 </main>
 
 <!-- ============ 解剖レッスン ============ -->

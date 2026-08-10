@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '93';
+const BUILD = '94';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2159,6 +2159,16 @@ function wireGallery() {
   $('#work-signup-btn')?.addEventListener('click', openAuth);
   $('#work-login-btn')?.addEventListener('click', openAuth);
   $('#work-account-btn')?.addEventListener('click', openAuth);
+
+  $('#work-ctr-start')?.addEventListener('click', () => startDailyFromCtr());
+}
+
+function startDailyFromCtr() {
+  const part = partForDate(dateKey());
+  const daily = buildDaily(part);
+  const rounds = roundsToday('daily', getHistory());
+  if (rounds >= 4) openPaywall(() => startDaily(daily, part));
+  else startDaily(daily, part);
 }
 
 let sheetBlob = null;
@@ -2778,6 +2788,12 @@ function applyRoute(route = routeFromLocation()) {
     renderHome();
     showScreen('home');
     openAuthSheet();
+    return;
+  }
+  if (root === 'daily') {
+    renderHome();
+    showScreen('home');
+    startDailyFromCtr();
     return;
   }
 

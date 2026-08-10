@@ -1749,6 +1749,21 @@ body[data-theme='dark'] .google-btn {
   flex-wrap: wrap;
   gap: 10px;
 }
+.work-ctr {
+  margin-top: 28px;
+  padding-bottom: 28px;
+}
+.work-ctr-lead {
+  margin: 0 0 12px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: .02em;
+}
+.work-ctr-card {
+  margin-bottom: 0;
+}
 
 /* ---------- アトリエ ---------- */
 

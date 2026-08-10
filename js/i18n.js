@@ -79,6 +79,7 @@ const DICT = {
   'gal.loginToLike':      { ja: 'いいねするにはログインしてね', en: 'Log in to like' },
   'gal.shareWork':        { ja: 'この作品をシェア',       en: 'Share this work' },
   'gal.workNotFound':     { ja: '作品が見つかりません',   en: 'Artwork not found' },
+  'work.ctrLead':         { ja: 'ドローイング練習してみよう', en: 'Try a drawing practice' },
 
   /* ---------- アトリエ ---------- */
   'atelier.title':        { ja: 'アトリエ',               en: 'Atelier' },
