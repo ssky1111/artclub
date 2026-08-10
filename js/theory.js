@@ -375,7 +375,7 @@ export const MODES = [
     title: 'ジェスチャードローイング',
     subtitle: '1分×10枚。動きと重心だけを取る',
     drillId: 'gesture',
-    steps: [{ drill: 'gesture', count: 10, seconds: 60 }],
+    steps: [{ drill: 'gesture', count: 10, seconds: 60, source: 'gesture' }],
     en: { title: 'Gesture drawing', subtitle: '10 × 1 min. Movement and weight only' },
   },
   {
@@ -391,7 +391,7 @@ export const MODES = [
     title: 'クロッキー',
     subtitle: '3分×2枚。形をきちんと乗せる',
     drillId: 'croquis',
-    steps: [{ drill: 'croquis', count: 2, seconds: 180 }],
+    steps: [{ drill: 'croquis', count: 2, seconds: 180, source: 'croquis' }],
     en: { title: 'Croquis', subtitle: '2 × 3 min. Put the shape down properly' },
   },
 ];
