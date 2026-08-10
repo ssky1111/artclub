@@ -22,19 +22,28 @@ export function restorePageScroll() {
   }
 }
 
+let screenShownHook = null;
+
+/** 画面切り替え後に描画する処理（app.js から登録。循環 import を避ける） */
+export function setScreenShownHook(fn) {
+  screenShownHook = fn;
+}
+
 export function showScreen(name) {
   const screen = document.getElementById(`screen-${name}`);
-  if (document.body.dataset.screen === name && screen?.classList.contains('is-active')) return;
-
-  $$('.screen').forEach((el) => el.classList.remove('is-active'));
-  if (screen) screen.classList.add('is-active');
-  document.body.dataset.screen = name;
-  document.documentElement.dataset.screen = name;
-  document.body.classList.toggle('in-session', name === 'session');
-  if (name !== 'session') restorePageScroll();
-  window.scrollTo(0, 0);
-  document.querySelectorAll('.tabbar button')
-    .forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
+  const already = document.body.dataset.screen === name && screen?.classList.contains('is-active');
+  if (!already) {
+    $$('.screen').forEach((el) => el.classList.remove('is-active'));
+    if (screen) screen.classList.add('is-active');
+    document.body.dataset.screen = name;
+    document.documentElement.dataset.screen = name;
+    document.body.classList.toggle('in-session', name === 'session');
+    if (name !== 'session') restorePageScroll();
+    window.scrollTo(0, 0);
+    document.querySelectorAll('.tabbar button')
+      .forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
+  }
+  screenShownHook?.(name);
 }
 
 let toastTimer = 0;

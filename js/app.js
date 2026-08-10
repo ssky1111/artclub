@@ -38,7 +38,7 @@ import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } fro
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
-import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, restorePageScroll } from './ui.js';
+import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, restorePageScroll, setScreenShownHook } from './ui.js';
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
@@ -57,7 +57,11 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '136';
+const BUILD = '137';
+
+function refreshHomeIfVisible() {
+  if (document.body.dataset.screen === 'home') renderHome();
+}
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -100,14 +104,20 @@ function renderHome() {
   const { streak } = graceStreak(history);
   const xp = levelProgress(totalXp(history));
 
-  $('#streak-count').textContent = String(streak);
-  $('#level-num').textContent = `Lv.${xp.level}`;
-  $('#level-name').textContent = '';
-  $('#xp-fill').style.width = `${xp.ratio * 100}%`;
+  const streakEl = $('#streak-count');
+  if (streakEl) streakEl.textContent = String(streak);
+  const levelEl = $('#level-num');
+  if (levelEl) levelEl.textContent = `Lv.${xp.level}`;
+  const levelName = $('#level-name');
+  if (levelName) levelName.textContent = '';
+  const xpFill = $('#xp-fill');
+  if (xpFill) xpFill.style.width = `${xp.ratio * 100}%`;
 
   const s = stats(history);
-  $('#total-drawings').textContent = String(totalDrawings(history));
-  $('#total-time').textContent = String(s.minutes);
+  const drawingsEl = $('#total-drawings');
+  if (drawingsEl) drawingsEl.textContent = String(totalDrawings(history));
+  const timeEl = $('#total-time');
+  if (timeEl) timeEl.textContent = String(s.minutes);
 
   renderWeekBars(history);
   renderDaily(history);
@@ -122,6 +132,7 @@ function renderHome() {
 function renderWeekBars(history) {
   const byDay = drawingsByDay(history);
   const wrap = $('#week-bars');
+  if (!wrap) return;
   wrap.innerHTML = '';
   const today = dateKey();
   const days = [];
@@ -167,6 +178,7 @@ function renderDaily(history) {
   const daily = buildDaily(part);
 
   const top = $('#menu-primary');
+  if (!top) return;
   top.innerHTML = '';
 
   const pendingDaily = !loggedIn || rounds === 0;
@@ -209,6 +221,7 @@ function renderDaily(history) {
 /** モードは3つだけ。 */
 function renderModes() {
   const wrap = $('#mode-cards');
+  if (!wrap) return;
   wrap.innerHTML = '';
   for (const mode of MODES) {
     const card = el('button', 'menu-card');
@@ -2900,13 +2913,11 @@ function applyRoute(route = routeFromLocation()) {
     return;
   }
   if (root === 'auth') {
-    renderHome();
     showScreen('home');
     openAuthSheet();
     return;
   }
   if (root === 'daily') {
-    renderHome();
     showScreen('home');
     startDailyFromCtr();
     return;
@@ -2938,7 +2949,6 @@ function applyRoute(route = routeFromLocation()) {
     return;
   }
 
-  renderHome();
   showScreen('home');
 }
 
@@ -3162,7 +3172,10 @@ function wireAuth() {
       applyRoute(routeFromLocation());
       return;
     }
-    if (uid === authHandledUserId) return;
+    if (uid === authHandledUserId) {
+      refreshHomeIfVisible();
+      return;
+    }
     authHandledUserId = uid;
     // 端末に名前が無くても、DB にあれば復元してからユーザーネーム入力を出すか決める
     Promise.all([hydrateUsername(), hydrateUserData()])
@@ -3197,28 +3210,34 @@ function wireAuth() {
           pendingStart = null;
           fn();
         }
+      })
+      .catch((err) => {
+        console.error('[auth hydrate]', err);
+        refreshHomeIfVisible();
       });
   });
 
   initAuth().then(async (u) => {
-    if (u) {
-      await hydrateUsername();
-      const data = await hydrateUserData();
-      if (data?.lang) applyLang(data.lang);
-      settings = getSettings();
-      applyTheme();
-      applyI18n();
-      $('#lang-btn').textContent = getLang() === 'ja' ? 'EN' : 'JA';
-    } else {
-      // 未ログインは履歴・設定を載せない（周回数バッジ等が残らないように）
-      await hydrateUserData();
-      settings = getSettings();
-      applyTheme();
-    }
-    updateAuthUI(u);
-    // hydrate 後にホームを描き直して古い周回数表示を消す
-    if (document.body.dataset.screen === 'home' || !document.body.dataset.screen) {
-      renderHome();
+    try {
+      if (u) {
+        await hydrateUsername();
+        const data = await hydrateUserData();
+        if (data?.lang) applyLang(data.lang);
+        settings = getSettings();
+        applyTheme();
+        applyI18n();
+        $('#lang-btn').textContent = getLang() === 'ja' ? 'EN' : 'JA';
+      } else {
+        // 未ログインは履歴・設定を載せない（周回数バッジ等が残らないように）
+        await hydrateUserData();
+        settings = getSettings();
+        applyTheme();
+      }
+      updateAuthUI(u);
+    } catch (err) {
+      console.error('[initAuth]', err);
+    } finally {
+      refreshHomeIfVisible();
     }
   });
 }
@@ -3258,6 +3277,10 @@ function init() {
   wireSettings();
   wireAdmin();
   wireRoutes();
+
+  setScreenShownHook((name) => {
+    if (name === 'home') renderHome();
+  });
 
   migrateHashRouteToPath();
   applyRoute(routeFromLocation());

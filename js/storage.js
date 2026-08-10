@@ -200,6 +200,8 @@ export async function hydrateUserData() {
       fetchPracticeSessions().catch(() => []),
     ]);
 
+    if (!getUser()) return { lang: null };
+
     if (prefs?.settings && typeof prefs.settings === 'object') {
       settingsCache = { ...DEFAULT_SETTINGS, ...prefs.settings };
     }
