@@ -17,15 +17,35 @@ const ADMIN_EMAILS = ['yuisskweb@gmail.com', 'sayu.u.u.u.u@gmail.com'];
 const EXCLUDED_USERNAMES = new Set(['しゃお']);
 
 const MODE_DEFS = [
-  { key: 'daily', labelKey: 'analytics.modeDaily' },
-  { key: 'gesture', labelKey: 'analytics.modeGesture' },
-  { key: 'part', labelKey: 'analytics.modePart' },
-  { key: 'croquis', labelKey: 'analytics.modeCroquis' },
-  { key: 'copy', labelKey: 'analytics.modeCopy' },
-  { key: 'other', labelKey: 'analytics.modeOther' },
+  { key: 'daily', labelKey: 'analytics.modeDaily', color: '#1a1a1a' },
+  { key: 'gesture', labelKey: 'analytics.modeGesture', color: '#5a9c1e' },
+  { key: 'part', labelKey: 'analytics.modePart', color: '#c45c26' },
+  { key: 'croquis', labelKey: 'analytics.modeCroquis', color: '#2a7a8c' },
+  { key: 'copy', labelKey: 'analytics.modeCopy', color: '#8a6b4a' },
+  { key: 'other', labelKey: 'analytics.modeOther', color: '#888888' },
 ];
 
+const CHART_DAYS = 14;
+
 let viewDate = dateKey();
+
+function chartColors() {
+  const text = getComputedStyle(document.body).getPropertyValue('--text').trim() || '#111111';
+  const muted = getComputedStyle(document.body).getPropertyValue('--muted').trim() || '#666666';
+  const accent = getComputedStyle(document.body).getPropertyValue('--accent').trim() || text;
+  return {
+    total: text,
+    users: accent || muted,
+    modes: {
+      daily: text,
+      gesture: '#5a9c1e',
+      part: '#c45c26',
+      croquis: '#2a7a8c',
+      copy: '#8a6b4a',
+      other: muted,
+    },
+  };
+}
 
 function authHeaders(extra = {}) {
   const session = getSession();
@@ -159,7 +179,7 @@ function aggregateByMode(rows, day) {
   }));
 }
 
-function trendDays(rows, endDate, days = 7) {
+function trendDays(rows, endDate, days = CHART_DAYS) {
   const keys = [];
   for (let i = days - 1; i >= 0; i--) keys.push(addDays(endDate, -i));
   const map = new Map(keys.map((d) => [d, { rounds: 0, users: new Set(), modes: emptyModeCounts() }]));
@@ -178,6 +198,169 @@ function userLabel(userId, names) {
   const name = names.get(userId);
   if (name) return name;
   return `${userId.slice(0, 8)}…`;
+}
+
+function svgEl(name, attrs = {}) {
+  const node = document.createElementNS('http://www.w3.org/2000/svg', name);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v != null) node.setAttribute(k, String(v));
+  }
+  return node;
+}
+
+function shortDate(dateStr) {
+  return dateStr.slice(5); // MM-DD
+}
+
+function niceMax(value) {
+  const n = Math.max(1, Number(value) || 1);
+  if (n <= 4) return 4;
+  const step = 10 ** Math.floor(Math.log10(n));
+  return Math.ceil(n / step) * step;
+}
+
+function renderLegend(target, items) {
+  if (!target) return;
+  target.innerHTML = '';
+  for (const item of items) {
+    const row = el('span', 'analytics-legend-item');
+    row.style.color = item.color;
+    const swatch = el('span', 'analytics-legend-swatch');
+    row.append(swatch, document.createTextNode(item.label));
+    target.append(row);
+  }
+}
+
+/**
+ * series: [{ key, label, color, values: number[] }]
+ * labels: string[] (x axis)
+ */
+function drawLineChart(svg, { labels, series, yLabel }) {
+  if (!svg) return;
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  const width = 640;
+  const height = 220;
+  const pad = { top: 16, right: 16, bottom: 36, left: 36 };
+  const innerW = width - pad.left - pad.right;
+  const innerH = height - pad.top - pad.bottom;
+  const n = labels.length;
+  if (!n) return;
+
+  const allVals = series.flatMap((s) => s.values);
+  const maxY = niceMax(Math.max(0, ...allVals));
+  const xAt = (i) => pad.left + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+  const yAt = (v) => pad.top + innerH - (v / maxY) * innerH;
+
+  // grid + y ticks
+  const ticks = 4;
+  for (let i = 0; i <= ticks; i++) {
+    const v = (maxY / ticks) * i;
+    const y = yAt(v);
+    svg.append(svgEl('line', {
+      class: 'analytics-chart-grid',
+      x1: pad.left,
+      x2: pad.left + innerW,
+      y1: y,
+      y2: y,
+    }));
+    const label = svgEl('text', {
+      class: 'analytics-chart-axis',
+      x: pad.left - 8,
+      y: y + 3,
+      'text-anchor': 'end',
+    });
+    label.textContent = String(Math.round(v));
+    svg.append(label);
+  }
+
+  // x labels (間引き)
+  const labelStep = n > 10 ? 2 : 1;
+  for (let i = 0; i < n; i += labelStep) {
+    const text = svgEl('text', {
+      class: 'analytics-chart-axis',
+      x: xAt(i),
+      y: height - 12,
+      'text-anchor': 'middle',
+    });
+    text.textContent = shortDate(labels[i]);
+    svg.append(text);
+  }
+
+  if (yLabel) {
+    const yl = svgEl('text', {
+      class: 'analytics-chart-axis',
+      x: 8,
+      y: 12,
+      'text-anchor': 'start',
+    });
+    yl.textContent = yLabel;
+    svg.append(yl);
+  }
+
+  for (const s of series) {
+    const pts = s.values.map((v, i) => `${xAt(i)},${yAt(v)}`).join(' ');
+    svg.append(svgEl('polyline', {
+      class: 'analytics-chart-line',
+      points: pts,
+      stroke: s.color,
+      'stroke-width': s.thick ? 3 : 2.25,
+      opacity: s.thick ? 1 : 0.92,
+    }));
+    s.values.forEach((v, i) => {
+      svg.append(svgEl('circle', {
+        class: 'analytics-chart-dot',
+        cx: xAt(i),
+        cy: yAt(v),
+        r: s.thick ? 3.5 : 3,
+        fill: s.color,
+      }));
+    });
+  }
+}
+
+function renderCharts(trend) {
+  const labels = trend.map((d) => d.date);
+
+  renderLegend($('#analytics-legend-total'), [
+    { label: t('analytics.chartRounds'), color: TOTAL_COLOR },
+    { label: t('analytics.chartUsers'), color: USERS_COLOR },
+  ]);
+  drawLineChart($('#analytics-chart-total'), {
+    labels,
+    yLabel: '',
+    series: [
+      {
+        key: 'rounds',
+        color: TOTAL_COLOR,
+        thick: true,
+        values: trend.map((d) => d.rounds),
+      },
+      {
+        key: 'users',
+        color: USERS_COLOR,
+        values: trend.map((d) => d.users.size),
+      },
+    ],
+  });
+
+  const modeSeries = MODE_DEFS
+    .filter((m) => m.key !== 'other')
+    .map((m) => ({
+      key: m.key,
+      label: modeLabel(m.key),
+      color: m.color,
+      values: trend.map((d) => d.modes[m.key] || 0),
+    }));
+
+  renderLegend(
+    $('#analytics-legend-modes'),
+    modeSeries.map((s) => ({ label: s.label, color: s.color })),
+  );
+  drawLineChart($('#analytics-chart-modes'), {
+    labels,
+    series: modeSeries,
+  });
 }
 
 function renderSummary(users) {
@@ -311,15 +494,16 @@ export async function renderAdminAnalytics() {
   errEl.textContent = '';
 
   try {
-    const trendFrom = addDays(viewDate, -6);
+    const trendFrom = addDays(viewDate, -(CHART_DAYS - 1));
     const raw = await fetchSessions(trendFrom, viewDate);
     const names = await fetchUsernames(raw.map((r) => r.user_id));
     const rows = filterExcluded(raw, names);
     const users = aggregateByUser(rows, viewDate);
     const modes = aggregateByMode(rows, viewDate);
-    const trend = trendDays(rows, viewDate, 7);
+    const trend = trendDays(rows, viewDate, CHART_DAYS);
 
     renderSummary(users);
+    renderCharts(trend);
     renderModeSummary(modes);
     renderUserTable(users, names);
     renderTrend(trend);

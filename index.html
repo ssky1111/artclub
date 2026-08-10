@@ -39,7 +39,7 @@
 </script>
 </head>
 
-<body data-build="195" data-theme="light">
+<body data-build="196" data-theme="light">
 
 <div id="site-gate" class="confirm-dialog site-gate-dialog" role="dialog" aria-modal="true" aria-labelledby="site-gate-title">
   <div class="confirm-dialog-inner site-gate-inner">
@@ -823,6 +823,26 @@
       <p id="analytics-error" class="muted small" hidden></p>
       <div id="analytics-body" hidden>
         <div id="analytics-summary" class="analytics-summary"></div>
+
+        <div class="section-head" style="margin-top:16px">
+          <h2 data-i18n="analytics.chartTotal">合計の推移</h2>
+        </div>
+        <div class="analytics-chart-card">
+          <div id="analytics-legend-total" class="analytics-chart-legend"></div>
+          <div class="analytics-chart-wrap">
+            <svg id="analytics-chart-total" class="analytics-chart" viewBox="0 0 640 220" preserveAspectRatio="xMidYMid meet" role="img" aria-label="total trend"></svg>
+          </div>
+        </div>
+
+        <div class="section-head" style="margin-top:16px">
+          <h2 data-i18n="analytics.chartModes">モード別の推移</h2>
+        </div>
+        <div class="analytics-chart-card">
+          <div id="analytics-legend-modes" class="analytics-chart-legend"></div>
+          <div class="analytics-chart-wrap">
+            <svg id="analytics-chart-modes" class="analytics-chart" viewBox="0 0 640 220" preserveAspectRatio="xMidYMid meet" role="img" aria-label="mode trend"></svg>
+          </div>
+        </div>
 
         <div class="section-head" style="margin-top:16px">
           <h2 data-i18n="analytics.byMode">モード別</h2>
