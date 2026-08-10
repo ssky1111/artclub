@@ -60,9 +60,11 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '192';
-const SITE_PASS_SESSION = 'artclub.sitePass';
+const BUILD = '193';
+const SITE_PASS_KEY = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
+/** サイトパスワード解除の有効期限（約1週間） */
+const SITE_PASS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -3579,11 +3581,23 @@ async function bootstrapApp() {
 }
 
 function isSiteUnlocked() {
-  try { return sessionStorage.getItem(SITE_PASS_SESSION) === '1'; } catch { return false; }
+  try {
+    const until = Number(localStorage.getItem(SITE_PASS_KEY) || 0);
+    if (!until) return false;
+    if (Date.now() > until) {
+      localStorage.removeItem(SITE_PASS_KEY);
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function markSiteUnlocked() {
-  try { sessionStorage.setItem(SITE_PASS_SESSION, '1'); } catch { /* */ }
+  try {
+    localStorage.setItem(SITE_PASS_KEY, String(Date.now() + SITE_PASS_TTL_MS));
+  } catch { /* */ }
   document.documentElement.dataset.siteUnlocked = '1';
   const gate = $('#site-gate');
   if (gate) gate.hidden = true;
@@ -3605,7 +3619,7 @@ function wireSiteGate(onUnlock) {
     return;
   }
 
-  // sessionStorage では解除済みでも、HTML属性が無いとゲートが残ったまま
+  // localStorage では解除済みでも、HTML属性が無いとゲートが残ったまま
   // ハンドラ未設定で「入力しても入れない」状態になる
   if (isSiteUnlocked()) {
     markSiteUnlocked();
