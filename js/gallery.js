@@ -62,6 +62,7 @@ function normalizeArtwork(row) {
   return {
     ...row,
     visibility: row.visibility || (row.is_public === false ? 'private' : 'public'),
+    allow_copy: row.allow_copy === true,
     like_count: likeCount,
     liked_by_me: !!row.liked_by_me,
   };
@@ -96,6 +97,7 @@ export async function uploadArtwork(drawingBlob, promptId, {
   isPublic = true,
   sessionId = null,
   mode = null,
+  allowCopy = false,
 } = {}) {
   await ensureFreshSession();
   const user = getUser();
@@ -132,6 +134,7 @@ export async function uploadArtwork(drawingBlob, promptId, {
     session_id: sessionId,
     mode,
     username: getUsername() || user.email?.split('@')[0] || null,
+    allow_copy: !!allowCopy,
   };
   const legacyRow = {
     user_id: user.id,
@@ -210,6 +213,58 @@ export async function fetchArtworks(promptId, { limit = 10 } = {}) {
     headers: authHeaders({ Accept: 'application/json' }),
   });
   // likes テーブル未作成時は素の一覧に落とす
+  if (!res.ok) {
+    params = new URLSearchParams({ ...base, select: '*' });
+    res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
+      headers: authHeaders({ Accept: 'application/json' }),
+    });
+  }
+  if (!res.ok) return [];
+  const rows = (await res.json()).map(normalizeArtwork);
+  return attachLikeState(rows);
+}
+
+/** みんなの公開作品（タイムライン用）。新しい順。 */
+export async function fetchPublicArtworks({ limit = 40 } = {}) {
+  let params = new URLSearchParams({
+    order: 'created_at.desc',
+    limit: String(Math.max(limit * 2, limit)),
+    select: '*,artwork_likes(count)',
+  });
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
+    headers: authHeaders({ Accept: 'application/json' }),
+  });
+  if (!res.ok) {
+    params = new URLSearchParams({
+      order: 'created_at.desc',
+      limit: String(Math.max(limit * 2, limit)),
+      select: '*',
+    });
+    res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
+      headers: authHeaders({ Accept: 'application/json' }),
+    });
+  }
+  if (!res.ok) return [];
+  // ログイン中は自分の非公開もRLSで見えるので、みんな用は公開だけ残す
+  const rows = (await res.json()).map(normalizeArtwork)
+    .filter((w) => w.visibility !== 'private' && w.is_public !== false)
+    .slice(0, limit);
+  return attachLikeState(rows);
+}
+
+/** 自分の作品（公開・非公開どちらも）。 */
+export async function fetchMyArtworks({ limit = 60 } = {}) {
+  const user = getUser();
+  if (!user) return [];
+  const base = {
+    user_id: `eq.${user.id}`,
+    order: 'created_at.desc',
+    limit: String(limit),
+  };
+  let params = new URLSearchParams({ ...base, select: '*,artwork_likes(count)' });
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
+    headers: authHeaders({ Accept: 'application/json' }),
+  });
   if (!res.ok) {
     params = new URLSearchParams({ ...base, select: '*' });
     res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {

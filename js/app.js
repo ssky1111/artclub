@@ -36,7 +36,7 @@ import {
   removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
   saveHiddenTags, invalidateTagConfig, convertToWebp, repairManifestExtensions,
 } from './supabase.js';
-import { totalXp, levelProgress, graceStreak, takeLevelUp } from './game.js';
+import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
@@ -46,8 +46,8 @@ import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js'
 window.__i18n = { t };
 import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, userAvatar, hasUsername, setUsername, getUsername } from './auth.js';
 import {
-  uploadArtwork, uploadShareImage, fetchArtworks, deleteArtwork,
-  toggleLike, workPageUrl, upsertProfile,
+  uploadArtwork, uploadShareImage, fetchArtworks, fetchPublicArtworks, fetchMyArtworks,
+  deleteArtwork, toggleLike, workPageUrl, upsertProfile,
 } from './gallery.js';
 
 /*
@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '71';
+const BUILD = '73';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1488,6 +1488,7 @@ async function uploadPendingArtworks({ quiet = false } = {}) {
         isPublic,
         sessionId,
         mode,
+        allowCopy: !!shot.allowCopy,
       });
       shot.uploaded = true;
       shot.artworkId = work?.id || null;
@@ -1545,6 +1546,7 @@ async function finishSession(result) {
   pendingDrawings = result.drawings || [];
   pendingDrawings.forEach((shot) => {
     if (shot.excludeFromGallery == null) shot.excludeFromGallery = false;
+    if (shot.allowCopy == null) shot.allowCopy = false;
   });
   galleryPromptIds = pendingDrawings.map((d) => d.photoId).filter(Boolean);
   pendingSessionMeta = {
@@ -1611,8 +1613,12 @@ function setShotExcluded(index, excluded) {
   const wrap = $(`#drawing-strip .strip-shot[data-index="${index}"]`);
   if (wrap) {
     wrap.classList.toggle('is-excluded', !!excluded);
-    const btn = wrap.querySelector('.strip-exclude');
-    if (btn) btn.textContent = excludeLabel(excluded);
+    const pub = wrap.querySelector('.strip-shot-controls .toggle-row input[type="checkbox"]');
+    const pubLabel = wrap.querySelector('.strip-shot-controls .toggle-row');
+    if (pub && pubLabel) {
+      pub.checked = publishEnabled() && !excluded;
+      pubLabel.classList.toggle('is-off', !pub.checked);
+    }
   }
   if (drawingIndex === index) {
     const lbBtn = $('#draw-exclude');
@@ -1628,7 +1634,7 @@ function renderDrawingStrip() {
   $('#strip-actions').hidden = !has;
   $('#dl-all').disabled = !has;
 
-  const showExclude = publishEnabled();
+  const showPublish = publishEnabled();
 
   pendingDrawings.forEach((shot, i) => {
     const wrap = el('div', `strip-shot${shot.excludeFromGallery ? ' is-excluded' : ''}`);
@@ -1644,18 +1650,37 @@ function renderDrawingStrip() {
     wrap.append(item);
 
     if (getUser()) {
-      const excludeBtn = el('button', 'strip-exclude');
-      excludeBtn.type = 'button';
-      excludeBtn.textContent = excludeLabel(!!shot.excludeFromGallery);
-      excludeBtn.hidden = !showExclude;
-      excludeBtn.disabled = !showExclude;
-      excludeBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!publishEnabled()) return;
-        setShotExcluded(i, !shot.excludeFromGallery);
+      const controls = el('div', 'strip-shot-controls');
+
+      const pubLabel = el('label', `toggle-row${(!showPublish || shot.excludeFromGallery) ? ' is-off' : ''}`);
+      const pubText = el('span', null, t('gal.postThis'));
+      const pubInput = el('input');
+      pubInput.type = 'checkbox';
+      pubInput.checked = showPublish && !shot.excludeFromGallery;
+      pubInput.disabled = !showPublish;
+      pubInput.addEventListener('change', () => {
+        setShotExcluded(i, !pubInput.checked);
+        pubLabel.classList.toggle('is-off', !pubInput.checked);
       });
-      wrap.append(excludeBtn);
+      const pubTrack = el('span', 'toggle-track');
+      pubLabel.append(pubText, pubInput, pubTrack);
+      controls.append(pubLabel);
+
+      const copyLabel = el('label', `toggle-row${shot.allowCopy ? '' : ' is-off'}`);
+      const copyText = el('span', null, t('gal.allowCopy'));
+      const copyInput = el('input');
+      copyInput.type = 'checkbox';
+      copyInput.checked = !!shot.allowCopy;
+      copyInput.addEventListener('change', () => {
+        shot.allowCopy = !!copyInput.checked;
+        copyLabel.classList.toggle('is-off', !copyInput.checked);
+      });
+      const copyTrack = el('span', 'toggle-track');
+      copyLabel.append(copyText, copyInput, copyTrack);
+      controls.append(copyLabel);
+      controls.append(el('p', 'strip-copy-hint', t('gal.allowCopyHint')));
+
+      wrap.append(controls);
     }
 
     strip.append(wrap);
@@ -1885,6 +1910,9 @@ function openGalleryLightbox(work, userId) {
   $('#gallery-lb-user').textContent = work.username || 'anonymous';
   const delBtn = $('#gallery-lb-delete');
   delBtn.hidden = work.user_id !== userId;
+  const copyBtn = $('#gallery-lb-copy');
+  const canCopy = !!work.allow_copy && work.user_id !== userId;
+  if (copyBtn) copyBtn.hidden = !canCopy;
   const likeBtn = $('#gallery-lb-like');
   const likeCount = $('#gallery-lb-like-count');
   likeBtn.hidden = false;
@@ -1931,8 +1959,16 @@ function wireGallery() {
       await deleteArtwork(currentArtwork.id, currentArtwork.storage_path);
       lb.hidden = true;
       loadSamePromptGallery();
+      if (document.body.dataset.screen === 'atelier') renderAtelier();
     } catch { toast(t('gal.uploadFail')); }
   });
+
+  const copyBtn = $('#gallery-lb-copy');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      toast(t('atelier.copySoon'));
+    });
+  }
 }
 
 let sheetBlob = null;
@@ -1941,6 +1977,11 @@ let sheetBlob = null;
 
 function renderLog() {
   const history = getHistory();
+  const s = stats(history);
+  $('#st-streak').textContent = String(graceStreak(history).streak);
+  $('#st-best').textContent = String(bestGraceStreak(history));
+  $('#st-minutes').textContent = String(s.minutes);
+  $('#st-drawings').textContent = String(totalDrawings(history));
 
   const dow = $('#cal-dow');
   dow.innerHTML = '';
@@ -2253,6 +2294,223 @@ function wireSettings() {
   bind('#opt-orientation', 'orientation');
 }
 
+/* ==================== アトリエ ==================== */
+
+let atelierTab = 'public';
+let atelierWired = false;
+let atelierPhotoIndex = null;
+
+function formatArtworkTime(work) {
+  if (!work?.created_at) return '';
+  const d = new Date(work.created_at);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function renderArtworkTlPost(work, { mine = false } = {}) {
+  const post = el('article', 'tl-post');
+  post.dataset.artworkId = work.id || '';
+  const name = work.username || t('log.me');
+  const avatar = el('div', 'tl-avatar', avatarGlyph(name));
+  const main = el('div', 'tl-main');
+
+  const meta = el('header', 'tl-meta');
+  meta.append(el('span', 'tl-name', name));
+  meta.append(el('span', 'tl-dot', '·'));
+  meta.append(el('time', 'tl-time', formatArtworkTime(work)));
+  if (work.mode) meta.append(el('span', 'tl-menu', work.mode));
+  if (mine && work.visibility === 'private') {
+    meta.append(el('span', 'atelier-badge private', t('atelier.privateBadge')));
+  }
+  if (work.allow_copy) {
+    meta.append(el('span', 'atelier-badge copy', t('atelier.copyable')));
+  }
+  main.append(meta);
+
+  if (work.image_url) {
+    const media = el('button', 'tl-media');
+    media.type = 'button';
+    const img = el('img');
+    img.src = work.image_url;
+    img.alt = name;
+    img.loading = 'lazy';
+    media.append(img);
+    media.addEventListener('click', () => openAtelierWork(work));
+    main.append(media);
+  }
+
+  const actions = el('div', 'tl-actions');
+  const likeBtn = el('button', `tl-like${work.liked_by_me ? ' on' : ''}`);
+  likeBtn.type = 'button';
+  likeBtn.innerHTML = `<span class="gallery-heart">♥</span><span class="tl-like-count">${work.like_count || 0}</span>`;
+  likeBtn.addEventListener('click', async () => {
+    if (!getUser()) return toast(t('gal.loginToLike'));
+    try {
+      const nowLiked = await toggleLike(work.id, !!work.liked_by_me);
+      work.liked_by_me = nowLiked;
+      work.like_count = Math.max(0, (work.like_count || 0) + (nowLiked ? 1 : -1));
+      likeBtn.classList.toggle('on', nowLiked);
+      likeBtn.querySelector('.tl-like-count').textContent = String(work.like_count);
+    } catch (err) {
+      toast(`${t('gal.uploadFail')}\n${formatErr(err)}`, 6000);
+    }
+  });
+  actions.append(likeBtn);
+  main.append(actions);
+
+  post.append(avatar, main);
+  return post;
+}
+
+function openAtelierWork(work) {
+  openGalleryLightbox(work, getUser()?.id);
+}
+
+async function ensureAtelierPhotoIndex() {
+  if (atelierPhotoIndex) return atelierPhotoIndex;
+  const photos = await everyPhoto().catch(() => []);
+  const map = new Map();
+  for (const p of photos) {
+    if (p?.id) map.set(p.id, p);
+  }
+  atelierPhotoIndex = map;
+  return map;
+}
+
+function switchAtelierTab(tab) {
+  atelierTab = tab;
+  $$('[data-atelier-tab]').forEach((btn) => {
+    btn.classList.toggle('on', btn.dataset.atelierTab === tab);
+  });
+  $('#atelier-public').hidden = tab !== 'public';
+  $('#atelier-mine').hidden = tab !== 'mine';
+  $('#atelier-prompt').hidden = tab !== 'prompt';
+  if (tab === 'public') renderAtelierPublic();
+  if (tab === 'mine') renderAtelierMine();
+  if (tab === 'prompt') renderAtelierByPrompt();
+}
+
+async function renderAtelierPublic() {
+  const feed = $('#atelier-public-feed');
+  const empty = $('#atelier-public-empty');
+  feed.innerHTML = '';
+  empty.hidden = true;
+  const works = await fetchPublicArtworks({ limit: 40 }).catch(() => []);
+  if (!works.length) {
+    empty.hidden = false;
+    return;
+  }
+  for (const work of works) feed.append(renderArtworkTlPost(work));
+}
+
+async function renderAtelierMine() {
+  const feed = $('#atelier-mine-feed');
+  const empty = $('#atelier-mine-empty');
+  const login = $('#atelier-mine-login');
+  feed.innerHTML = '';
+  empty.hidden = true;
+  login.hidden = true;
+  if (!getUser()) {
+    login.hidden = false;
+    return;
+  }
+  const works = await fetchMyArtworks({ limit: 60 }).catch(() => []);
+  if (!works.length) {
+    empty.hidden = false;
+    return;
+  }
+  for (const work of works) feed.append(renderArtworkTlPost(work, { mine: true }));
+}
+
+async function renderAtelierByPrompt() {
+  const list = $('#atelier-prompt-list');
+  const empty = $('#atelier-prompt-empty');
+  list.innerHTML = '';
+  empty.hidden = true;
+
+  const [publicWorks, myWorks, photos] = await Promise.all([
+    fetchPublicArtworks({ limit: 80 }).catch(() => []),
+    getUser() ? fetchMyArtworks({ limit: 80 }).catch(() => []) : Promise.resolve([]),
+    ensureAtelierPhotoIndex(),
+  ]);
+
+  const byPrompt = new Map();
+  const add = (work) => {
+    if (!work?.prompt_id || String(work.prompt_id).startsWith('session:')) return;
+    const bucket = byPrompt.get(work.prompt_id) || [];
+    if (!bucket.some((w) => w.id === work.id)) bucket.push(work);
+    byPrompt.set(work.prompt_id, bucket);
+  };
+  publicWorks.forEach(add);
+  myWorks.forEach(add);
+
+  const promptIds = [...byPrompt.keys()];
+  if (!promptIds.length) {
+    empty.hidden = false;
+    return;
+  }
+
+  const me = getUser()?.id;
+  for (const promptId of promptIds) {
+    const works = byPrompt.get(promptId)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const card = el('section', 'atelier-prompt-card');
+    const head = el('div', 'atelier-prompt-head');
+    head.append(el('span', 'atelier-prompt-label', t('atelier.promptPhoto')));
+    head.append(el('span', 'atelier-prompt-count', `${works.length}`));
+    card.append(head);
+
+    const photo = photos.get(promptId);
+    if (photo) {
+      const img = el('img', 'atelier-prompt-photo');
+      img.alt = t('atelier.promptPhoto');
+      setPhotoSrc(img, photo);
+      card.append(img);
+    } else {
+      card.append(el('div', 'atelier-prompt-photo is-empty', t('atelier.noPromptPhoto')));
+    }
+
+    const scroller = el('div', 'atelier-hscroll');
+    // 自分の絵を先に
+    const ordered = [
+      ...works.filter((w) => w.user_id === me),
+      ...works.filter((w) => w.user_id !== me),
+    ];
+    for (const work of ordered) {
+      const btn = el('button', `atelier-thumb${work.user_id === me ? ' is-mine' : ''}`);
+      btn.type = 'button';
+      const frame = el('div', 'atelier-thumb-frame');
+      const img = el('img');
+      img.src = work.image_url;
+      img.alt = work.username || '';
+      img.loading = 'lazy';
+      frame.append(img);
+      btn.append(frame);
+      const meta = el('div', 'atelier-thumb-meta');
+      meta.append(el('span', null, work.user_id === me ? t('atelier.you') : (work.username || '—')));
+      if (work.allow_copy) meta.append(el('span', 'atelier-badge copy', t('atelier.copyable')));
+      if (work.visibility === 'private') meta.append(el('span', 'atelier-badge private', t('atelier.privateBadge')));
+      btn.append(meta);
+      btn.addEventListener('click', () => openAtelierWork(work));
+      scroller.append(btn);
+    }
+    card.append(scroller);
+    list.append(card);
+  }
+}
+
+function renderAtelier() {
+  switchAtelierTab(atelierTab || 'public');
+}
+
+function wireAtelier() {
+  if (atelierWired) return;
+  atelierWired = true;
+  $$('[data-atelier-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => switchAtelierTab(btn.dataset.atelierTab));
+  });
+}
+
 /* ==================== 起動 ==================== */
 
 function wireNav() {
@@ -2261,6 +2519,7 @@ function wireNav() {
       const target = btn.dataset.nav;
       if (target === 'library') { openLibrary(); return; }
       if (target === 'log') renderLog();
+      if (target === 'atelier') renderAtelier();
       if (target === 'home') renderHome();
       if (target === 'settings') renderSettings();
       showScreen(target);
@@ -2448,6 +2707,7 @@ function init() {
   wireNav();
   wireAuth();
   wireReview();
+  wireAtelier();
   wireDrawingLightbox();
   wireLesson();
   wireSetup();
