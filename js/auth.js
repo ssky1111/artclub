@@ -45,16 +45,51 @@ function notify() {
   }
 }
 
-function scheduleRefresh(expiresIn) {
+function decodeJwt(token) {
+  try {
+    const part = String(token).split('.')[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    const bytes = Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch { return null; }
+}
+
+/**
+ * アクセストークンの残り秒数。
+ * トークンの exp を直接見る。保存時刻を自前で数えると、端末の時計や
+ * 保存漏れでズレて「まだ有効なはず」の期限切れトークンで投稿してしまう。
+ */
+function secondsLeft(sess = session) {
+  const exp = decodeJwt(sess?.access_token)?.exp;
+  if (exp) return exp - Date.now() / 1000;
+  const stored = load();
+  const elapsed = stored?.saved_at ? (Date.now() - stored.saved_at) / 1000 : Infinity;
+  return (stored?.expires_in || 3600) - elapsed;
+}
+
+function scheduleRefresh() {
   clearTimeout(refreshTimer);
-  const ms = Math.max((expiresIn - 60) * 1000, 10_000);
+  const ms = Math.max((secondsLeft() - 60) * 1000, 10_000);
   refreshTimer = setTimeout(() => refreshSession(), ms);
 }
 
-async function refreshSession() {
-  if (!session?.refresh_token) return;
+let refreshing = null;
+
+/** 更新は同時に1回だけ。リフレッシュトークンは使うたび変わるので、並行して叩くと壊れる。 */
+function refreshSession() {
+  if (!session?.refresh_token) return Promise.resolve(false);
+  if (!refreshing) {
+    refreshing = doRefresh().finally(() => { refreshing = null; });
+  }
+  return refreshing;
+}
+
+async function doRefresh() {
+  let res;
   try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
       method: 'POST',
       headers: {
         apikey: SUPABASE_KEY,
@@ -62,23 +97,33 @@ async function refreshSession() {
       },
       body: JSON.stringify({ refresh_token: session.refresh_token }),
     });
-    if (!res.ok) throw new Error(res.status);
-    const data = await res.json();
-    session = {
-      access_token: data.access_token,
-      refresh_token: data.refresh_token,
-      expires_in: data.expires_in,
-    };
-    user = data.user || user;
-    save(session);
-    scheduleRefresh(data.expires_in);
-    notify();
   } catch {
-    session = null;
-    user = null;
-    clear();
-    notify();
+    return false;   // 圏外なだけでログアウトさせない
   }
+  if (!res.ok) {
+    // リフレッシュトークン自体が無効なときだけ、ログインし直してもらう
+    if (res.status === 400 || res.status === 401 || res.status === 403) {
+      session = null;
+      user = null;
+      clear();
+      notify();
+    }
+    return false;
+  }
+  const data = await res.json().catch(() => null);
+  if (!data?.access_token) return false;
+  // 待っている間にログアウトされていたら、ここで session を戻さない
+  if (!session) return false;
+  session = {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    expires_in: data.expires_in,
+  };
+  user = data.user || user;
+  save(session);
+  scheduleRefresh();
+  notify();
+  return true;
 }
 
 async function fetchUser(accessToken) {
@@ -114,7 +159,7 @@ export async function initAuth() {
     try {
       user = await fetchUser(session.access_token);
     } catch {}
-    scheduleRefresh(session.expires_in);
+    scheduleRefresh();
     notify();
     return user;
   }
@@ -122,14 +167,12 @@ export async function initAuth() {
   const stored = load();
   if (stored?.access_token) {
     session = stored;
-    const elapsed = stored.saved_at ? (Date.now() - stored.saved_at) / 1000 : Infinity;
-    const remaining = (stored.expires_in || 3600) - elapsed;
-    if (remaining < 120) {
+    if (secondsLeft() < 300) {
       await refreshSession();
     } else {
       try {
         user = await fetchUser(session.access_token);
-        scheduleRefresh(remaining);
+        scheduleRefresh();
         notify();
       } catch {
         await refreshSession();
@@ -156,6 +199,7 @@ export async function logout() {
     } catch {}
   }
   clearTimeout(refreshTimer);
+  refreshing = null;
   session = null;
   user = null;
   clear();
@@ -165,9 +209,10 @@ export async function logout() {
 export function getUser() { return user; }
 export function getSession() { return session; }
 
-export async function ensureFreshSession() {
+/** 投稿の直前に呼ぶ。期限が近い（or force）ときだけ更新する。 */
+export async function ensureFreshSession({ force = false } = {}) {
   if (!session?.refresh_token) return session;
-  await refreshSession();
+  if (force || secondsLeft() < 300) await refreshSession();
   return session;
 }
 
