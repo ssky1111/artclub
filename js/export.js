@@ -26,8 +26,14 @@ function loadImage(blob) {
 /**
  * 白い紙の余白を除き、線がある範囲だけに切り出す。
  * 薄い線も拾えるよう、白からの差で判定する。
+ * axis: 'both' … 上下左右 / 'y' … 上下だけ（横幅はキャンバスのまま）
  */
-export async function cropToInk(blob, { padRatio = 0.04, minPad = 12, threshold = 16 } = {}) {
+export async function cropToInk(blob, {
+  padRatio = 0.04,
+  minPad = 12,
+  threshold = 16,
+  axis = 'both',
+} = {}) {
   if (!blob) return null;
   const img = await loadImage(blob);
   const src = document.createElement('canvas');
@@ -66,12 +72,21 @@ export async function cropToInk(blob, { padRatio = 0.04, minPad = 12, threshold 
   if (contentW * contentH > width * height * 0.92) return blob;
 
   const pad = Math.max(minPad, Math.round(Math.max(contentW, contentH) * padRatio));
-  minX = Math.max(0, minX - pad);
-  minY = Math.max(0, minY - pad);
-  maxX = Math.min(width - 1, maxX + pad);
-  maxY = Math.min(height - 1, maxY + pad);
+  if (axis === 'y') {
+    // single 用：縦の余白だけ落とす
+    minX = 0;
+    maxX = width - 1;
+    minY = Math.max(0, minY - pad);
+    maxY = Math.min(height - 1, maxY + pad);
+  } else {
+    minX = Math.max(0, minX - pad);
+    minY = Math.max(0, minY - pad);
+    maxX = Math.min(width - 1, maxX + pad);
+    maxY = Math.min(height - 1, maxY + pad);
+  }
   const w = maxX - minX + 1;
   const h = maxY - minY + 1;
+  if (w >= width && h >= height) return blob;
 
   const out = document.createElement('canvas');
   out.width = w;
@@ -83,9 +98,18 @@ export async function cropToInk(blob, { padRatio = 0.04, minPad = 12, threshold 
   return new Promise((resolve) => out.toBlob((b) => resolve(b || blob), 'image/webp', 0.9));
 }
 
+/** single 画像用。上下の余白だけ切る。 */
+export function cropToInkVertical(blob, opts = {}) {
+  return cropToInk(blob, { ...opts, axis: 'y' });
+}
+
 export async function downloadEach(blobs, prefix = 'artclub') {
   for (let i = 0; i < blobs.length; i++) {
-    downloadBlob(blobs[i], `${prefix}-${String(i + 1).padStart(2, '0')}.jpg`);
+    let blob = blobs[i];
+    try {
+      blob = (await cropToInkVertical(blob)) || blob;
+    } catch { /* keep original */ }
+    downloadBlob(blob, `${prefix}-${String(i + 1).padStart(2, '0')}.jpg`);
     await new Promise((r) => setTimeout(r, 350));
   }
 }

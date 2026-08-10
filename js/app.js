@@ -35,7 +35,7 @@ import {
   saveHiddenTags, invalidateTagConfig, convertToWebp, repairManifestExtensions,
 } from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
-import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
+import { composeSheet, cropToInkVertical, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
 import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, restorePageScroll, setScreenShownHook } from './ui.js';
@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '188';
+const BUILD = '189';
 const SITE_PASS_SESSION = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 
@@ -2005,10 +2005,18 @@ function wireDrawingLightbox() {
   $('#draw-lightbox').addEventListener('click', (e) => {
     if (e.target.id === 'draw-lightbox') close();
   });
-  $('#draw-dl').addEventListener('click', () => {
+  $('#draw-dl').addEventListener('click', async () => {
     const shot = pendingDrawings[drawingIndex];
-    if (shot) {
+    if (!shot) return;
+    const btn = $('#draw-dl');
+    if (btn) btn.disabled = true;
+    try {
+      const blob = (await cropToInkVertical(shot.blob)) || shot.blob;
+      downloadBlob(blob, `artclub-${dateKey()}-${drawingIndex + 1}.jpg`);
+    } catch {
       downloadBlob(shot.blob, `artclub-${dateKey()}-${drawingIndex + 1}.jpg`);
+    } finally {
+      if (btn) btn.disabled = false;
     }
   });
   $('#draw-share-x').addEventListener('click', async () => {
