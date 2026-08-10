@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '100';
+const BUILD = '101';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2336,7 +2336,7 @@ function renderLog() {
   for (const label of labels) dow.append(el('span', null, label));
 
   renderCalendar(history);
-  renderNotes(history);
+  void renderNotes();
 }
 
 let calMonth = null;   // 'YYYY-MM'
@@ -2502,71 +2502,34 @@ function avatarGlyph(name) {
   return s ? s.slice(0, 1) : 'あ';
 }
 
-function renderNotes(history) {
+async function renderNotes() {
   const wrap = $('#note-list');
   wrap.innerHTML = '';
-  // メモか絵があるセッションをTL投稿として新しい順に
-  const posts = history
-    .filter((h) => h.note || h.hasDrawing)
-    .slice(-30)
-    .reverse();
-  if (!posts.length) {
-    wrap.append(el('p', 'muted small tl-empty', t('log.noNotes')));
+
+  if (!getUser()) {
+    wrap.append(el('p', 'muted small tl-empty', t('log.loginNotes')));
     return;
   }
 
-  const displayName = getUsername() || t('log.me');
-  for (const entry of posts) {
-    const post = el('article', 'tl-post');
-    post.dataset.sessionId = entry.id || '';
+  const loading = el('p', 'muted small', t('gal.loading'));
+  wrap.append(loading);
 
-    const avatar = el('div', 'tl-avatar', avatarGlyph(displayName));
-    const main = el('div', 'tl-main');
-
-    const meta = el('header', 'tl-meta');
-    meta.append(el('span', 'tl-name', displayName));
-    meta.append(el('span', 'tl-dot', '·'));
-    const time = el('time', 'tl-time', formatTlDate(entry));
-    if (entry.date) time.dateTime = entry.date;
-    meta.append(time);
-    const label = sessionLabel(entry);
-    if (label) meta.append(el('span', 'tl-menu', label));
-    main.append(meta);
-
-    if (entry.note) main.append(el('p', 'tl-body', entry.note));
-
-    if (entry.hasDrawing) {
-      const media = el('div', 'tl-media');
-      const img = el('img');
-      img.alt = label || t('rev.drawn');
-      img.loading = 'lazy';
-      media.append(img);
-      main.append(media);
-      loadDrawing(entry.id)
-        .then((blob) => { if (blob) img.src = URL.createObjectURL(blob); })
-        .catch(() => { media.remove(); });
+  try {
+    const works = await fetchMyArtworks({ limit: 40 });
+    if (!wrap.isConnected) return;
+    wrap.innerHTML = '';
+    if (!works.length) {
+      wrap.append(el('p', 'muted small tl-empty', t('log.noNotes')));
+      return;
     }
-
-    const actions = el('div', 'tl-actions');
-    const likeBtn = el('button', 'tl-like');
-    likeBtn.type = 'button';
-    likeBtn.setAttribute('aria-label', t('log.like'));
-    likeBtn.dataset.liked = '0';
-    likeBtn.innerHTML = `<span class="gallery-heart">♥</span><span class="tl-like-count">0</span>`;
-    // いまは自分のローカル記録用の見た目だけ。クラウドいいねは後で接続する
-    likeBtn.addEventListener('click', () => {
-      const on = likeBtn.dataset.liked === '1';
-      const next = !on;
-      likeBtn.dataset.liked = next ? '1' : '0';
-      likeBtn.classList.toggle('on', next);
-      const n = Number(likeBtn.querySelector('.tl-like-count')?.textContent || 0);
-      likeBtn.querySelector('.tl-like-count').textContent = String(Math.max(0, n + (next ? 1 : -1)));
-    });
-    actions.append(likeBtn);
-    main.append(actions);
-
-    post.append(avatar, main);
-    wrap.append(post);
+    for (const work of works) {
+      wrap.append(renderArtworkTlPost(work, { mine: true }));
+    }
+  } catch (err) {
+    console.error('[log notes]', err);
+    if (!wrap.isConnected) return;
+    wrap.innerHTML = '';
+    wrap.append(el('p', 'muted small tl-empty', t('gal.uploadFail')));
   }
 }
 
