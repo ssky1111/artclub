@@ -79,7 +79,7 @@ export function el(tag, className, text) {
   return node;
 }
 
-/** ドリル説明などの箇条書き（− 付き） */
+/** ドリル説明などの箇条書き（黒丸リスト） */
 export function hintList(hints, className = 'hint-list') {
   const ul = document.createElement('ul');
   ul.className = className;
