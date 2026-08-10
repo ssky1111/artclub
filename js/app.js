@@ -37,7 +37,7 @@ import {
   saveHiddenTags, invalidateTagConfig, convertToWebp, repairManifestExtensions,
 } from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
-import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
+import { composeSheet, cropToInk, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
 import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog } from './ui.js';
@@ -56,7 +56,7 @@ import { uploadArtwork, uploadShareImage, fetchArtworks, deleteArtwork } from '.
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '32';
+const BUILD = '33';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1405,7 +1405,6 @@ async function finishSession(result) {
   pendingDrawings = result.drawings || [];
   galleryPromptIds = pendingDrawings.map((d) => d.photoId).filter(Boolean);
   $('#gallery-card').hidden = true;
-  renderDrawingStrip();
   $('#review-note').value = '';
 
   renderReviewChecks(entry.lessonId, entry.lessonMode);
@@ -1417,22 +1416,38 @@ async function finishSession(result) {
     updatePublishNote(true);
   }
 
-  // 写真を先に出してから、まとめ画像を作る
+  // 余白を落としてから並べる／まとめ画像を作る
   if (pendingDrawings.length > 0) {
     $('#sheet-preview').hidden = true;
     showScreen('review');
-    const blob = await composeSheet(pendingDrawings.map((s) => s.blob), {
-      date: dateKey(),
-    });
+    await cropPendingDrawings();
+    renderDrawingStrip();
+    const blob = await composeSheet(
+      pendingDrawings.map((s) => s.croppedBlob || s.blob),
+      { date: dateKey(), crop: false },
+    );
     if (blob) {
       sheetBlob = blob;
       $('#sheet-img').src = URL.createObjectURL(blob);
       $('#sheet-preview').hidden = false;
     }
   } else {
+    renderDrawingStrip();
     $('#sheet-preview').hidden = true;
     showScreen('review');
   }
+}
+
+/** 描いた範囲だけに切り出した Blob を各ショットに載せる。 */
+async function cropPendingDrawings() {
+  await Promise.all(pendingDrawings.map(async (shot) => {
+    if (shot.croppedBlob || !shot.blob) return;
+    try {
+      shot.croppedBlob = await cropToInk(shot.blob);
+    } catch {
+      shot.croppedBlob = shot.blob;
+    }
+  }));
 }
 
 /* ==================== ふりかえり ==================== */
@@ -1481,7 +1496,8 @@ function renderDrawingStrip() {
   pendingDrawings.forEach((shot, i) => {
     const item = el('button', 'strip-item');
     const img = el('img');
-    img.src = URL.createObjectURL(shot.blob);
+    img.src = URL.createObjectURL(shot.croppedBlob || shot.blob);
+    img.alt = '';
     item.append(img);
     item.addEventListener('click', () => openDrawing(i));
     strip.append(item);
@@ -1494,7 +1510,7 @@ function openDrawing(index) {
   const shot = pendingDrawings[index];
   if (!shot) return;
   drawingIndex = index;
-  $('#draw-img').src = URL.createObjectURL(shot.blob);
+  $('#draw-img').src = URL.createObjectURL(shot.croppedBlob || shot.blob);
   $('#draw-lightbox').hidden = false;
 }
 
@@ -1542,7 +1558,10 @@ function wireReview() {
   });
 
   $('#dl-all').addEventListener('click', () => {
-    downloadEach(pendingDrawings.map((s) => s.blob), `artclub-${dateKey()}`);
+    downloadEach(
+      pendingDrawings.map((s) => s.croppedBlob || s.blob),
+      `artclub-${dateKey()}`,
+    );
   });
 
   $('#sheet-dl').addEventListener('click', () => {
