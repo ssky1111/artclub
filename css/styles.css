@@ -763,7 +763,41 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
 }
 .toggle-row input:checked + .toggle-track { background: var(--accent); }
 .toggle-row input:checked + .toggle-track::after { transform: translateX(18px); }
+#publish-row { margin-top: 14px; }
 #publish-note { margin-top: 6px; }
+.gallery-desc { margin: 0 0 12px; }
+
+.strip-shot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.strip-shot.is-excluded .strip-item {
+  opacity: .5;
+  border-style: dashed;
+}
+.strip-exclude {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.2;
+  padding: 5px 4px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  width: 100%;
+}
+.strip-exclude:disabled {
+  opacity: .4;
+  cursor: default;
+}
+.strip-shot.is-excluded .strip-exclude {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
 
 /* ---------- 記録 ---------- */
 

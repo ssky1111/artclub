@@ -17,7 +17,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="43">
+<body data-build="44">
 
 <!-- 明暗ポスタライズ用のSVGフィルタ（ノタン練習で使う） -->
 <svg class="filter-defs" aria-hidden="true" focusable="false">
@@ -254,31 +254,29 @@
     <div class="row" id="strip-actions" hidden>
       <button id="dl-all" class="btn ghost small" data-i18n="rev.downloadAll">全部ダウンロード</button>
     </div>
+    <label class="toggle-row" id="publish-row" hidden>
+      <span data-i18n="gal.public">みんなが描いたスケッチに投稿する</span>
+      <input type="checkbox" id="publish-toggle" checked>
+      <span class="toggle-track"></span>
+    </label>
+    <p class="muted small" id="publish-note" hidden></p>
+  </section>
+
+  <section class="card" id="gallery-card" hidden>
+    <div class="section-head">
+      <h2 data-i18n="gal.title">みんなが描いたスケッチ</h2>
+      <span id="gallery-count" class="muted small"></span>
+    </div>
+    <p class="muted small gallery-desc" data-i18n="gal.desc">他のみんなが描いた同じお題のスケッチです。良いところを参考に見てみましょう</p>
+    <div id="gallery-grid" class="gallery-grid"></div>
+    <p id="gallery-empty" class="muted small" hidden data-i18n="gal.empty"></p>
+    <p id="gallery-loading" class="muted small" hidden data-i18n="gal.loading"></p>
   </section>
 
   <section class="card">
     <div class="label" data-i18n="rev.howWas">今日はどうだった？</div>
     <p class="muted small" data-i18n="rev.reflectNote"></p>
     <textarea id="review-note" class="note" rows="3" data-i18n-ph="rev.notePh"></textarea>
-  </section>
-
-  <section class="card" id="publish-card" hidden>
-    <label class="toggle-row">
-      <span data-i18n="gal.public">みんなが描いた同じお題に表示する</span>
-      <input type="checkbox" id="publish-toggle" checked>
-      <span class="toggle-track"></span>
-    </label>
-    <p class="muted small" id="publish-note" data-i18n="gal.private"></p>
-  </section>
-
-  <section class="card" id="gallery-card" hidden>
-    <div class="section-head">
-      <h2 data-i18n="gal.title">みんなが描いた同じお題</h2>
-      <span id="gallery-count" class="muted small"></span>
-    </div>
-    <div id="gallery-grid" class="gallery-grid"></div>
-    <p id="gallery-empty" class="muted small" hidden data-i18n="gal.empty"></p>
-    <p id="gallery-loading" class="muted small" hidden data-i18n="gal.loading"></p>
   </section>
 
   <div class="stack">
@@ -513,6 +511,7 @@
   <div class="lightbox-actions">
     <button id="draw-dl" class="btn small" data-i18n="common.download">ダウンロード</button>
     <button id="draw-share-x" class="btn small" data-i18n="rev.shareX">X に投稿する</button>
+    <button id="draw-exclude" class="btn ghost small" hidden>投稿から外す</button>
     <button id="draw-remove" class="btn ghost small" data-i18n="common.delete">消す</button>
   </div>
 </div>

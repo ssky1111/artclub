@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '43';
+const BUILD = '44';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1423,6 +1423,9 @@ async function finishSession(result) {
   if (settings.sfx) sfx.fanfare();
 
   pendingDrawings = result.drawings || [];
+  pendingDrawings.forEach((shot) => {
+    if (shot.excludeFromGallery == null) shot.excludeFromGallery = false;
+  });
   galleryPromptIds = pendingDrawings.map((d) => d.photoId).filter(Boolean);
   pendingSessionMeta = {
     sessionId: entry?.id || null,
@@ -1431,9 +1434,12 @@ async function finishSession(result) {
   $('#gallery-card').hidden = true;
   $('#review-note').value = '';
 
-  const hasDrawings = pendingDrawings.length > 0 && !!getUser();
-  $('#publish-card').hidden = !hasDrawings;
-  if (hasDrawings) {
+  const canPublish = pendingDrawings.length > 0 && !!getUser();
+  const publishRow = $('#publish-row');
+  const publishNote = $('#publish-note');
+  if (publishRow) publishRow.hidden = !canPublish;
+  if (publishNote) publishNote.hidden = !canPublish;
+  if (canPublish) {
     $('#publish-toggle').checked = true;
     updatePublishNote(true);
   }
@@ -1465,6 +1471,30 @@ async function finishSession(result) {
  * 以前はここを押すと消えていた。押して消えるのは事故にしかならないので、
  * 押したら大きくなり、消すのは拡大した先でもう一度選ぶ形にした。
  */
+function publishEnabled() {
+  return !!getUser() && $('#publish-toggle')?.checked !== false;
+}
+
+function excludeLabel(excluded) {
+  return excluded ? t('gal.include') : t('gal.exclude');
+}
+
+function setShotExcluded(index, excluded) {
+  const shot = pendingDrawings[index];
+  if (!shot) return;
+  shot.excludeFromGallery = !!excluded;
+  const wrap = $(`#drawing-strip .strip-shot[data-index="${index}"]`);
+  if (wrap) {
+    wrap.classList.toggle('is-excluded', !!excluded);
+    const btn = wrap.querySelector('.strip-exclude');
+    if (btn) btn.textContent = excludeLabel(excluded);
+  }
+  if (drawingIndex === index) {
+    const lbBtn = $('#draw-exclude');
+    if (lbBtn && !lbBtn.hidden) lbBtn.textContent = excludeLabel(excluded);
+  }
+}
+
 function renderDrawingStrip() {
   const strip = $('#drawing-strip');
   strip.innerHTML = '';
@@ -1473,24 +1503,57 @@ function renderDrawingStrip() {
   $('#strip-actions').hidden = !has;
   $('#dl-all').disabled = !has;
 
+  const showExclude = publishEnabled();
+
   pendingDrawings.forEach((shot, i) => {
+    const wrap = el('div', `strip-shot${shot.excludeFromGallery ? ' is-excluded' : ''}`);
+    wrap.dataset.index = String(i);
+
     const item = el('button', 'strip-item');
+    item.type = 'button';
     const img = el('img');
     img.src = URL.createObjectURL(shot.blob);
     img.alt = '';
     item.append(img);
     item.addEventListener('click', () => openDrawing(i));
-    strip.append(item);
+    wrap.append(item);
+
+    if (getUser()) {
+      const excludeBtn = el('button', 'strip-exclude');
+      excludeBtn.type = 'button';
+      excludeBtn.textContent = excludeLabel(!!shot.excludeFromGallery);
+      excludeBtn.hidden = !showExclude;
+      excludeBtn.disabled = !showExclude;
+      excludeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!publishEnabled()) return;
+        setShotExcluded(i, !shot.excludeFromGallery);
+      });
+      wrap.append(excludeBtn);
+    }
+
+    strip.append(wrap);
   });
 }
 
 let drawingIndex = -1;
+
+function syncDrawExcludeButton() {
+  const btn = $('#draw-exclude');
+  if (!btn) return;
+  const shot = pendingDrawings[drawingIndex];
+  const can = !!shot && publishEnabled();
+  btn.hidden = !can;
+  if (can) btn.textContent = excludeLabel(!!shot.excludeFromGallery);
+}
 
 function openDrawing(index) {
   const shot = pendingDrawings[index];
   if (!shot) return;
   drawingIndex = index;
   $('#draw-img').src = URL.createObjectURL(shot.blob);
+  syncDrawExcludeButton();
   $('#draw-lightbox').hidden = false;
 }
 
@@ -1522,6 +1585,12 @@ function wireDrawingLightbox() {
       shareToX(text);
     }
   });
+  $('#draw-exclude').addEventListener('click', () => {
+    if (drawingIndex < 0 || !publishEnabled()) return;
+    const shot = pendingDrawings[drawingIndex];
+    if (!shot) return;
+    setShotExcluded(drawingIndex, !shot.excludeFromGallery);
+  });
   $('#draw-remove').addEventListener('click', () => {
     if (drawingIndex < 0) return;
     pendingDrawings.splice(drawingIndex, 1);
@@ -1531,13 +1600,16 @@ function wireDrawingLightbox() {
 }
 
 function updatePublishNote(isPublic) {
-  $('#publish-note').textContent = isPublic ? '' : t('gal.private');
+  const note = $('#publish-note');
+  if (!note) return;
+  note.textContent = isPublic ? '' : t('gal.private');
+  note.hidden = isPublic;
 }
 
 async function uploadPendingArtworks() {
   const user = getUser();
   if (!user || !pendingDrawings.length) return;
-  const isPublic = $('#publish-toggle')?.checked !== false;
+  const globalPublic = $('#publish-toggle')?.checked !== false;
   const sessionId = pendingSessionMeta?.sessionId || null;
   const mode = pendingSessionMeta?.mode || null;
   if (getUsername()) {
@@ -1547,6 +1619,7 @@ async function uploadPendingArtworks() {
     if (shot.uploaded || !shot.photoId) continue;
     try {
       shot.uploading = true;
+      const isPublic = globalPublic && !shot.excludeFromGallery;
       const work = await uploadArtwork(shot.blob, shot.photoId, {
         isPublic,
         sessionId,
@@ -1563,6 +1636,8 @@ async function uploadPendingArtworks() {
 function wireReview() {
   $('#publish-toggle').addEventListener('change', (e) => {
     updatePublishNote(e.target.checked);
+    renderDrawingStrip();
+    syncDrawExcludeButton();
   });
 
   $('#dl-all').addEventListener('click', () => {
@@ -1653,7 +1728,8 @@ async function loadSamePromptGallery() {
   loading.hidden = false;
   countEl.textContent = '';
 
-  await uploadPendingArtworks();
+  // 投稿設定（全体／スケッチ単位）は保存・シェア時に反映する。
+  // ここでは他の人のスケッチだけ先に見せる。
 
   const uniqueIds = [...new Set(galleryPromptIds.filter(Boolean))];
   let allWorks = [];
@@ -1890,6 +1966,7 @@ async function openDaySheet(dayKey, history = getHistory()) {
       $('#draw-img').src = URL.createObjectURL(blob);
       drawingIndex = -1;                       // 過去の絵はここから消せない
       $('#draw-remove').hidden = true;
+      if ($('#draw-exclude')) $('#draw-exclude').hidden = true;
       $('#draw-dl').onclick = () => downloadBlob(blob, `artclub-${dayKey}-${i + 1}.jpg`);
       $('#draw-lightbox').hidden = false;
     });
