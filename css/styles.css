@@ -1079,6 +1079,7 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
 .note-item { border-bottom: 1px solid var(--line); padding-bottom: 12px; }
 .note-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .note-date { font-size: 13px; font-weight: 600; }
+.note-menu { font-size: 12px; color: var(--muted); font-weight: 600; }
 .note-body { margin: 6px 0 0; font-size: 14px; }
 .note-thumb { width: 100%; max-width: 220px; border-radius: 8px; margin-top: 8px; display: block; }
 .rate-tag { font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
