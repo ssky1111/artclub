@@ -565,7 +565,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
         awaitingBridge: false,
       };
       pad.resetHistory();
-      const initAlpha = settings.penAlpha ?? 0.4;
+      const initAlpha = settings.penAlpha ?? 0.8;
       pad.setAlpha(initAlpha);
       const initVal = String(Math.round(initAlpha * 100));
       dom.padOpacity.value = initVal;
