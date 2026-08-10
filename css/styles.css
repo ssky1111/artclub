@@ -23,8 +23,8 @@
   --accent-dim: #d4d4ce;
   --cta-bg: #111111;
   --cta-ink: #ffffff;
-  --brand: #ff7eb3;           /* ピンク。塗り */
-  --brand-ink: #ff5c9e;       /* ピンク。文字 */
+  --brand: #e89ab8;           /* くすみピンク。塗り */
+  --brand-ink: #c96f94;       /* くすみピンク。文字 */
   --lime: #8ed94b;            /* 黄緑。塗り */
   --lime-ink: #5a9c1e;        /* 黄緑。文字 */
   --mint: #8ed94b;
@@ -55,8 +55,8 @@ body[data-theme='dark'] {
   --accent-dim: #3a3a3a;
   --cta-bg: #ffffff;
   --cta-ink: #000000;
-  --brand: #ff7eb3;
-  --brand-ink: #ff9ec8;       /* 黒地なので明るい方が読める */
+  --brand: #e89ab8;
+  --brand-ink: #e8b8cb;       /* 黒地なので明るい方が読める */
   --lime: #a6e864;
   --lime-ink: #a6e864;
   --mint: #a6e864;
@@ -110,10 +110,10 @@ body[data-skin='pastel-rpg'] {
   --accent-ink: #1f3f38;
   --accent-soft: #dff4ee;
   --accent-dim: #b7e2d6;
-  --cta-bg: #ff9ec8;
-  --cta-ink: #5a1840;
-  --brand: #ff9ec8;
-  --brand-ink: #ff6fa5;
+  --cta-bg: #2b2a27;
+  --cta-ink: #ffffff;
+  --brand: #e8a8bc;
+  --brand-ink: #c9789a;
   --lime: #b8e986;
   --lime-ink: #5f9a2e;
   --mint: #7ec8b5;
@@ -123,8 +123,7 @@ body[data-skin='pastel-rpg'] {
   --radius: 18px;
   --radius-sm: 12px;
   --lift: 0 4px 0 #d4bfe0, inset 0 2px 0 rgba(255, 255, 255, .65);
-  --lift-accent: 0 4px 0 color-mix(in srgb, var(--cta-bg) 58%, #d45f90),
-    inset 0 2px 0 rgba(255, 255, 255, .55);
+  --lift-accent: 0 4px 0 #12110f, inset 0 2px 0 rgba(255, 255, 255, .22);
 }
 
 body[data-skin='pastel-rpg'][data-theme='dark'] {
@@ -140,10 +139,10 @@ body[data-skin='pastel-rpg'][data-theme='dark'] {
   --accent-ink: #1a2e2a;
   --accent-soft: #3d4f4a;
   --accent-dim: #5a7a70;
-  --cta-bg: #ff9ec8;
-  --cta-ink: #4a1834;
-  --brand: #ff9ec8;
-  --brand-ink: #ffc0d9;
+  --cta-bg: #f4f1ec;
+  --cta-ink: #1a1916;
+  --brand: #e8a8bc;
+  --brand-ink: #e8b8cb;
   --lime: #c8f090;
   --lime-ink: #c8f090;
   --mint: #8fd9c6;
@@ -151,7 +150,7 @@ body[data-skin='pastel-rpg'][data-theme='dark'] {
   --good: #c8f090;
   --danger: #f0a0a4;
   --lift: 0 4px 0 #1e1830, inset 0 2px 0 rgba(255, 255, 255, .12);
-  --lift-accent: 0 4px 0 #1e1830, inset 0 2px 0 rgba(255, 255, 255, .28);
+  --lift-accent: 0 4px 0 #0e0d0c, inset 0 2px 0 rgba(255, 255, 255, .28);
 }
 
 body[data-skin='pastel-rpg'][data-theme='paper'] {
@@ -167,13 +166,12 @@ body[data-skin='pastel-rpg'][data-theme='paper'] {
   --accent-ink: #1f3f38;
   --accent-soft: #e4f4ee;
   --accent-dim: #b7e2d6;
-  --cta-bg: #ff9ec8;
-  --cta-ink: #5a1840;
-  --brand: #ff9ec8;
-  --brand-ink: #ff6fa5;
+  --cta-bg: #2b2a27;
+  --cta-ink: #ffffff;
+  --brand: #e8a8bc;
+  --brand-ink: #c9789a;
   --lift: 0 4px 0 #e6d8c4, inset 0 2px 0 rgba(255, 255, 255, .7);
-  --lift-accent: 0 4px 0 color-mix(in srgb, var(--cta-bg) 58%, #d45f90),
-    inset 0 2px 0 rgba(255, 255, 255, .55);
+  --lift-accent: 0 4px 0 #12110f, inset 0 2px 0 rgba(255, 255, 255, .22);
 }
 
 /* パステルRPG：やわらかい水玉の地と、ウィンドウっぽいカード */
@@ -225,22 +223,22 @@ body[data-skin='pastel-rpg'] .btn:active {
 body[data-skin='pastel-rpg'] .btn.primary,
 body[data-skin='pastel-rpg'] .btn.cta {
   color: var(--cta-ink);
-  border-color: color-mix(in srgb, var(--cta-bg) 55%, #d45f90);
+  border-color: color-mix(in srgb, var(--cta-bg) 70%, #000);
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--cta-bg) 55%, #fff) 0%,
+    color-mix(in srgb, var(--cta-bg) 72%, #fff) 0%,
     var(--cta-bg) 55%,
-    color-mix(in srgb, var(--cta-bg) 82%, #e878a8) 100%
+    color-mix(in srgb, var(--cta-bg) 82%, #000) 100%
   );
   box-shadow: var(--lift-accent);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, .28);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .28);
 }
 body[data-skin='pastel-rpg'] .btn.primary:active,
 body[data-skin='pastel-rpg'] .btn.cta:active {
   transform: translateY(3px);
   box-shadow:
-    0 1px 0 color-mix(in srgb, var(--cta-bg) 58%, #d45f90),
-    inset 0 2px 4px rgba(160, 60, 110, .18);
+    0 1px 0 color-mix(in srgb, var(--cta-bg) 70%, #000),
+    inset 0 2px 4px rgba(0, 0, 0, .22);
   text-shadow: none;
 }
 body[data-skin='pastel-rpg'] .btn.ghost {
