@@ -5,6 +5,7 @@
 const SETTINGS_KEY = 'croqui.settings.v1';
 const HISTORY_KEY = 'croqui.history.v1';
 const CARDS_KEY = 'croqui.cards.v1';
+const CAL_COVER_KEY = 'croqui.calCover.v1';
 
 const DEFAULT_SETTINGS = {
   source: 'picsum',          // 'unsplash' | 'picsum' | 'local'
@@ -101,6 +102,39 @@ export function clearAll() {
   localStorage.removeItem(SETTINGS_KEY);
   localStorage.removeItem(HISTORY_KEY);
   localStorage.removeItem(CARDS_KEY);
+  localStorage.removeItem(CAL_COVER_KEY);
+}
+
+/* ---------- カレンダーに出すスケッチ ---------- */
+
+/** { [YYYY-MM-DD]: { entryId, index } } */
+export function getCalCovers() {
+  const map = read(CAL_COVER_KEY, {});
+  return map && typeof map === 'object' ? map : {};
+}
+
+export function getCalCover(dateStr) {
+  const cover = getCalCovers()[dateStr];
+  if (!cover || typeof cover.entryId !== 'string') return null;
+  const index = Number(cover.index);
+  return {
+    entryId: cover.entryId,
+    index: Number.isFinite(index) && index >= 0 ? index : 0,
+  };
+}
+
+/** cover に null を渡すとその日の指定を外す */
+export function setCalCover(dateStr, cover) {
+  const map = { ...getCalCovers() };
+  if (!cover) delete map[dateStr];
+  else {
+    map[dateStr] = {
+      entryId: cover.entryId,
+      index: Number(cover.index) || 0,
+    };
+  }
+  write(CAL_COVER_KEY, map);
+  return map;
 }
 
 /* ---------- 日付ユーティリティ ---------- */

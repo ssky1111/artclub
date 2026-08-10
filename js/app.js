@@ -10,7 +10,7 @@ import {
 import {
   getSettings, saveSettings, getHistory, addSession, updateLastSession,
   dateKey, addDays, dailyTotals, drawingsByDay, totalDrawings, roundsToday, stats,
-  recentReviewNotes,
+  recentReviewNotes, getCalCover, setCalCover,
 } from './storage.js';
 import { LESSONS, PD_BOOKS, lessonById } from './anatomy.js';
 import { createPhotoQueue } from './images.js';
@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '104';
+const BUILD = '105';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2336,9 +2336,32 @@ function renderLog() {
 
 let calMonth = null;   // 'YYYY-MM'
 
+/** 指定セッションの n 枚目。古い記録は連番なしキーも見る。 */
+async function loadDrawingShot(entryId, index = 0) {
+  const keyed = await getDrawing(`${entryId}#${index}`).catch(() => null);
+  if (keyed) return keyed;
+  if (index === 0) return getDrawing(entryId).catch(() => null);
+  return null;
+}
+
 /** 1枚目の絵。古い記録は連番なしのキーで入っているので、そちらも見る。 */
 async function loadDrawing(entryId) {
-  return (await getDrawing(`${entryId}#0`)) || (await getDrawing(entryId));
+  return loadDrawingShot(entryId, 0);
+}
+
+/** その日のカレンダー既定（いちばん古い有絵セッションの1枚目）。 */
+function defaultCalCover(dayKey, history = getHistory()) {
+  let pick = null;
+  for (const entry of history) {
+    if (entry.date !== dayKey) continue;
+    if (!pick || (entry.hasDrawing && !pick.hasDrawing)) pick = entry;
+  }
+  if (!pick?.hasDrawing) return null;
+  return { entryId: pick.id, index: 0 };
+}
+
+function effectiveCalCover(dayKey, history = getHistory()) {
+  return getCalCover(dayKey) || defaultCalCover(dayKey, history);
 }
 
 function monthKey(dateStr) { return dateStr.slice(0, 7); }
@@ -2375,16 +2398,28 @@ function renderCalendar(history = getHistory()) {
     const dayKey = `${calMonth}-${String(day).padStart(2, '0')}`;
     const seconds = totals.get(dayKey) || 0;
     const entry = byDay.get(dayKey);
+    const cover = effectiveCalCover(dayKey, history);
 
     const cell = el('button', 'cal-cell');
     if (seconds) cell.classList.add(`l${heatLevel(seconds)}`, 'filled');
     if (dayKey === today) cell.classList.add('today');
     cell.append(el('span', 'cal-num', String(day)));
 
-    if (entry?.hasDrawing) {
+    if (cover || entry?.hasDrawing) {
       cell.classList.add('has-drawing');
       const img = el('img');
-      loadDrawing(entry.id).then((blob) => { if (blob) img.src = URL.createObjectURL(blob); }).catch(() => {});
+      const blobPromise = cover
+        ? loadDrawingShot(cover.entryId, cover.index)
+        : loadDrawing(entry.id);
+      blobPromise.then((blob) => {
+        if (blob) img.src = URL.createObjectURL(blob);
+        else if (entry?.hasDrawing && cover) {
+          // 指定が消えていたら既定に戻す見た目
+          loadDrawing(entry.id).then((fallback) => {
+            if (fallback) img.src = URL.createObjectURL(fallback);
+          }).catch(() => {});
+        }
+      }).catch(() => {});
       cell.prepend(img);
     }
 
@@ -2394,41 +2429,84 @@ function renderCalendar(history = getHistory()) {
   }
 }
 
-/** その日に描いたものを全部ならべる。押すと拡大＋ダウンロード。 */
+/** その日のスケッチから、カレンダーに出す1枚を選ぶ。 */
 async function openDaySheet(dayKey, history = getHistory()) {
   const entries = history.filter((h) => h.date === dayKey);
   $('#sheet-date').textContent = dayKey;
 
   const seconds = entries.reduce((sum, e) => sum + (e.seconds || 0), 0);
-  $('#sheet-title').textContent = seconds ? t('log.drew', { d: fmtDur(seconds) }) : t('log.restDay');
-
-  const shots = $('#sheet-shots');
-  shots.innerHTML = '';
-  const blobs = [];
+  const items = [];
   for (const entry of entries) {
     const count = entry.drawingCount || (entry.hasDrawing ? 1 : 0);
     for (let i = 0; i < count; i++) {
-      const blob = await getDrawing(`${entry.id}#${i}`).catch(() => null)
-        || (i === 0 ? await getDrawing(entry.id).catch(() => null) : null);
-      if (blob) blobs.push(blob);
+      const blob = await loadDrawingShot(entry.id, i);
+      if (blob) items.push({ entryId: entry.id, index: i, blob });
     }
   }
-  shots.hidden = blobs.length === 0;
-  blobs.forEach((blob, i) => {
-    const item = el('button', 'strip-item');
-    const img = el('img');
-    img.src = URL.createObjectURL(blob);
-    item.append(img);
-    item.addEventListener('click', () => {
-      $('#draw-img').src = URL.createObjectURL(blob);
-      drawingIndex = -1;                       // 過去の絵はここから消せない
-      $('#draw-remove').hidden = true;
-      if ($('#draw-exclude')) $('#draw-exclude').hidden = true;
-      $('#draw-dl').onclick = () => downloadBlob(blob, `artclub-${dayKey}-${i + 1}.jpg`);
-      $('#draw-lightbox').hidden = false;
+
+  const title = $('#sheet-title');
+  const lead = $('#sheet-pick-lead');
+  if (items.length) {
+    title.textContent = t('log.pickCoverTitle');
+    if (lead) {
+      lead.hidden = false;
+      lead.textContent = t('log.pickCoverLead');
+    }
+  } else {
+    title.textContent = seconds ? t('log.drew', { d: fmtDur(seconds) }) : t('log.restDay');
+    if (lead) lead.hidden = true;
+  }
+
+  const shots = $('#sheet-shots');
+  shots.innerHTML = '';
+  shots.hidden = items.length === 0;
+  shots.classList.toggle('cal-cover-strip', items.length > 0);
+
+  let selected = effectiveCalCover(dayKey, history);
+
+  const paintSelection = () => {
+    $$('.cal-cover-pick', shots).forEach((btn) => {
+      const on = selected
+        && btn.dataset.entryId === selected.entryId
+        && Number(btn.dataset.index) === selected.index;
+      btn.classList.toggle('is-cover', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
-    shots.append(item);
+  };
+
+  items.forEach((item, i) => {
+    const btn = el('button', 'strip-item cal-cover-pick');
+    btn.type = 'button';
+    btn.dataset.entryId = item.entryId;
+    btn.dataset.index = String(item.index);
+    const img = el('img');
+    img.src = URL.createObjectURL(item.blob);
+    img.alt = '';
+    btn.append(img);
+    btn.append(el('span', 'cal-cover-badge', t('log.coverBadge')));
+    btn.addEventListener('click', () => {
+      const already = selected
+        && selected.entryId === item.entryId
+        && selected.index === item.index
+        && getCalCover(dayKey);
+      if (already) {
+        $('#draw-img').src = URL.createObjectURL(item.blob);
+        drawingIndex = -1;
+        $('#draw-remove').hidden = true;
+        if ($('#draw-exclude')) $('#draw-exclude').hidden = true;
+        $('#draw-dl').onclick = () => downloadBlob(item.blob, `artclub-${dayKey}-${i + 1}.jpg`);
+        $('#draw-lightbox').hidden = false;
+        return;
+      }
+      setCalCover(dayKey, { entryId: item.entryId, index: item.index });
+      selected = { entryId: item.entryId, index: item.index };
+      paintSelection();
+      renderCalendar(history);
+      toast(t('log.coverSet'));
+    });
+    shots.append(btn);
   });
+  paintSelection();
 
   const body = $('#sheet-body');
   body.innerHTML = '';
