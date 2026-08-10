@@ -19,7 +19,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="70" data-theme="light" data-skin="pastel-rpg">
+<body data-build="71" data-theme="light" data-skin="pastel-rpg">
 <script>
 /* 設定があれば先に当てる。無ければ上の data-skin でパステルのまま */
 (function () {
@@ -268,7 +268,7 @@
         <button id="share-x" class="btn primary small" data-i18n="rev.shareX">Xでシェア</button>
       </div>
     </div>
-    <div id="drawing-strip" class="drawing-strip" hidden></div>
+    <div id="drawing-strip" class="drawing-strip drawing-strip-vertical" hidden></div>
     <div class="row" id="strip-actions" hidden>
       <button id="dl-all" class="btn ghost small" data-i18n="rev.downloadAll">全部ダウンロード</button>
     </div>
@@ -315,6 +315,7 @@
     </button>
   </div>
   <div class="lightbox-actions">
+    <button id="gallery-lb-copy" class="btn primary small" hidden data-i18n="atelier.copyAction">模写する</button>
     <a id="gallery-lb-share" class="btn small" href="#" target="_blank" rel="noopener" hidden data-i18n="gal.shareWork">この作品をシェア</a>
     <button id="gallery-lb-delete" class="btn danger small" data-i18n="gal.delete" hidden>この作品を消す</button>
   </div>
@@ -754,9 +755,42 @@
 
 </main>
 
+<!-- ============ アトリエ ============ -->
+<main id="screen-atelier" class="screen">
+  <header class="topbar">
+    <h1 class="brand plain" data-i18n="atelier.title">アトリエ</h1>
+    <button class="icon-btn" data-nav="settings" data-icon="settings"></button>
+  </header>
+
+  <div class="atelier-tabs" role="tablist">
+    <button type="button" class="chip on" data-atelier-tab="public" data-i18n="atelier.tabPublic">みんなのアトリエ</button>
+    <button type="button" class="chip" data-atelier-tab="mine" data-i18n="atelier.tabMine">自分のアトリエ</button>
+    <button type="button" class="chip" data-atelier-tab="prompt" data-i18n="atelier.tabPrompt">お題別</button>
+  </div>
+
+  <section id="atelier-public" class="atelier-panel">
+    <p class="muted small atelier-lead" data-i18n="atelier.publicDesc">みんなの公開スケッチが新しい順に流れます</p>
+    <div id="atelier-public-feed" class="tl-feed"></div>
+    <p id="atelier-public-empty" class="muted small tl-empty" hidden data-i18n="atelier.emptyPublic">まだ公開投稿がありません</p>
+  </section>
+
+  <section id="atelier-mine" class="atelier-panel" hidden>
+    <p class="muted small atelier-lead" data-i18n="atelier.mineDesc">自分の投稿（非公開も含む）</p>
+    <div id="atelier-mine-feed" class="tl-feed"></div>
+    <p id="atelier-mine-empty" class="muted small tl-empty" hidden data-i18n="atelier.emptyMine">まだ自分の投稿がありません</p>
+    <p id="atelier-mine-login" class="muted small tl-empty" hidden data-i18n="atelier.loginMine">ログインすると自分のアトリエが見られます</p>
+  </section>
+
+  <section id="atelier-prompt" class="atelier-panel" hidden>
+    <p class="muted small atelier-lead" data-i18n="atelier.promptDesc">お題写真のあとに、自分とみんなの絵が横に並びます</p>
+    <div id="atelier-prompt-list" class="atelier-prompt-list"></div>
+    <p id="atelier-prompt-empty" class="muted small tl-empty" hidden data-i18n="atelier.emptyPrompt">まだお題別の投稿がありません</p>
+  </section>
+</main>
+
 <nav class="tabbar">
   <button data-nav="home" data-tab="home" data-i18n="tab.home">ホーム</button>
-
+  <button data-nav="atelier" data-tab="atelier" data-i18n="tab.atelier">アトリエ</button>
   <button data-nav="log" data-tab="log" data-i18n="tab.log">きろく</button>
 </nav>
 

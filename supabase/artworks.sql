@@ -42,6 +42,9 @@ alter table public.artworks
   add column if not exists username text,
   add column if not exists is_public boolean default true;
 
+alter table public.artworks
+  add column if not exists allow_copy boolean default false;
+
 -- visibility が空なら is_public から埋める
 update public.artworks
 set visibility = case when coalesce(is_public, true) then 'public' else 'private' end
