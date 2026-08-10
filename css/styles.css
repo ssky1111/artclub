@@ -2149,48 +2149,82 @@ button.tl-media img {
   border: 1px solid var(--line);
 }
 
-/* ---------- フィードバック（右端タブ） ---------- */
+/* ---------- フィードバック（右端タブ + 吹き出し） ---------- */
 
 /*
- * 全画面シートにしない。開いていてもページのスクロールを奪わない。
- * （誤タップや閉じ忘れで「スクロールできない」に見えるのを防ぐ）
+ * 全面シートにしない。タブの左から小さな吹き出しが出るだけ。
+ * 背面は触らないのでスクロールもそのまま。
  */
-.feedback-panel {
+.feedback-bubble {
   position: fixed;
-  z-index: 65;
-  right: max(8px, env(safe-area-inset-right));
-  top: 50%;
+  z-index: 64;
+  right: 42px;
+  top: 42%;
   transform: translateY(-50%);
-  width: min(360px, calc(100vw - 56px));
+  width: min(272px, calc(100vw - 56px));
   pointer-events: none;
-  background: none;
 }
-.feedback-panel[hidden] {
+.feedback-bubble[hidden] {
   display: none !important;
   pointer-events: none !important;
 }
-.feedback-panel-inner {
+.feedback-bubble-inner {
   pointer-events: auto;
   position: relative;
   background: var(--surface);
   border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
-  border-radius: var(--radius);
-  box-shadow: 0 10px 36px color-mix(in srgb, #000 16%, transparent);
-  max-height: min(85dvh, 560px);
-  overflow-y: auto;
-  padding: var(--pad);
-  padding-top: calc(var(--pad) + 4px);
-  animation: feedback-in .22s ease-out;
+  border-radius: 16px;
+  padding: 14px 14px 12px;
+  box-shadow: 0 8px 28px color-mix(in srgb, #000 14%, transparent);
+  animation: feedback-bubble-in .24s cubic-bezier(.2, .9, .3, 1);
 }
-.feedback-panel-inner h2 { margin: 4px 0 12px; font-size: 20px; }
-.feedback-panel-inner .sheet-close { position: absolute; top: 8px; right: 8px; }
-@keyframes feedback-in {
-  from { transform: translateX(10px); opacity: 0; }
+.feedback-bubble-inner::after {
+  content: '';
+  position: absolute;
+  right: -7px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  background: var(--surface);
+  border-right: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  transform: translateY(-50%) rotate(45deg);
+  box-shadow: 4px -2px 8px color-mix(in srgb, #000 6%, transparent);
+}
+@keyframes feedback-bubble-in {
+  from { transform: translateX(16px); opacity: 0; }
   to { transform: none; opacity: 1; }
 }
-body[data-screen='session'] .feedback-panel,
-body[data-screen='review'] .feedback-panel,
-body.in-session .feedback-panel {
+.feedback-bubble-title {
+  margin: 0 28px 4px 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+.feedback-bubble-note {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.feedback-close {
+  position: absolute;
+  top: 6px;
+  right: 4px;
+}
+.feedback-message {
+  resize: vertical;
+  min-height: 88px;
+  max-height: 40vh;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+#feedback-send {
+  width: 100%;
+  padding: 11px 14px;
+  font-size: 15px;
+}
+body[data-screen='session'] .feedback-bubble,
+body[data-screen='review'] .feedback-bubble,
+body.in-session .feedback-bubble {
   display: none !important;
 }
 
@@ -2198,7 +2232,7 @@ body.in-session .feedback-panel {
   position: fixed;
   right: 0;
   top: 42%;
-  z-index: 45;
+  z-index: 66;
   writing-mode: vertical-rl;
   text-orientation: mixed;
   letter-spacing: .12em;
@@ -2217,7 +2251,8 @@ body.in-session .feedback-panel {
   transition: transform .18s ease, background .15s ease;
 }
 .feedback-tab:hover,
-.feedback-tab:focus-visible {
+.feedback-tab:focus-visible,
+.feedback-tab.is-open {
   transform: translateX(0);
   background: var(--surface-2);
   outline: none;
@@ -2228,8 +2263,3 @@ body[data-screen='review'] .feedback-tab {
   display: none;
 }
 .feedback-tab-label { display: inline-block; }
-.feedback-message {
-  resize: vertical;
-  min-height: 120px;
-  margin-bottom: 14px;
-}

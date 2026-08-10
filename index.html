@@ -27,7 +27,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="129" data-theme="light">
+<body data-build="130" data-theme="light">
 <script>
 /* テーマは設定ロード後に JS が当てる（端末 localStorage には依存しない） */
 </script>
@@ -892,15 +892,15 @@
 <button id="feedback-tab" class="feedback-tab" type="button" data-i18n-title="fb.tabTitle" title="フィードバック">
   <span class="feedback-tab-label" data-i18n="fb.tab">フィードバック</span>
 </button>
-<div id="feedback-sheet" class="feedback-panel" hidden>
-  <div class="feedback-panel-inner">
-    <button id="feedback-close" class="icon-btn sheet-close" data-icon="close" data-i18n-title="common.close"></button>
-    <h2 data-i18n="fb.title">フィードバック</h2>
-    <p class="muted small" data-i18n="fb.note">気づいたこと・要望・不具合など、なんでもどうぞ。</p>
-    <label class="label" for="feedback-message" data-i18n="fb.message">内容</label>
-    <textarea id="feedback-message" class="input feedback-message" rows="5"
-              data-i18n-ph="fb.messagePh" placeholder="ここに書いてね" maxlength="4000"></textarea>
-    <button id="feedback-send" class="btn primary big" data-i18n="fb.send">送る</button>
+<div id="feedback-sheet" class="feedback-bubble" hidden>
+  <div class="feedback-bubble-inner">
+    <button id="feedback-close" class="icon-btn feedback-close" data-icon="close" data-i18n-title="common.close"></button>
+    <p class="feedback-bubble-title" data-i18n="fb.title">フィードバック</p>
+    <p class="muted small feedback-bubble-note" data-i18n="fb.note">気づいたこと・要望・不具合など、なんでもどうぞ。</p>
+    <textarea id="feedback-message" class="input feedback-message" rows="4"
+              data-i18n-ph="fb.messagePh" placeholder="ここに書いてね" maxlength="4000"
+              aria-label="フィードバック"></textarea>
+    <button id="feedback-send" class="btn primary" data-i18n="fb.send">送る</button>
   </div>
 </div>
 
