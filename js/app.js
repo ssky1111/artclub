@@ -10,7 +10,7 @@ import {
 import {
   getSettings, saveSettings, getHistory, addSession, updateLastSession,
   dateKey, addDays, dailyTotals, drawingsByDay, totalDrawings, roundsToday, stats,
-  recentReviewNotes, hydrateUserData, resetUserCaches,
+  recentReviewNotes, hydrateUserData, resetUserCaches, syncSessionNow,
 } from './storage.js';
 import { LESSONS, PD_BOOKS, lessonById } from './anatomy.js';
 import { createPhotoQueue } from './images.js';
@@ -57,10 +57,18 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '157';
+const BUILD = '158';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
+}
+
+/** ログイン後のクラウド復元が終わってから画面を描く */
+function repaintAfterHydrate() {
+  refreshHomeIfVisible();
+  const screen = document.body.dataset.screen;
+  if (screen === 'log') renderLog();
+  if (screen === 'settings') renderSettings();
 }
 
 function shellIsCurrent() {
@@ -1621,6 +1629,13 @@ async function finishLeavingReview() {
 
 async function finishSession(result) {
   const entry = saveResult(result);
+  if (getUser() && entry) {
+    try {
+      await syncSessionNow(entry);
+    } catch (err) {
+      console.error('[session sync]', err);
+    }
+  }
   if (settings.sfx) sfx.fanfare();
 
   pendingDrawings = result.drawings || [];
@@ -3204,8 +3219,10 @@ function wireAuth() {
   });
 
   let authHandledUserId = null;
+  let bootstrapping = true;
 
   onAuthChange((u) => {
+    if (bootstrapping) return;
     updateAuthUI(u);
     const uid = u?.id ?? null;
     if (!u) {
@@ -3217,7 +3234,7 @@ function wireAuth() {
       return;
     }
     if (uid === authHandledUserId) {
-      refreshHomeIfVisible();
+      repaintAfterHydrate();
       return;
     }
     authHandledUserId = uid;
@@ -3237,6 +3254,7 @@ function wireAuth() {
           restorePageScroll();
           showUsernameSheet(() => {
             applyRoute(routeFromLocation());
+            repaintAfterHydrate();
             if (pendingStart) {
               const fn = pendingStart;
               pendingStart = null;
@@ -3247,8 +3265,8 @@ function wireAuth() {
         }
         sheet.hidden = true;
         restorePageScroll();
-        // /log や /atelier/mine に直リンクできていたら、ログイン後に中身を出す
         applyRoute(routeFromLocation());
+        repaintAfterHydrate();
         if (pendingStart) {
           const fn = pendingStart;
           pendingStart = null;
@@ -3257,38 +3275,53 @@ function wireAuth() {
       })
       .catch((err) => {
         console.error('[auth hydrate]', err);
-        refreshHomeIfVisible();
+        repaintAfterHydrate();
       });
   });
 
-  initAuth().then(async (u) => {
-    try {
-      if (u) {
-        await hydrateUsername();
-        const data = await hydrateUserData();
-        if (data?.lang) applyLang(data.lang);
-        settings = getSettings();
-        applyTheme();
-        applyI18n();
-        $('#lang-btn').textContent = getLang() === 'ja' ? 'EN' : 'JA';
-      } else {
-        // 未ログインは履歴・設定を載せない（周回数バッジ等が残らないように）
-        await hydrateUserData();
-        settings = getSettings();
-        applyTheme();
-      }
-      updateAuthUI(u);
-    } catch (err) {
-      console.error('[initAuth]', err);
-    } finally {
-      refreshHomeIfVisible();
-    }
-  });
+  window.__finishAuthBootstrap = () => { bootstrapping = false; };
+  window.__setAuthHandledUserId = (id) => { authHandledUserId = id; };
 }
 
 function openAuthSheet() {
   if (typeof window.__openAuthSheet === 'function') window.__openAuthSheet();
   else $('#auth-sheet').hidden = false;
+}
+
+/** 起動時: 認証 → クラウド復元 → 初回描画（空の 0 表示を防ぐ） */
+async function bootstrapApp() {
+  try {
+    const u = await initAuth();
+    updateAuthUI(u);
+    if (u) {
+      window.__setAuthHandledUserId?.(u.id);
+      const [name, data] = await Promise.all([hydrateUsername(), hydrateUserData()]);
+      if (data?.lang) {
+        applyLang(data.lang);
+        applyI18n();
+        $('#lang-btn').textContent = getLang() === 'ja' ? 'EN' : 'JA';
+      }
+      settings = getSettings();
+      applyTheme();
+      if (!name && !hasUsername()) {
+        showUsernameSheet(() => {
+          applyRoute(routeFromLocation());
+          repaintAfterHydrate();
+        });
+        return;
+      }
+    } else {
+      await hydrateUserData();
+      settings = getSettings();
+      applyTheme();
+    }
+  } catch (err) {
+    console.error('[bootstrap]', err);
+  } finally {
+    window.__finishAuthBootstrap?.();
+    applyRoute(routeFromLocation());
+    repaintAfterHydrate();
+  }
 }
 
 function init() {
@@ -3327,10 +3360,17 @@ function init() {
   });
 
   migrateHashRouteToPath();
-  applyRoute(routeFromLocation());
+  bootstrapApp();
   restorePageScroll();
 
-  window.addEventListener('pageshow', restorePageScroll);
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted && getUser()) {
+      hydrateUserData()
+        .then(() => repaintAfterHydrate())
+        .catch((err) => console.error('[pageshow hydrate]', err));
+    }
+    restorePageScroll();
+  });
   window.addEventListener('focus', restorePageScroll);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) restorePageScroll();

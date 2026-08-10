@@ -104,8 +104,16 @@ function schedulePrefsSync(patch) {
 }
 
 function syncSession(entry) {
+  if (!entry?.id || !getUser()) return Promise.resolve();
+  return upsertPracticeSession(entry).catch((err) => {
+    console.error('[session sync]', err);
+  });
+}
+
+/** 練習終了直後など、クラウド反映を待ちたいとき用 */
+export async function syncSessionNow(entry) {
   if (!entry?.id || !getUser()) return;
-  upsertPracticeSession(entry).catch((err) => console.error('[session sync]', err));
+  await upsertPracticeSession(entry);
 }
 
 export function getSettings() {
@@ -127,7 +135,7 @@ export function addSession(entry) {
   const list = getHistory();
   list.push(entry);
   historyCache = list.slice(-1000);
-  syncSession(entry);
+  void syncSession(entry);
   return entry;
 }
 
@@ -199,7 +207,10 @@ export async function hydrateUserData() {
 
     const [prefs, sessions] = await Promise.all([
       fetchUserPrefs().catch(() => null),
-      fetchPracticeSessions().catch(() => []),
+      fetchPracticeSessions().catch((err) => {
+        console.error('[sessions fetch]', err);
+        return null;
+      }),
     ]);
 
     if (!getUser()) return { lang: null };
@@ -214,16 +225,20 @@ export async function hydrateUserData() {
       gameCache = prefs.game;
     }
 
-    if (Array.isArray(sessions) && sessions.length) {
-      const byId = new Map(historyCache.map((e) => [e.id, e]));
-      for (const s of sessions) {
-        if (!s?.id) continue;
-        const prev = byId.get(s.id);
-        byId.set(s.id, prev ? { ...prev, ...s } : s);
+    if (Array.isArray(sessions)) {
+      if (sessions.length) {
+        const byId = new Map(historyCache.map((e) => [e.id, e]));
+        for (const s of sessions) {
+          if (!s?.id) continue;
+          const prev = byId.get(s.id);
+          byId.set(s.id, prev ? { ...prev, ...s } : s);
+        }
+        historyCache = [...byId.values()]
+          .sort((a, b) => (a.ts || 0) - (b.ts || 0))
+          .slice(-1000);
       }
-      historyCache = [...byId.values()]
-        .sort((a, b) => (a.ts || 0) - (b.ts || 0))
-        .slice(-1000);
+    } else if (getUser() && !historyCache.length) {
+      console.warn('[hydrate] practice_sessions fetch failed; keeping empty history');
     }
 
     // 初回ログイン or 移行分をクラウドへ（prefs 行が無ければ必ず作る）

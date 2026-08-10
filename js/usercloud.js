@@ -88,7 +88,7 @@ export async function fetchPracticeSessions({ limit = 1000 } = {}) {
   if (!(await ready())) return [];
   const user = getUser();
   const params = new URLSearchParams({
-    select: 'id,day_date,ts,payload,updated_at',
+    select: 'id,day_date,ts,menu_id,seconds,drawing_count,payload,updated_at',
     user_id: `eq.${user.id}`,
     order: 'ts.asc',
     limit: String(limit),
@@ -96,7 +96,10 @@ export async function fetchPracticeSessions({ limit = 1000 } = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/practice_sessions?${params}`, {
     headers: authHeaders({ Accept: 'application/json' }),
   });
-  if (!res.ok) return [];
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`sessions fetch failed: ${res.status} ${text}`);
+  }
   const rows = await res.json();
   return rows.map((row) => {
     const payload = row.payload && typeof row.payload === 'object' ? row.payload : {};
@@ -105,6 +108,10 @@ export async function fetchPracticeSessions({ limit = 1000 } = {}) {
       id: row.id || payload.id,
       date: row.day_date || payload.date,
       ts: row.ts || payload.ts || 0,
+      menuId: payload.menuId || row.menu_id || null,
+      seconds: payload.seconds ?? row.seconds ?? 0,
+      drawingCount: payload.drawingCount ?? row.drawing_count ?? 0,
+      hasDrawing: payload.hasDrawing ?? (row.drawing_count > 0),
     };
   }).filter((e) => e.id && e.date);
 }
