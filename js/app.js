@@ -45,7 +45,7 @@ window.__i18n = { t };
 import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, hasUsername, setUsername, getUsername, hydrateUsername } from './auth.js';
 import {
   uploadArtwork, uploadShareImage, fetchArtworks, fetchArtwork, fetchPublicArtworks, fetchMyArtworks,
-  fetchTopCopyableArtworks, deleteArtwork, toggleLike, workPageUrl, upsertProfile, artworkDisplayName,
+  fetchTopCopyableArtworks, deleteArtwork, updateArtwork, toggleLike, workPageUrl, upsertProfile, artworkDisplayName,
 } from './gallery.js';
 import { initFeedback } from './feedback.js';
 /*
@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '173';
+const BUILD = '174';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -1519,6 +1519,23 @@ async function persistPendingMeta() {
   });
 }
 
+async function syncPendingShotArtwork(shot) {
+  if (!shot?.artworkId || !getUser()) return;
+  const isPublic = publishEnabled() && !shot.excludeFromGallery;
+  await updateArtwork(shot.artworkId, {
+    is_public: isPublic,
+    visibility: isPublic ? 'public' : 'private',
+    allow_copy: isPublic && !!shot.allowCopy,
+  });
+}
+
+async function syncAllPendingShotArtworks() {
+  if (!getUser() || !pendingDrawings.length) return;
+  await Promise.all(pendingDrawings.map((shot) => syncPendingShotArtwork(shot).catch((err) => {
+    console.error('[artwork sync]', err);
+  })));
+}
+
 async function uploadPendingArtworks({ quiet = false } = {}) {
   const user = getUser();
   if (!user || !pendingDrawings.length) return { uploaded: 0, failed: 0 };
@@ -1534,7 +1551,18 @@ async function uploadPendingArtworks({ quiet = false } = {}) {
   let lastErr = null;
   for (let i = 0; i < drawings.length; i++) {
     const shot = drawings[i];
-    if (shot.uploaded) continue;
+    if (shot.uploaded) {
+      if (shot.artworkId) {
+        try {
+          await syncPendingShotArtwork(shot);
+        } catch (err) {
+          failed++;
+          lastErr = err;
+          console.error('[artwork sync]', err);
+        }
+      }
+      continue;
+    }
     const promptId = shot.photoId || `session:${sessionId || 'local'}:${i}`;
     try {
       shot.uploading = true;
@@ -1608,6 +1636,7 @@ async function uploadPendingArtworks({ quiet = false } = {}) {
 
 async function finishLeavingReview() {
   persistAllowCopyPreference();
+  await syncAllPendingShotArtworks();
   updateLastSession({
     rating: null,
     note: $('#review-note').value.trim() || null,
@@ -1751,9 +1780,11 @@ function setAllPublish(on) {
   updatePublishNote(!!on);
   pendingDrawings.forEach((shot) => {
     shot.excludeFromGallery = !on;
+    if (!on) shot.allowCopy = false;
   });
   renderDrawingStrip();
   syncDrawExcludeButton();
+  void syncAllPendingShotArtworks();
 }
 
 function setAllAllowCopy(on) {
@@ -1762,6 +1793,7 @@ function setAllAllowCopy(on) {
   });
   renderDrawingStrip();
   persistAllowCopyPreference();
+  void syncAllPendingShotArtworks();
 }
 
 function setShotExcluded(index, excluded) {
@@ -1791,6 +1823,7 @@ function setShotExcluded(index, excluded) {
   }
   syncBulkToggles();
   if (excluded) persistAllowCopyPreference();
+  void syncPendingShotArtwork(shot);
 }
 
 function renderDrawingStrip() {
@@ -1846,6 +1879,7 @@ function renderDrawingStrip() {
         copyLabel.classList.toggle('is-off', !copyInput.checked);
         syncBulkToggles();
         persistAllowCopyPreference();
+        void syncPendingShotArtwork(shot);
       });
       const copyTrack = el('span', 'toggle-track');
       copyLabel.append(copyText, copyInput, copyTrack);

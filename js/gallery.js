@@ -472,6 +472,27 @@ export async function fetchArtwork(id) {
   return work || null;
 }
 
+export async function updateArtwork(id, patch) {
+  if (!id || !patch || !Object.keys(patch).length) return null;
+  await ensureFreshSession();
+  const user = getUser();
+  if (!user?.id) throw new Error('not logged in');
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: authHeaders({
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    }),
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`artwork update failed: ${res.status} ${text}`);
+  }
+  const rows = await res.json().catch(() => []);
+  return normalizeArtwork(rows[0] || null);
+}
+
 export async function toggleLike(artworkId, liked) {
   const user = getUser();
   if (!user) throw new Error('not logged in');
