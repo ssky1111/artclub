@@ -354,7 +354,8 @@ body:not([data-screen='session']) #screen-session {
 
 .sheet[hidden],
 .confirm-dialog[hidden],
-.lightbox[hidden] {
+.lightbox[hidden],
+.feedback-bubble[hidden] {
   pointer-events: none !important;
 }
 
@@ -2166,3 +2167,114 @@ button.tl-media img {
   background: #fff;
   border: 1px solid var(--line);
 }
+
+/* ---------- フィードバック（右端タブ + 吹き出し） ---------- */
+
+/*
+ * 全面シートにしない。タブの左から小さな吹き出しが出るだけ。
+ * 背面は触らないのでスクロールもそのまま。
+ */
+.feedback-bubble {
+  position: fixed;
+  z-index: 64;
+  right: 42px;
+  top: 42%;
+  transform: translateY(-50%);
+  width: min(272px, calc(100vw - 56px));
+  pointer-events: none;
+}
+.feedback-bubble[hidden] {
+  display: none !important;
+  pointer-events: none !important;
+}
+.feedback-bubble-inner {
+  pointer-events: auto;
+  position: relative;
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: 16px;
+  padding: 14px 14px 12px;
+  box-shadow: 0 8px 28px color-mix(in srgb, #000 14%, transparent);
+  animation: feedback-bubble-in .24s cubic-bezier(.2, .9, .3, 1);
+}
+.feedback-bubble-inner::after {
+  content: '';
+  position: absolute;
+  right: -7px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  background: var(--surface);
+  border-right: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  transform: translateY(-50%) rotate(45deg);
+  box-shadow: 4px -2px 8px color-mix(in srgb, #000 6%, transparent);
+}
+@keyframes feedback-bubble-in {
+  from { transform: translateX(16px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.feedback-bubble-title {
+  margin: 0 28px 4px 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+.feedback-bubble-note {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.feedback-close {
+  position: absolute;
+  top: 6px;
+  right: 4px;
+}
+.feedback-message {
+  resize: vertical;
+  min-height: 88px;
+  max-height: 40vh;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+#feedback-send {
+  width: 100%;
+  padding: 11px 14px;
+  font-size: 15px;
+}
+body[data-screen='session'] .feedback-bubble,
+body[data-screen='review'] .feedback-bubble,
+body[data-screen='session'] .feedback-tab,
+body[data-screen='review'] .feedback-tab {
+  display: none !important;
+}
+
+.feedback-tab {
+  position: fixed;
+  right: 0;
+  top: 42%;
+  z-index: 66;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  letter-spacing: .12em;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-right: none;
+  border-radius: 12px 0 0 12px;
+  padding: 14px 8px;
+  cursor: pointer;
+  box-shadow: -2px 2px 10px color-mix(in srgb, #000 8%, transparent);
+  transform: translateX(4px);
+  transition: transform .18s ease, background .15s ease;
+}
+.feedback-tab:hover,
+.feedback-tab:focus-visible,
+.feedback-tab.is-open {
+  transform: translateX(0);
+  background: var(--surface-2);
+  outline: none;
+}
+.feedback-tab-label { display: inline-block; }

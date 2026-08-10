@@ -47,6 +47,7 @@ import {
   uploadArtwork, uploadShareImage, fetchArtworks, fetchArtwork, fetchPublicArtworks, fetchMyArtworks,
   fetchTopCopyableArtworks, deleteArtwork, toggleLike, workPageUrl, upsertProfile,
 } from './gallery.js';
+import { initFeedback } from './feedback.js';
 /*
  * index.html の data-build と揃えておく番号。
  *
@@ -56,7 +57,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '135';
+const BUILD = '136';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -3244,6 +3245,7 @@ function init() {
 
   wireNav();
   wireAuth();
+  initFeedback();
   wireReview();
   wireAtelier();
   wireDrawingLightbox();
