@@ -57,7 +57,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '123';
+const BUILD = '124';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2925,6 +2925,11 @@ function applyRoute(route = routeFromLocation()) {
     return;
   }
   if (root === 'settings') {
+    if (!getUser()) {
+      openAuthSheet();
+      navigateTo('home', { replace: true });
+      return;
+    }
     renderSettings();
     showScreen('settings');
     return;
@@ -3011,12 +3016,37 @@ function wireCalendar() {
 function updateAuthUI(u) {
   const label = $('#auth-login-label');
   const btn = $('#auth-btn');
+  const signup = $('#auth-signup-btn');
+  const settingsBtn = $('#header-settings-btn');
+  const atelierSignup = $('#atelier-signup-btn');
+  const atelierLogin = $('#atelier-login-btn');
+  const atelierSettings = $('#atelier-settings-btn');
+  const logSettings = $('#log-settings-btn');
+
   if (u) {
-    label.textContent = userName(u);
-    btn.title = userName(u);
+    if (label) label.textContent = userName(u);
+    if (btn) {
+      btn.hidden = false;
+      btn.title = userName(u);
+    }
+    if (signup) signup.hidden = true;
+    if (settingsBtn) settingsBtn.hidden = false;
+    if (atelierSignup) atelierSignup.hidden = true;
+    if (atelierLogin) atelierLogin.hidden = true;
+    if (atelierSettings) atelierSettings.hidden = false;
+    if (logSettings) logSettings.hidden = false;
   } else {
-    label.textContent = t('auth.login');
-    btn.title = t('auth.login');
+    if (label) label.textContent = t('auth.login');
+    if (btn) {
+      btn.hidden = false;
+      btn.title = t('auth.login');
+    }
+    if (signup) signup.hidden = false;
+    if (settingsBtn) settingsBtn.hidden = true;
+    if (atelierSignup) atelierSignup.hidden = false;
+    if (atelierLogin) atelierLogin.hidden = false;
+    if (atelierSettings) atelierSettings.hidden = true;
+    if (logSettings) logSettings.hidden = true;
   }
   updateWorkAuthUI(u);
 
@@ -3080,6 +3110,18 @@ function wireAuth() {
   };
 
   $('#auth-btn').addEventListener('click', () => {
+    renderSheet();
+    sheet.hidden = false;
+  });
+  $('#auth-signup-btn')?.addEventListener('click', () => {
+    renderSheet();
+    sheet.hidden = false;
+  });
+  $('#atelier-login-btn')?.addEventListener('click', () => {
+    renderSheet();
+    sheet.hidden = false;
+  });
+  $('#atelier-signup-btn')?.addEventListener('click', () => {
     renderSheet();
     sheet.hidden = false;
   });
