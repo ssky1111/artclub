@@ -36,7 +36,7 @@ import {
   removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
   saveHiddenTags, invalidateTagConfig, convertToWebp, repairManifestExtensions,
 } from './supabase.js';
-import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
+import { totalXp, levelProgress, graceStreak, takeLevelUp } from './game.js';
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
