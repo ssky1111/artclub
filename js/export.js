@@ -170,8 +170,8 @@ export async function composeSheet(blobs, { date = '', crop = true } = {}) {
     }
   });
 
-  // ARTCLUB は下中央
-  ctx.fillStyle = SOFT;
+  // ARTCLUB は下中央（黒）
+  ctx.fillStyle = INK;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = '600 16px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
