@@ -57,7 +57,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '119';
+const BUILD = '120';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -369,10 +369,6 @@ function createArtworkQueue(work) {
 
 function startCopySession(work) {
   if (!work?.image_url) return;
-  if (!getUser()) {
-    requireLogin(() => startCopySession(work));
-    return;
-  }
   const menu = buildCopyMenu(work);
   lastStart = () => startCopySession(work);
   settings = getSettings();
