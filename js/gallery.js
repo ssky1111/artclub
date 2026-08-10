@@ -371,15 +371,16 @@ export async function fetchPublicArtworks({ limit = 40 } = {}) {
 }
 
 /**
- * 模写モード用。模写OKの公開スケッチをいいね多い順で返す。
- * 自分の絵は出さない（他人のスケッチを模写するモード）。
- * PostgREST では like 集計ソートが難しいので、多めに取ってクライアントで並べ替える。
+ * 模写モード用。模写OKの公開スケッチを新しい順で1ページ分返す。
+ * 自分の絵・非公開・まとめ画像は除く。いいね順は呼び出し側でプールして並べ替える。
+ * @returns {{ works: object[], fetched: number }}
  */
-export async function fetchTopCopyableArtworks({ limit = 30 } = {}) {
-  const take = Math.max(limit * 5, 100);
+export async function fetchCopyableArtworksPage({ limit = 40, offset = 0 } = {}) {
+  const take = Math.max(1, limit);
   const base = {
     order: 'created_at.desc',
     limit: String(take),
+    offset: String(Math.max(0, offset)),
   };
   let params = new URLSearchParams({
     ...base,
@@ -404,23 +405,35 @@ export async function fetchTopCopyableArtworks({ limit = 30 } = {}) {
       headers: authHeaders({ Accept: 'application/json' }),
     });
   }
-  if (!res.ok) return [];
+  if (!res.ok) return { works: [], fetched: 0 };
 
+  const raw = await res.json();
+  const fetched = Array.isArray(raw) ? raw.length : 0;
   const me = getUser()?.id;
-  const rows = (await res.json())
+  const rows = (raw || [])
     .map(normalizeArtwork)
     .filter((w) => w.visibility !== 'private' && w.is_public !== false)
     .filter((w) => w.kind !== 'sheet')
     .filter((w) => w.allow_copy === true)
-    .filter((w) => !me || w.user_id !== me)
+    .filter((w) => !me || w.user_id !== me);
+
+  return { works: await attachLikeState(rows), fetched };
+}
+
+/**
+ * 模写モード用。模写OKの公開スケッチをいいね多い順で返す（先頭 limit 件）。
+ * PostgREST では like 集計ソートが難しいので、多めに取ってクライアントで並べ替える。
+ */
+export async function fetchTopCopyableArtworks({ limit = 30 } = {}) {
+  const take = Math.max(limit * 5, 100);
+  const { works } = await fetchCopyableArtworksPage({ limit: take, offset: 0 });
+  return works
     .sort((a, b) => {
       const likeDiff = (b.like_count || 0) - (a.like_count || 0);
       if (likeDiff) return likeDiff;
       return new Date(b.created_at) - new Date(a.created_at);
     })
     .slice(0, limit);
-
-  return attachLikeState(rows);
 }
 
 /** 自分のスケッチ（公開・非公開どちらも）。 */
