@@ -257,6 +257,7 @@ const DICT = {
   'log.whatPractised':   { ja: 'なにを練習したか',     en: 'What you practised' },
   'log.notes':           { ja: 'ふりかえりノート',     en: 'Review notes' },
   'log.noNotes':         { ja: 'ふりかえりのメモがここに並びます。', en: 'Your notes will show up here.' },
+  'log.practisedPart':   { ja: '{n}の練習',           en: '{n} practice' },
   'log.noRecord':        { ja: 'まだ記録がありません。', en: 'Nothing recorded yet.' },
   'log.restDay':         { ja: 'この日は休み',         en: 'Rest day' },
   'log.drew':            { ja: '{d} 描いた',           en: 'Drew for {d}' },

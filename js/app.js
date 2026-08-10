@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '63';
+const BUILD = '64';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2052,8 +2052,11 @@ async function openDaySheet(dayKey, history = getHistory()) {
   for (const entry of entries) {
     const block = el('div', 'note-item');
     const head = el('div', 'note-head');
-    head.append(el('span', 'note-date', entry.menuTitle || '—'));
-    if (entry.lessonId) head.append(el('span', 'rate-tag', tr(lessonById(entry.lessonId), 'name') || ''));
+    head.append(el('span', 'note-date', entry.menuTitle || sessionLabel(entry) || '—'));
+    if (entry.lessonId && !entry.menuTitle) {
+      const lessonName = tr(lessonById(entry.lessonId), 'name');
+      if (lessonName) head.append(el('span', 'rate-tag', lessonName));
+    }
     block.append(head);
     const drills = Object.entries(entry.byDrill || {})
       .map(([id, sec]) => `${tr(DRILLS[id], 'name') || id} ${fmtDur(sec)}`).join(' / ');
@@ -2110,23 +2113,32 @@ function renderDrillBars(s) {
   }
 }
 
+function sessionLabel(entry) {
+  if (entry?.menuTitle) return entry.menuTitle;
+  if (entry?.lessonId) {
+    const name = tr(lessonById(entry.lessonId), 'name');
+    if (name) return t('log.practisedPart', { n: name });
+  }
+  return '';
+}
+
 function renderNotes(history) {
   const wrap = $('#note-list');
   wrap.innerHTML = '';
-  const notes = history.filter((h) => h.note || h.hasDrawing || h.missed?.length).slice(-20).reverse();
+  // メモがあるものだけ。絵だけの記録はカレンダー側で見る
+  const notes = history.filter((h) => h.note).slice(-20).reverse();
   if (!notes.length) {
     wrap.append(el('p', 'muted small', t('log.noNotes')));
     return;
   }
-  const ratingText = { 1: t('rev.rate1'), 2: t('rev.rate2'), 3: t('rev.rate3') };
   for (const entry of notes) {
     const item = el('div', 'note-item');
     const head = el('div', 'note-head');
     head.append(el('span', 'note-date', entry.date));
-    if (entry.rating) head.append(el('span', `rate-tag r${entry.rating}`, ratingText[entry.rating]));
-    if (entry.lessonId) head.append(el('span', 'rate-tag', tr(lessonById(entry.lessonId), 'name') || ''));
+    const label = sessionLabel(entry);
+    if (label) head.append(el('span', 'note-menu', label));
     item.append(head);
-    if (entry.note) item.append(el('p', 'note-body', entry.note));
+    item.append(el('p', 'note-body', entry.note));
     if (entry.hasDrawing) {
       const img = el('img', 'note-thumb');
       loadDrawing(entry.id)
