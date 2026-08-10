@@ -90,6 +90,30 @@ export async function downloadEach(blobs, prefix = 'artclub') {
   }
 }
 
+/** 枚数に応じた行ごとの枚数。5枚は上3・下2。 */
+function sheetRowCounts(n) {
+  if (n <= 0) return [];
+  if (n === 5) return [3, 2];
+  if (n === 4) return [2, 2];
+  if (n === 3) return [3];
+  if (n === 2) return [2];
+  if (n === 1) return [1];
+  if (n === 6) return [3, 3];
+  if (n === 7) return [4, 3];
+  if (n === 8) return [4, 4];
+  if (n === 9) return [3, 3, 3];
+  if (n === 10) return [4, 3, 3];
+  // それ以外はだいたい3列
+  const cols = 3;
+  const rows = [];
+  let left = n;
+  while (left > 0) {
+    rows.push(Math.min(cols, left));
+    left -= cols;
+  }
+  return rows;
+}
+
 export async function composeSheet(blobs, { date = '', crop = true } = {}) {
   if (!blobs.length) return null;
 
@@ -131,25 +155,30 @@ export async function composeSheet(blobs, { date = '', crop = true } = {}) {
   const areaY = topBand;
   const areaH = H - topBand - bottomBand;
 
-  const n = images.length;
-  const cols = Math.min(n, Math.ceil(Math.sqrt(n * (areaW / areaH))));
-  const rows = Math.ceil(n / cols);
+  const rowCounts = sheetRowCounts(images.length);
+  const maxCols = Math.max(...rowCounts);
+  const rowCount = rowCounts.length;
   const cell = Math.min(
-    (areaW - (cols - 1) * gap) / cols,
-    (areaH - (rows - 1) * gap) / rows,
+    (areaW - (maxCols - 1) * gap) / maxCols,
+    (areaH - (rowCount - 1) * gap) / rowCount,
   );
-  const totalW = cols * cell + (cols - 1) * gap;
-  const totalH = rows * cell + (rows - 1) * gap;
-  const offX = areaX + (areaW - totalW) / 2;
+  const totalH = rowCount * cell + (rowCount - 1) * gap;
   const offY = areaY + (areaH - totalH) / 2;
 
-  images.forEach((img, i) => {
-    const cx = offX + (i % cols) * (cell + gap);
-    const cy = offY + Math.floor(i / cols) * (cell + gap);
-    const scale = Math.min(cell / img.width, cell / img.height);
-    const w = img.width * scale;
-    const h = img.height * scale;
-    ctx.drawImage(img, cx + (cell - w) / 2, cy + (cell - h) / 2, w, h);
+  let index = 0;
+  rowCounts.forEach((cols, row) => {
+    const rowW = cols * cell + (cols - 1) * gap;
+    const offX = areaX + (areaW - rowW) / 2;
+    const cy = offY + row * (cell + gap);
+    for (let c = 0; c < cols; c++) {
+      const img = images[index++];
+      if (!img) return;
+      const cx = offX + c * (cell + gap);
+      const scale = Math.min(cell / img.width, cell / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      ctx.drawImage(img, cx + (cell - w) / 2, cy + (cell - h) / 2, w, h);
+    }
   });
 
   // ARTCLUB は下中央に小さく
