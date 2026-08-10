@@ -36,7 +36,7 @@ import {
   removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
   saveHiddenTags, invalidateTagConfig, convertToWebp, repairManifestExtensions,
 } from './supabase.js';
-import { totalXp, levelProgress, graceStreak, takeLevelUp } from './game.js';
+import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '69';
+const BUILD = '70';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1941,6 +1941,11 @@ let sheetBlob = null;
 
 function renderLog() {
   const history = getHistory();
+  const s = stats(history);
+  $('#st-streak').textContent = String(graceStreak(history).streak);
+  $('#st-best').textContent = String(bestGraceStreak(history));
+  $('#st-minutes').textContent = String(s.minutes);
+  $('#st-drawings').textContent = String(totalDrawings(history));
 
   const dow = $('#cal-dow');
   dow.innerHTML = '';
