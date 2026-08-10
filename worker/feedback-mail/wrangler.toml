@@ -1,0 +1,10 @@
+name = "artclub-feedback-mail"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# Routes 例: artclub.space/api/feedback-mail
+
+[vars]
+SUPABASE_URL = "https://clifnylwatvtrikrfpft.supabase.co"
+FEEDBACK_NOTIFY_EMAIL = "yuisskweb@gmail.com"
+FROM_EMAIL = "ARTCLUB <feedback@artclub.space>"
