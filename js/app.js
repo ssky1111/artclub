@@ -308,8 +308,9 @@ function wirePartSheet() {
   $('#part-sheet').addEventListener('click', (e) => {
     if (e.target.id === 'part-sheet') $('#part-sheet').hidden = true;
   });
-  $('#part-start').addEventListener('click', () => {
+  $('#part-start').addEventListener('click', async () => {
     $('#part-sheet').hidden = true;
+    await weekReviewDialog(recentReviewNotes(7));
     startSession(buildPartMenu(currentPart), { tags: currentPart.tags, part: currentPart });
   });
 
