@@ -1865,6 +1865,15 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
   min-width: 2px;
 }
 
+.analytics-table th.analytics-num,
+.analytics-table td.analytics-num { text-align: right; }
+.analytics-table-wide { min-width: 520px; }
+.analytics-mode-breakdown {
+  font-size: 11px;
+  white-space: normal;
+  max-width: 220px;
+}
+
 @media (max-width: 480px) {
   .analytics-summary { grid-template-columns: 1fr; }
 }

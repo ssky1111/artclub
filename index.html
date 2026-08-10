@@ -39,7 +39,7 @@
 </script>
 </head>
 
-<body data-build="194" data-theme="light">
+<body data-build="195" data-theme="light">
 
 <div id="site-gate" class="confirm-dialog site-gate-dialog" role="dialog" aria-modal="true" aria-labelledby="site-gate-title">
   <div class="confirm-dialog-inner site-gate-inner">
@@ -697,10 +697,10 @@
 
     <section class="card">
       <div class="section-head">
-        <h2 data-i18n="analytics.title">デイリー解析</h2>
+        <h2 data-i18n="analytics.title">利用解析</h2>
         <button id="admin-analytics-link" type="button" class="btn primary small" data-i18n="analytics.open">ひらく</button>
       </div>
-      <p class="muted small" data-i18n="analytics.teaser">日ごとのデイリー利用回数を確認できます。</p>
+      <p class="muted small" data-i18n="analytics.teaser">日ごとのモード別利用を確認できます。</p>
     </section>
     
     <section class="card">
@@ -805,7 +805,7 @@
     </div>
   </header>
 
-  <h1 class="menu-title screen-page-title" data-i18n="analytics.title">デイリー解析</h1>
+  <h1 class="menu-title screen-page-title" data-i18n="analytics.title">利用解析</h1>
 
   <section class="card" id="analytics-gate" hidden>
     <p class="muted" data-i18n="analytics.needAdminLogin">管理者アカウントでログインしてください。</p>
@@ -825,11 +825,27 @@
         <div id="analytics-summary" class="analytics-summary"></div>
 
         <div class="section-head" style="margin-top:16px">
-          <h2 data-i18n="analytics.byUser">ユーザー別</h2>
+          <h2 data-i18n="analytics.byMode">モード別</h2>
         </div>
         <div class="analytics-table-wrap">
           <table class="analytics-table">
             <thead>
+              <tr>
+                <th data-i18n="analytics.mode">モード</th>
+                <th data-i18n="analytics.rounds">回数</th>
+                <th data-i18n="analytics.userCount">人数</th>
+              </tr>
+            </thead>
+            <tbody id="analytics-modes"></tbody>
+          </table>
+        </div>
+
+        <div class="section-head" style="margin-top:16px">
+          <h2 data-i18n="analytics.byUser">ユーザー × モード</h2>
+        </div>
+        <div class="analytics-table-wrap">
+          <table class="analytics-table analytics-table-wide">
+            <thead id="analytics-users-head">
               <tr>
                 <th data-i18n="analytics.user">ユーザー</th>
                 <th data-i18n="analytics.rounds">回数</th>
@@ -850,6 +866,7 @@
                 <th data-i18n="analytics.date">日付</th>
                 <th data-i18n="analytics.rounds">回数</th>
                 <th data-i18n="analytics.userCount">人数</th>
+                <th data-i18n="analytics.modeBreakdown">内訳</th>
               </tr>
             </thead>
             <tbody id="analytics-trend"></tbody>
