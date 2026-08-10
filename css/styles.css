@@ -1380,7 +1380,7 @@ body[data-screen='atelier'] #screen-atelier,
 body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 
 .tabbar button {
-  font: inherit; font-size: 15px; font-weight: 700; font-family: var(--font-display);
+  font: inherit; font-size: 15px; font-weight: 700; font-family: var(--font-ja);
   border: none; background: transparent; color: var(--muted);
   padding: 9px 18px; border-radius: 999px; cursor: pointer;
   white-space: nowrap;
