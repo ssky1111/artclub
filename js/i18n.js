@@ -71,8 +71,8 @@ const DICT = {
   /* ---------- ギャラリー ---------- */
   'gal.showAll':          { ja: 'みんなのスケッチを見る',     en: 'See what others drew' },
   'gal.title':            { ja: 'みんなが描いたスケッチ', en: 'Sketches from everyone' },
-  'gal.desc':             { ja: '他のみんなが描いた同じお題のスケッチです。良いところを参考に見てみましょう',
-                           en: 'These are sketches others drew for the same prompt. Look for what you can learn from them.' },
+  'gal.desc':             { ja: 'みんなが描いた同じお題のスケッチです。良いところを参考にしてみましょう',
+                           en: 'Sketches of the same prompt from everyone. Take inspiration from what works.' },
   'gal.empty':            { ja: 'まだ誰も描いていません。最初の1人になろう！',
                            en: 'No one has drawn this yet. Be the first!' },
   'gal.upload':           { ja: 'スケッチを投稿する',         en: 'Share your drawing' },
