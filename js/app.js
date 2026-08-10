@@ -1801,7 +1801,10 @@ function wireDrawingLightbox() {
     const shot = pendingDrawings[drawingIndex];
     if (!shot) return;
     const btn = $('#draw-share-x');
-    const text = t('rev.shareText', { n: 1, d: '' });
+    const text = t('rev.shareText', {
+      n: 1,
+      d: fmtDur(shot.seconds || getHistory().at(-1)?.seconds || 0),
+    });
     if (getUser()) {
       btn.disabled = true;
       try {
