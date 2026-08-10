@@ -6,7 +6,7 @@
 
 - 作品ごとの OGP（X カード用）
 - 作品の簡易公開ページ（**インラインCSS**。SPA を /work に出すと CSS が壊れる）
-- 通常の ArtClub UI は GitHub Pages のまま
+- 通常の ARTCLUB UI は GitHub Pages のまま
 - `{id}` は **short_id（8桁）** または従来の uuid
 
 ## デプロイ

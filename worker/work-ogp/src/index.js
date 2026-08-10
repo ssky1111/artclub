@@ -61,13 +61,13 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
   const pageUrl = `${origin}/work/${key}`;
   const kindLabel = work.kind === 'sheet' ? 'まとめ' : modeLabel(work.mode);
   const title = work.kind === 'sheet'
-    ? `ArtClub - ${kindLabel}`
-    : `ArtClub - 3分${kindLabel}`;
+    ? `ARTCLUB - ${kindLabel}`
+    : `ARTCLUB - 3分${kindLabel}`;
   const desc = work.username
     ? (work.kind === 'sheet'
       ? `${work.username} さんのまとめ`
       : `${work.username} さんが描いた作品`)
-    : 'ArtClub で描いたクロッキー';
+    : 'ARTCLUB で描いたクロッキー';
   const image = work.og_image_url || work.image_url;
   const appLink = `${origin}/#work/${encodeURIComponent(key)}`;
 
@@ -79,7 +79,7 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(desc)}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="ArtClub">
+<meta property="og:site_name" content="ARTCLUB">
 <meta property="og:title" content="${escapeHtml(title)}">
 <meta property="og:description" content="${escapeHtml(desc)}">
 <meta property="og:image" content="${escapeHtml(image)}">
@@ -105,7 +105,7 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(desc)}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="ArtClub">
+<meta property="og:site_name" content="ARTCLUB">
 <meta property="og:title" content="${escapeHtml(title)}">
 <meta property="og:description" content="${escapeHtml(desc)}">
 <meta property="og:image" content="${escapeHtml(image)}">
@@ -177,7 +177,7 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
       <p class="meta">${escapeHtml(desc)}</p>
       <img class="work" src="${escapeHtml(image)}" alt="${escapeHtml(desc)}">
       <div class="actions">
-        <a class="btn primary" href="${escapeHtml(appLink)}">ArtClub で見る</a>
+        <a class="btn primary" href="${escapeHtml(appLink)}">ARTCLUB で見る</a>
         <a class="btn ghost" href="${escapeHtml(origin)}/">トップへ</a>
       </div>
     </main>
@@ -191,7 +191,7 @@ function notFoundHtml(origin = 'https://artclub.space') {
 <title>Not found</title>
 <style>body{font-family:system-ui;padding:40px;background:#f6f0f8;color:#2a2438}a{color:#c45a8c}</style>
 </head><body><h1>作品が見つかりません</h1>
-<p><a href="${escapeHtml(origin)}/">ArtClub へ戻る</a></p></body></html>`;
+<p><a href="${escapeHtml(origin)}/">ARTCLUB へ戻る</a></p></body></html>`;
 }
 
 export default {
