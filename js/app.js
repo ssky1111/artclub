@@ -57,7 +57,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '116';
+const BUILD = '117';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -167,7 +167,8 @@ function renderWeekBars(history) {
  * 1日2回までは無料。それ以上は案内を出して止める。
  */
 function renderDaily(history) {
-  const rounds = roundsToday('daily', history);
+  const loggedIn = !!getUser();
+  const rounds = loggedIn ? roundsToday('daily', history) : 0;
   const part = partForDate(dateKey());
   const daily = buildDaily(part);
 
@@ -178,7 +179,8 @@ function renderDaily(history) {
 
   const headRow = el('div', 'primary-head');
   headRow.append(el('div', 'menu-kicker', t('home.todayLabel')));
-  if (rounds > 0) {
+  // 周回数はログイン中のクラウド履歴だけ。ログアウトでは出さない
+  if (loggedIn && rounds > 0) {
     const done = el('div', 'done-badge');
     done.append(
       el('span', 'done-check', '\u2713'),
@@ -3190,13 +3192,16 @@ function wireAuth() {
       applyI18n();
       $('#lang-btn').textContent = getLang() === 'ja' ? 'EN' : 'JA';
     } else {
-      // 未ログインでも旧端末データを一度メモリへ（このセッション限り）
-      const data = await hydrateUserData();
-      if (data?.lang) applyLang(data.lang);
+      // 未ログインは履歴・設定を載せない（周回数バッジ等が残らないように）
+      await hydrateUserData();
       settings = getSettings();
       applyTheme();
     }
     updateAuthUI(u);
+    // hydrate 後にホームを描き直して古い周回数表示を消す
+    if (document.body.dataset.screen === 'home' || !document.body.dataset.screen) {
+      renderHome();
+    }
   });
 }
 

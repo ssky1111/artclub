@@ -179,6 +179,13 @@ export function resetUserCaches() {
 export async function hydrateUserData() {
   if (hydratePromise) return hydratePromise;
   hydratePromise = (async () => {
+    // ログアウト中はアカウントデータをメモリに載せない（周回数などが残って見えるのを防ぐ）
+    // 旧 localStorage はログイン時に移行するので、ここでは消さない
+    if (!getUser()) {
+      clearAll();
+      return { lang: null };
+    }
+
     const legacyLang = absorbLegacyLocal();
     const hadLegacy = !!(
       readLegacy(LEGACY_HISTORY, null)?.length
@@ -187,11 +194,6 @@ export async function hydrateUserData() {
       || readLegacy(LEGACY_GAME, null)
       || legacyLang
     );
-
-    if (!getUser()) {
-      if (hadLegacy) clearLegacyKeys();
-      return { lang: legacyLang };
-    }
 
     const [prefs, sessions] = await Promise.all([
       fetchUserPrefs().catch(() => null),
