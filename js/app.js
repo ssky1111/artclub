@@ -56,7 +56,7 @@ import { uploadArtwork, uploadShareImage, fetchArtworks, deleteArtwork } from '.
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '35';
+const BUILD = '36';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -133,8 +133,12 @@ function renderWeekBars(history) {
   for (const day of days) {
     const count = byDay.get(day) || 0;
     const col = el('div', `week-col${count ? ' on' : ''}${day === today ? ' today' : ''}`);
-    const label = count ? (getLang() === 'ja' ? `${count}枚` : String(count)) : '';
-    const box = el('div', 'week-box', label);
+    const box = el('div', 'week-box');
+    if (count) {
+      // 数字は累計と同じ太い英字フォント。単位だけ和文
+      box.append(el('span', 'week-num', String(count)));
+      if (getLang() === 'ja') box.append(el('span', 'week-unit', '枚'));
+    }
     // 枚数が多い日ほど濃くする。0枚の日は色を付けない
     if (count) box.style.setProperty('--fill', String(0.35 + 0.65 * (count / max)));
     col.append(box, el('div', 'week-dow', dow[new Date(`${day}T00:00:00`).getDay()]));
