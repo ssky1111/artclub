@@ -334,6 +334,11 @@ const DICT = {
   'analytics.modeCopy':  { ja: '模写',                 en: 'Copy' },
   'analytics.modeOther': { ja: 'その他',               en: 'Other' },
   'analytics.noData':    { ja: 'この日のデータはありません', en: 'No data for this day' },
+  'analytics.sourceNote': { ja: '集計元: {source}（{n}件）', en: 'Source: {source} ({n} rows)' },
+  'analytics.sessionsUnavailable': {
+    ja: '※きろくテーブルは他ユーザー分が読めません。投稿（artworks）から集計しています。Supabase で admin-analytics.sql を実行すると改善します。',
+    en: 'Session rows for other users are unreadable. Using public artworks instead. Run admin-analytics.sql in Supabase to fix.',
+  },
 
   /* ---------- 解剖学の本 ---------- */
   'books.title':         { ja: '解剖学の本',           en: 'Anatomy books' },

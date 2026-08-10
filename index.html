@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+JP:wght@400;700&family=Special+Gothic+Expanded+One&display=swap">
-<link rel="stylesheet" href="./css/styles.css?v=201">
+<link rel="stylesheet" href="./css/styles.css?v=202">
 <script>
 (function () {
   try {
@@ -39,11 +39,11 @@
 </script>
 </head>
 
-<body data-build="201" data-theme="light">
+<body data-build="202" data-theme="light">
 <script>
 /* 古い SW / Cache Storage / HTTP キャッシュを強制破棄して1回だけ読み直す */
 (function () {
-  var BUST = '201';
+  var BUST = '202';
   var KEY = 'artclub.forceClear';
   var qs = location.search || '';
   var alreadyBusted = /(?:\?|&)_bust=/.test(qs);
@@ -870,6 +870,7 @@
       </div>
       <p id="analytics-loading" class="muted small" data-i18n="analytics.loading">読み込み中…</p>
       <p id="analytics-error" class="muted small" hidden></p>
+      <p id="analytics-source-note" class="muted small" hidden></p>
       <div id="analytics-body" hidden>
         <div id="analytics-summary" class="analytics-summary"></div>
 
@@ -1114,6 +1115,6 @@
   </div>
 </div>
 
-<script type="module" src="./js/app.js?v=201"></script>
+<script type="module" src="./js/app.js?v=202"></script>
 </body>
 </html>

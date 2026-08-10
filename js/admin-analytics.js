@@ -105,9 +105,78 @@ async function fetchSessions(fromDate, toDate) {
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`fetch failed: ${res.status} ${text}`);
+    console.warn('[analytics] sessions fetch failed', res.status, text);
+    return [];
   }
   return res.json();
+}
+
+/**
+ * 公開 artworks は他ユーザー分も読める（practice_sessions の管理者 RLS が未適用でも使える）。
+ * 1セッション複数枚でも session_id 単位で1回と数える。
+ */
+async function fetchArtworksUsage(fromDate, toDate) {
+  await ensureFreshSession();
+  if (!isAdminAnalyticsUser()) throw new Error('not admin');
+
+  const params = new URLSearchParams({
+    select: 'user_id,created_at,mode,session_id,username,kind',
+    created_at: `gte.${new Date(`${fromDate}T00:00:00`).toISOString()}`,
+    order: 'created_at.desc',
+    limit: '5000',
+  });
+  params.append('created_at', `lte.${new Date(`${toDate}T23:59:59.999`).toISOString()}`);
+  // 公開 or 自分（RLSどおり）。private 他人は来ない
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
+    headers: authHeaders({ Accept: 'application/json' }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`artworks fetch failed: ${res.status} ${text}`);
+  }
+  return res.json();
+}
+
+function modeToMenuId(mode) {
+  const m = String(mode || '').toLowerCase();
+  if (m.includes('daily')) return 'daily';
+  if (m.includes('gesture')) return 'gestureMode';
+  if (m.includes('part')) return 'part-unknown';
+  if (m.includes('croquis')) return 'croquisMode';
+  if (m.includes('copy') || m.includes('模写')) return 'copyMode';
+  return '';
+}
+
+function artworksToRows(artworks = []) {
+  const seen = new Map();
+  for (const a of artworks) {
+    if (!a?.user_id) continue;
+    if (a.kind === 'sheet') continue;
+    const day = dateKey(new Date(a.created_at));
+    const sid = a.session_id || `art:${a.id || a.created_at}`;
+    const key = `${a.user_id}|${day}|${sid}`;
+    const ts = new Date(a.created_at).getTime() || 0;
+    const menuId = modeToMenuId(a.mode);
+    if (seen.has(key)) {
+      const prev = seen.get(key);
+      if (ts > prev.ts) prev.ts = ts;
+      if (!prev.menu_id && menuId) {
+        prev.menu_id = menuId;
+        prev.payload = { menuId, username: a.username || null };
+      }
+      continue;
+    }
+    seen.set(key, {
+      user_id: a.user_id,
+      day_date: day,
+      ts,
+      menu_id: menuId || null,
+      session_id: sid,
+      payload: { id: sid, menuId: menuId || null, username: a.username || null },
+    });
+  }
+  return [...seen.values()];
 }
 
 async function fetchUsernames(userIds) {
@@ -134,6 +203,65 @@ function isExcludedUser(userId, names) {
 
 function filterExcluded(rows, names) {
   return rows.filter((row) => row.user_id && !isExcludedUser(row.user_id, names));
+}
+
+/** sessions と artworks 由来を合体（同じ user+day+session は1回） */
+function mergeUsageRows(sessionRows, artworkRows) {
+  const map = new Map();
+  const put = (row, source) => {
+    const sid = row.payload?.id
+      || row.session_id
+      || `${row.menu_id || ''}:${row.ts || 0}`;
+    const key = `${row.user_id}|${row.day_date}|${sid}`;
+    if (map.has(key)) {
+      const prev = map.get(key);
+      if ((Number(row.ts) || 0) > (Number(prev.ts) || 0)) prev.ts = row.ts;
+      if (!prev.menu_id && row.menu_id) {
+        prev.menu_id = row.menu_id;
+        prev.payload = { ...(prev.payload || {}), ...(row.payload || {}) };
+      }
+      return;
+    }
+    map.set(key, { ...row, _source: source });
+  };
+  for (const r of artworkRows) put(r, 'artwork');
+  for (const r of sessionRows) put(r, 'session');
+  return [...map.values()];
+}
+
+async function loadAnalyticsRows(fromDate, toDate) {
+  const [sessions, artworks] = await Promise.all([
+    fetchSessions(fromDate, toDate),
+    fetchArtworksUsage(fromDate, toDate),
+  ]);
+  const fromArt = artworksToRows(artworks);
+
+  const names = await fetchUsernames([
+    ...sessions.map((s) => s.user_id),
+    ...fromArt.map((s) => s.user_id),
+    ...artworks.map((a) => a.user_id),
+  ]);
+  for (const a of artworks) {
+    if (a.user_id && a.username && !names.get(a.user_id)) {
+      names.set(a.user_id, a.username);
+    }
+  }
+
+  const sessFiltered = filterExcluded(sessions, names);
+  const artFiltered = filterExcluded(fromArt, names);
+  const rows = mergeUsageRows(sessFiltered, artFiltered);
+  const source = sessFiltered.length && artFiltered.length
+    ? 'sessions+artworks'
+    : (sessFiltered.length ? 'sessions' : 'artworks');
+
+  return {
+    rows,
+    names,
+    source,
+    rawSessionCount: sessions.length,
+    rawArtworkCount: artworks.length,
+    usedCount: rows.length,
+  };
 }
 
 function emptyModeCounts() {
@@ -496,9 +624,7 @@ export async function renderAdminAnalytics() {
 
   try {
     const trendFrom = addDays(viewDate, -(CHART_DAYS - 1));
-    const raw = await fetchSessions(trendFrom, viewDate);
-    const names = await fetchUsernames(raw.map((r) => r.user_id));
-    const rows = filterExcluded(raw, names);
+    const { rows, names, source, rawSessionCount, usedCount } = await loadAnalyticsRows(trendFrom, viewDate);
     const users = aggregateByUser(rows, viewDate);
     const modes = aggregateByMode(rows, viewDate);
     const trend = trendDays(rows, viewDate, CHART_DAYS);
@@ -508,6 +634,18 @@ export async function renderAdminAnalytics() {
     renderModeSummary(modes);
     renderUserTable(users, names);
     renderTrend(trend);
+
+    const note = $('#analytics-source-note');
+    if (note) {
+      const sessHint = rawSessionCount === 0
+        ? t('analytics.sessionsUnavailable')
+        : '';
+      note.textContent = [
+        t('analytics.sourceNote', { source, n: usedCount }),
+        sessHint,
+      ].filter(Boolean).join(' ');
+      note.hidden = false;
+    }
 
     loading.hidden = true;
     body.hidden = false;
