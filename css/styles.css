@@ -1214,20 +1214,11 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
 .tl-desc { margin: -4px 0 8px; }
 .tl-feed { display: flex; flex-direction: column; }
 .tl-post {
-  display: grid;
-  grid-template-columns: 40px 1fr;
-  gap: 10px;
+  display: block;
   padding: 14px var(--pad);
   border-top: 1px solid var(--line);
 }
 .tl-post:first-child { border-top: 1px solid var(--line); }
-.tl-avatar {
-  width: 40px; height: 40px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  background: color-mix(in srgb, var(--brand) 28%, var(--surface-2));
-  color: var(--brand-ink); font-weight: 800; font-size: 15px;
-  font-family: var(--font-display);
-}
 .tl-main { min-width: 0; }
 .tl-meta {
   display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 6px;
@@ -1618,11 +1609,6 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
   font: inherit; font-size: 12px; font-weight: 800; letter-spacing: .06em;
 }
 .auth-btn:hover { background: var(--surface-2); }
-.auth-avatar-wrap { display: flex; }
-.auth-avatar {
-  width: 26px; height: 26px; border-radius: 50%; object-fit: cover;
-  border: 2px solid var(--brand);
-}
 .auth-login-label { white-space: nowrap; }
 
 .auth-sheet-inner { text-align: center; }
@@ -1657,9 +1643,6 @@ body[data-theme='dark'] .google-btn {
 .auth-user-row {
   display: flex; align-items: center; gap: 12px;
   justify-content: center; margin-bottom: 16px;
-}
-.auth-info-avatar {
-  width: 44px; height: 44px; border-radius: 50%; object-fit: cover;
 }
 .auth-info-name { font-weight: 700; font-size: 16px; }
 

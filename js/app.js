@@ -42,7 +42,7 @@ import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog } from '.
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
-import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, userAvatar, hasUsername, setUsername, getUsername, hydrateUsername } from './auth.js';
+import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, hasUsername, setUsername, getUsername, hydrateUsername } from './auth.js';
 import {
   uploadArtwork, uploadShareImage, fetchArtworks, fetchArtwork, fetchPublicArtworks, fetchMyArtworks,
   fetchTopCopyableArtworks, deleteArtwork, toggleLike, workPageUrl, upsertProfile,
@@ -2468,11 +2468,6 @@ function formatSessionTime(entry) {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-function avatarGlyph(name) {
-  const s = String(name || '').trim();
-  return s ? s.slice(0, 1) : 'あ';
-}
-
 async function renderNotes() {
   const wrap = $('#note-list');
   wrap.innerHTML = '';
@@ -2607,7 +2602,6 @@ function renderArtworkTlPost(work, { mine = false } = {}) {
   const post = el('article', 'tl-post');
   post.dataset.artworkId = work.id || '';
   const name = work.username || t('log.me');
-  const avatar = el('div', 'tl-avatar', avatarGlyph(name));
   const main = el('div', 'tl-main');
 
   const meta = el('header', 'tl-meta');
@@ -2654,7 +2648,7 @@ function renderArtworkTlPost(work, { mine = false } = {}) {
   actions.append(likeBtn);
   main.append(actions);
 
-  post.append(avatar, main);
+  post.append(main);
   return post;
 }
 
@@ -3039,10 +3033,8 @@ function wireCalendar() {
 }
 
 function updateAuthUI(u) {
-  const avatarWrap = $('#auth-avatar-wrap');
   const label = $('#auth-login-label');
   const btn = $('#auth-btn');
-  avatarWrap.hidden = true;
   if (u) {
     label.textContent = userName(u);
     btn.title = userName(u);
@@ -3097,7 +3089,6 @@ function wireAuth() {
       userInfo.hidden = false;
       if (loginNote) loginNote.hidden = true;
       if (privacyNote) privacyNote.hidden = true;
-      $('#auth-info-avatar').hidden = true;
       $('#auth-info-name').textContent = userName(u);
     } else {
       buttons.hidden = false;
