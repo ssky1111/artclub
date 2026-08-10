@@ -209,7 +209,7 @@ const DICT = {
   'rev.save':            { ja: '保存して終わる',       en: 'Save & finish' },
   'rev.home':            { ja: 'ホームに戻る',         en: 'Back to home' },
   'rev.again':           { ja: 'もう一周やる',          en: 'Try again' },
-  'rev.dlSheet':         { ja: 'まとめをダウンロード', en: 'Download sheet' },
+  'rev.dlSheet':         { ja: 'ダウンロード',         en: 'Download' },
   'rev.streakLine':      { ja: '連続 {s} 日 / 通算 {n} 回', en: '{s}-day streak · {n} sessions' },
   'rev.sheetDone':       { ja: 'まとめ画像を作りました', en: 'Contact sheet ready' },
 

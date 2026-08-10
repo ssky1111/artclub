@@ -2448,13 +2448,18 @@ async function openDaySheet(dayKey, history = getHistory()) {
 
     const sheet = await getDrawing(`${entry.id}#sheet`).catch(() => null);
     if (sheet) {
+      const wrap = el('div', 'day-sheet-summary');
+      const img = el('img', 'day-sheet-summary-img');
+      img.src = URL.createObjectURL(sheet);
+      img.alt = '';
       const dl = el('button', 'btn primary small');
       dl.type = 'button';
-      dl.textContent = t('rev.dlSheet');
+      dl.textContent = t('common.download');
       dl.addEventListener('click', () => {
         downloadBlob(sheet, `artclub-${dayKey}-${entry.id}.jpg`);
       });
-      block.append(dl);
+      wrap.append(img, dl);
+      block.append(wrap);
     }
     body.append(block);
   }
