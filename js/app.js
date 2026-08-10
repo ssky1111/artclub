@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '94';
+const BUILD = '95';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2437,7 +2437,7 @@ function renderSettings() {
     $('#profile-username').value = getUsername();
   }
   $('#opt-theme').value = settings.theme;
-  $('#opt-skin').value = settings.skin || 'pastel-rpg';
+  $('#opt-skin').value = settings.skin || 'default';
   $('#opt-sound').checked = settings.sound;
   $('#opt-sfx').checked = settings.sfx;
   $('#opt-autoflip').checked = settings.autoFlip;
@@ -2866,7 +2866,7 @@ const SKIN_THEME_COLORS = {
 
 function applyTheme() {
   const theme = settings.theme || 'light';
-  const skin = settings.skin || 'pastel-rpg';
+  const skin = settings.skin || 'default';
   document.body.dataset.theme = theme;
   if (skin && skin !== 'default') document.body.dataset.skin = skin;
   else delete document.body.dataset.skin;

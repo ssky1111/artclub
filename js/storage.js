@@ -12,7 +12,7 @@ const DEFAULT_SETTINGS = {
   categories: ['pose', 'dance', 'sitting', 'hands'],   // 人物を描きたい人が大半なので
   weakParts: [],             // 苦手だと申告した部位（レッスンID）
   theme: 'light',            // 'light' | 'dark' | 'paper'
-  skin: 'pastel-rpg',        // 'default' | 'pastel-rpg'（既定はパステルRPG）
+  skin: 'default',           // 'default' | 'pastel-rpg'（既定はシンプル）
   sound: true,
   sfx: true,
   autoFlip: false,
@@ -43,9 +43,14 @@ function write(key, value) {
 export function getSettings() {
   const raw = read(SETTINGS_KEY, {});
   const merged = { ...DEFAULT_SETTINGS, ...raw };
-  // v49: 既定をパステルRPGへ。一度だけ寄せる（その後はユーザー選択を尊重）
+  // 一度だけ既定スキンを寄せる。v2=パステル、v3=シンプルへ戻す。
   if (!raw.skinDefaultV2) {
-    const next = { ...merged, skin: 'pastel-rpg', skinDefaultV2: 1 };
+    const next = { ...merged, skin: 'default', skinDefaultV2: 1, skinDefaultV3: 1 };
+    write(SETTINGS_KEY, next);
+    return next;
+  }
+  if (!raw.skinDefaultV3) {
+    const next = { ...merged, skin: 'default', skinDefaultV3: 1 };
     write(SETTINGS_KEY, next);
     return next;
   }

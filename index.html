@@ -27,15 +27,15 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="94" data-theme="light" data-skin="pastel-rpg">
+<body data-build="95" data-theme="light">
 <script>
-/* 設定があれば先に当てる。無ければ上の data-skin でパステルのまま */
+/* 設定があれば先に当てる。無ければシンプル（data-skin なし） */
 (function () {
   try {
     var s = JSON.parse(localStorage.getItem('croqui.settings.v1') || '{}');
     document.body.dataset.theme = s.theme || 'light';
-    if (s.skin === 'default') delete document.body.dataset.skin;
-    else document.body.dataset.skin = s.skin || 'pastel-rpg';
+    if (s.skin && s.skin !== 'default') document.body.dataset.skin = s.skin;
+    else delete document.body.dataset.skin;
   } catch (e) {}
 })();
 </script>
@@ -771,8 +771,8 @@
 
     <label class="label" for="opt-skin" data-i18n="set.skin">スキン</label>
     <select id="opt-skin" class="input">
-      <option value="pastel-rpg" data-i18n="set.skinPastelRpg">パステルRPG（デフォルト）</option>
-      <option value="default" data-i18n="set.skinDefault">シンプル</option>
+      <option value="default" data-i18n="set.skinDefault">シンプル（デフォルト）</option>
+      <option value="pastel-rpg" data-i18n="set.skinPastelRpg">パステルRPG</option>
     </select>
 
     <label class="label" for="opt-alpha" data-i18n="set.penAlpha">線の透明度</label>

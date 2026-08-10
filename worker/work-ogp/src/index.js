@@ -121,22 +121,19 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Special+Gothic+Expanded+One&display=swap">
 <style>
   :root {
-    --bg: #f6f0f8;
-    --surface: #fffdfb;
-    --text: #2a2438;
-    --muted: #8a7f96;
-    --brand: #e891b8;
-    --brand-ink: #c45a8c;
-    --line: #eadff0;
+    --bg: #f4f4f1;
+    --surface: #ffffff;
+    --text: #111111;
+    --muted: #8b8b85;
+    --brand-ink: #c96f94;
+    --line: transparent;
+    --surface-2: #efefeb;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; min-height: 100vh;
     font-family: "DotGothic16", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
-    background:
-      radial-gradient(circle at 12% 18%, rgba(232, 145, 184, .18), transparent 40%),
-      radial-gradient(circle at 88% 12%, rgba(168, 196, 240, .2), transparent 36%),
-      var(--bg);
+    background: var(--bg);
     color: var(--text);
     padding: 16px 16px 40px;
   }
@@ -154,7 +151,7 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
     border: none; border-radius: 999px; background: transparent;
     color: var(--text); cursor: pointer;
   }
-  .back:hover { background: rgba(255,255,255,.55); }
+  .back:hover { background: var(--surface-2); }
   .back svg { display: block; }
   .brand {
     font-family: "Special Gothic Expanded One", sans-serif;
@@ -174,23 +171,22 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
   }
   .auth .signup {
     background: transparent; color: var(--text);
-    border: 1px solid var(--line);
+    border: 1px solid #e4e4e0;
   }
   .auth .login {
     background: var(--surface); color: var(--text); border: none;
   }
   .card {
     background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 18px;
+    border: none;
+    border-radius: 22px;
     padding: 18px;
-    box-shadow: 0 10px 30px rgba(80, 40, 70, .06);
   }
   h1 { font-size: 20px; margin: 0 0 6px; line-height: 1.35; font-weight: 700; }
   .meta { color: var(--muted); font-size: 13px; margin: 0 0 14px; line-height: 1.5; }
   img.work {
-    width: 100%; height: auto; display: block; border-radius: 12px;
-    background: #f3eef7; border: 1px solid var(--line);
+    width: 100%; height: auto; display: block; border-radius: 14px;
+    background: var(--surface-2);
   }
   .ctr { margin-top: 28px; }
   .ctr-lead {
@@ -199,8 +195,8 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
   }
   .ctr-card {
     background: var(--surface);
-    border: 2px solid var(--line);
-    border-radius: 18px;
+    border: none;
+    border-radius: 22px;
     padding: 20px 18px;
   }
   .ctr-kicker {
@@ -215,7 +211,7 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
   .ctr-start {
     display: flex; align-items: center; justify-content: center;
     width: 100%; padding: 15px 20px; border-radius: 999px;
-    background: #1c1a17; color: #fff; text-decoration: none;
+    background: #111111; color: #fff; text-decoration: none;
     font-weight: 700; font-size: 17px;
   }
 </style>
@@ -253,7 +249,7 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
 function notFoundHtml(origin = 'https://artclub.space') {
   return `<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Not found</title>
-<style>body{font-family:system-ui;padding:40px;background:#f6f0f8;color:#2a2438}a{color:#c45a8c}</style>
+<style>body{font-family:system-ui;padding:40px;background:#f4f4f1;color:#111}a{color:#c96f94}</style>
 </head><body><h1>作品が見つかりません</h1>
 <p><a href="${escapeHtml(origin)}/">ARTCLUB へ戻る</a></p></body></html>`;
 }
