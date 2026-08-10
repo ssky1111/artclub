@@ -168,8 +168,6 @@ function renderWeekBars(history) {
  * 中身（ジェスチャードローイング → 部位練習 → クロッキー）も、かかる時間も書かない。
  * 「11分」と書いてあると、11分ある日にしか押さなくなる。
  * 押してから中身が出てくるほうが、実際には手が動く。
- *
- * 1日2回までは無料。それ以上は案内を出して止める。
  */
 function renderDaily(history) {
   const loggedIn = !!getUser();
@@ -207,12 +205,7 @@ function renderDaily(history) {
   hero.append(el('div', 'menu-title big', tr(daily, 'title')));
 
   const cta = el('button', 'btn primary big', t('home.startPlain'));
-  cta.addEventListener('click', () => {
-    // 未ログインは先にログイン。端末に古い回数が残っていても上限シートは出さない
-    if (!getUser()) return startDaily(daily, part);
-    if (rounds >= DAILY_FREE_LIMIT) return openDailyLimitSheet();
-    startDaily(daily, part);
-  });
+  cta.addEventListener('click', () => startDaily(daily, part));
   hero.append(cta);
 
   top.append(hero);
@@ -275,7 +268,6 @@ function renderExtras() {
 }
 
 let paywallCallback = null;
-const DAILY_FREE_LIMIT = 2;
 
 function setPaySheetCopy({ titleKey, bodyKey, ctaKey }) {
   const title = $('#pay-title');
@@ -284,17 +276,6 @@ function setPaySheetCopy({ titleKey, bodyKey, ctaKey }) {
   if (title) title.textContent = t(titleKey);
   if (body) body.textContent = t(bodyKey);
   if (cta) cta.textContent = t(ctaKey);
-}
-
-/** デイリー無料上限。続ける導線は出さず、閉じるだけ。 */
-function openDailyLimitSheet() {
-  paywallCallback = null;
-  setPaySheetCopy({
-    titleKey: 'home.dailyLimitTitle',
-    bodyKey: 'home.dailyLimitBody',
-    ctaKey: 'home.dailyLimitCta',
-  });
-  $('#pay-sheet').hidden = false;
 }
 
 /** レベルアップだけ祝う（バッジは外した）。 */
@@ -2281,13 +2262,7 @@ function wireGallery() {
 function startDailyFromCtr() {
   const part = partForDate(dateKey());
   const daily = buildDaily(part);
-  if (!getUser()) {
-    startDaily(daily, part);
-    return;
-  }
-  const rounds = roundsToday('daily', getHistory());
-  if (rounds >= DAILY_FREE_LIMIT) openDailyLimitSheet();
-  else startDaily(daily, part);
+  startDaily(daily, part);
 }
 
 let sheetBlob = null;
