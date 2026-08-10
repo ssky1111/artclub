@@ -94,7 +94,6 @@ const DICT = {
   'atelier.emptyMine':    { ja: 'まだ自分のスケッチがありません', en: 'You have no posts yet' },
   'atelier.loginMine':    { ja: 'ログインすると自分のアトリエが見られます', en: 'Log in to see your atelier' },
   'atelier.emptyPrompt':  { ja: 'まだお題別のスケッチがありません', en: 'No prompt groups yet' },
-  'atelier.seeMore':      { ja: 'もっと見る',             en: 'See more' },
   'atelier.promptPhoto':  { ja: 'お題',                   en: 'Prompt' },
   'atelier.you':          { ja: '自分',                   en: 'You' },
   'atelier.copyable':     { ja: '模写OK',                 en: 'Copyable' },

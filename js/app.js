@@ -57,7 +57,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '122';
+const BUILD = '123';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2719,10 +2719,8 @@ async function renderAtelierMine() {
 async function renderAtelierByPrompt() {
   const list = $('#atelier-prompt-list');
   const empty = $('#atelier-prompt-empty');
-  const panel = $('#atelier-prompt');
   list.innerHTML = '';
   empty.hidden = true;
-  panel?.querySelectorAll('.atelier-prompt-more').forEach((btn) => btn.remove());
 
   const [publicWorks, myWorks, photos] = await Promise.all([
     fetchPublicArtworks({ limit: 120 }).catch(() => []),
@@ -2751,14 +2749,6 @@ async function renderAtelierByPrompt() {
     const score = (id) => byPrompt.get(id).reduce((s, w) => s + (w.like_count || 0), 0);
     return score(b) - score(a);
   });
-
-  const PROMPT_PREVIEW = 2; // 3件以上あるとき最初は2件＋もっと見る
-  const visibleIds = promptIds.length >= 3
-    ? promptIds.slice(0, PROMPT_PREVIEW)
-    : promptIds;
-  const hiddenIds = promptIds.length >= 3
-    ? promptIds.slice(PROMPT_PREVIEW)
-    : [];
 
   const appendPromptCard = (promptId) => {
     const topWorks = [...byPrompt.get(promptId)]
@@ -2803,17 +2793,7 @@ async function renderAtelierByPrompt() {
     list.append(card);
   };
 
-  for (const promptId of visibleIds) appendPromptCard(promptId);
-
-  if (hiddenIds.length) {
-    const more = el('button', 'btn ghost atelier-prompt-more', t('atelier.seeMore'));
-    more.type = 'button';
-    more.addEventListener('click', () => {
-      more.remove();
-      for (const promptId of hiddenIds) appendPromptCard(promptId);
-    });
-    list.after(more);
-  }
+  for (const promptId of promptIds) appendPromptCard(promptId);
 }
 
 
