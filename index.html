@@ -27,7 +27,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="124" data-theme="light">
+<body data-build="125" data-theme="light">
 <script>
 /* テーマは設定ロード後に JS が当てる（端末 localStorage には依存しない） */
 </script>
@@ -885,6 +885,25 @@
     <div class="confirm-dialog-actions">
       <button id="week-review-ok" class="confirm-dialog-btn ok" data-i18n="home.startPlain">はじめる</button>
     </div>
+  </div>
+</div>
+
+<!-- フィードバック（右端からぴよっと） -->
+<button id="feedback-tab" class="feedback-tab" type="button" data-i18n-title="fb.tabTitle" title="フィードバック">
+  <span class="feedback-tab-label" data-i18n="fb.tab">フィードバック</span>
+</button>
+<div id="feedback-sheet" class="sheet" hidden>
+  <div class="sheet-inner">
+    <button id="feedback-close" class="icon-btn sheet-close" data-icon="close" data-i18n-title="common.close"></button>
+    <h2 data-i18n="fb.title">フィードバック</h2>
+    <p class="muted small" data-i18n="fb.note">気づいたこと・要望・不具合など、なんでもどうぞ。</p>
+    <label class="label" for="feedback-message" data-i18n="fb.message">内容</label>
+    <textarea id="feedback-message" class="input feedback-message" rows="5"
+              data-i18n-ph="fb.messagePh" placeholder="ここに書いてね" maxlength="4000"></textarea>
+    <label class="label" for="feedback-contact" data-i18n="fb.contact">連絡先（任意）</label>
+    <input id="feedback-contact" class="input" type="text" maxlength="200"
+           data-i18n-ph="fb.contactPh" placeholder="返信が欲しければメールやXなど">
+    <button id="feedback-send" class="btn primary big" data-i18n="fb.send">送る</button>
   </div>
 </div>
 
