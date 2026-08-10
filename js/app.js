@@ -56,7 +56,7 @@ import { uploadArtwork, uploadShareImage, fetchArtworks, deleteArtwork } from '.
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '31';
+const BUILD = '32';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
