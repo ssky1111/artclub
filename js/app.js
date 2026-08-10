@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '95';
+const BUILD = '96';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2436,8 +2436,9 @@ function renderSettings() {
   if (u) {
     $('#profile-username').value = getUsername();
   }
-  $('#opt-theme').value = settings.theme;
-  $('#opt-skin').value = settings.skin || 'default';
+  $('#opt-theme').value = settings.theme || 'light';
+  const skin = settings.skin === 'pastel-rpg' ? 'pastel-rpg' : 'default';
+  $('#opt-skin').value = skin;
   $('#opt-sound').checked = settings.sound;
   $('#opt-sfx').checked = settings.sfx;
   $('#opt-autoflip').checked = settings.autoFlip;
@@ -2445,6 +2446,7 @@ function renderSettings() {
   $('#opt-orientation').value = settings.orientation;
   $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 0.9) * 100));
   renderLangChips();
+  applyTheme();
 }
 
 function renderLangChips() {

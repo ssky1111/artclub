@@ -27,15 +27,19 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="95" data-theme="light">
+<body data-build="96" data-theme="light">
 <script>
-/* 設定があれば先に当てる。無ければシンプル（data-skin なし） */
+/* 設定があれば先に当てる。無ければ／移行前はシンプル（data-skin なし） */
 (function () {
   try {
     var s = JSON.parse(localStorage.getItem('croqui.settings.v1') || '{}');
     document.body.dataset.theme = s.theme || 'light';
-    if (s.skin && s.skin !== 'default') document.body.dataset.skin = s.skin;
-    else delete document.body.dataset.skin;
+    // skinDefaultV3 以降で、明示的にパステル等を選んだときだけ skin を付ける
+    if (s.skinDefaultV3 && s.skin && s.skin !== 'default') {
+      document.body.dataset.skin = s.skin;
+    } else {
+      delete document.body.dataset.skin;
+    }
   } catch (e) {}
 })();
 </script>
@@ -771,7 +775,7 @@
 
     <label class="label" for="opt-skin" data-i18n="set.skin">スキン</label>
     <select id="opt-skin" class="input">
-      <option value="default" data-i18n="set.skinDefault">シンプル（デフォルト）</option>
+      <option value="default" selected data-i18n="set.skinDefault">シンプル（デフォルト）</option>
       <option value="pastel-rpg" data-i18n="set.skinPastelRpg">パステルRPG</option>
     </select>
 
