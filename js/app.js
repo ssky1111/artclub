@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '66';
+const BUILD = '67';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1933,11 +1933,6 @@ let sheetBlob = null;
 
 function renderLog() {
   const history = getHistory();
-  const s = stats(history);
-  $('#st-streak').textContent = String(graceStreak(history).streak);
-  $('#st-best').textContent = String(bestGraceStreak(history));
-  $('#st-minutes').textContent = String(s.minutes);
-  $('#st-drawings').textContent = String(totalDrawings(history));
 
   const dow = $('#cal-dow');
   dow.innerHTML = '';
