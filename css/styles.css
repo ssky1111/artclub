@@ -2214,13 +2214,37 @@ body[data-theme='dark'] .google-btn {
   box-shadow: 0 2px 0 color-mix(in srgb, var(--accent) 55%, #000);
 }
 
+.copy-sheet-inner {
+  display: flex;
+  flex-direction: column;
+  max-height: min(85dvh, 720px);
+  overflow: hidden;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.copy-sheet-inner h2,
+.copy-sheet-inner #copy-status,
+.copy-sheet-inner #copy-start {
+  flex: none;
+}
 .copy-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 10px;
-  margin: 14px 0 18px;
-  max-height: 48vh;
+  margin: 10px 0 14px;
+  flex: 1 1 auto;
+  min-height: 180px;
+  max-height: none;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  align-content: start;
+}
+.copy-grid-sentinel {
+  grid-column: 1 / -1;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
 }
 .copy-pick {
   appearance: none;

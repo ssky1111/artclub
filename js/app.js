@@ -45,7 +45,7 @@ window.__i18n = { t };
 import { initAuth, loginWithProvider, logout, getUser, onAuthChange, hasUsername, setUsername, getUsername, hydrateUsername } from './auth.js';
 import {
   uploadArtwork, uploadShareImage, fetchArtworks, fetchArtwork, fetchPublicArtworks, fetchMyArtworks,
-  fetchTopCopyableArtworks, deleteArtwork, updateArtwork, toggleLike, workPageUrl, upsertProfile, artworkDisplayName,
+  fetchCopyableArtworksPage, deleteArtwork, updateArtwork, toggleLike, workPageUrl, upsertProfile, artworkDisplayName,
 } from './gallery.js';
 import { initFeedback } from './feedback.js';
 import {
@@ -60,7 +60,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '204';
+const BUILD = '205';
 const SITE_PASS_KEY = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 /** サイトパスワード解除の有効期限（約1週間） */
@@ -427,8 +427,39 @@ function wirePartSheet() {
 
 /* ==================== 模写モード ==================== */
 
-let copyCandidates = [];
-let selectedCopyWork = null;
+const COPY_PAGE_SIZE = 24;
+const COPY_FETCH_SIZE = 60;
+
+let copyPool = [];
+let copyPoolIds = new Set();
+let copyRenderedIds = new Set();
+let copyApiOffset = 0;
+let copyHasMoreApi = true;
+let copyLoadingMore = false;
+let copySelectedWork = null;
+let copyScrollObserver = null;
+
+function resetCopySheetState() {
+  copyPool = [];
+  copyPoolIds = new Set();
+  copyRenderedIds = new Set();
+  copyApiOffset = 0;
+  copyHasMoreApi = true;
+  copyLoadingMore = false;
+  copySelectedWork = null;
+  if (copyScrollObserver) {
+    copyScrollObserver.disconnect();
+    copyScrollObserver = null;
+  }
+}
+
+function sortCopyPool() {
+  copyPool.sort((a, b) => {
+    const likeDiff = (b.like_count || 0) - (a.like_count || 0);
+    if (likeDiff) return likeDiff;
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+}
 
 function createArtworkQueue(work) {
   const photo = {
@@ -466,7 +497,7 @@ function startCopySession(work) {
 }
 
 async function openCopySheet() {
-  selectedCopyWork = null;
+  resetCopySheetState();
   const startBtn = $('#copy-start');
   if (startBtn) startBtn.disabled = true;
   const status = $('#copy-status');
@@ -474,28 +505,45 @@ async function openCopySheet() {
   if (grid) grid.innerHTML = '';
   if (status) status.textContent = t('gal.loading');
   $('#copy-sheet').hidden = false;
+  wireCopyGridInfiniteScroll();
 
   try {
-    copyCandidates = await fetchTopCopyableArtworks({ limit: 24 });
-    renderCopyGrid();
+    await loadMoreCopyWorks({ fillViewport: true });
     if (status) {
-      status.textContent = copyCandidates.length
+      status.textContent = copyRenderedIds.size
         ? t('copy.pickHint')
         : t('copy.empty');
     }
   } catch {
-    copyCandidates = [];
+    resetCopySheetState();
+    if (grid) grid.innerHTML = '';
     if (status) status.textContent = t('copy.loadFail');
   }
 }
 
-function renderCopyGrid() {
+function copyGridSentinel() {
   const grid = $('#copy-grid');
-  if (!grid) return;
-  grid.innerHTML = '';
-  for (const work of copyCandidates) {
-    const btn = el('button', `copy-pick${selectedCopyWork?.id === work.id ? ' on' : ''}`);
+  if (!grid) return null;
+  let sentinel = $('#copy-grid-sentinel');
+  if (!sentinel) {
+    sentinel = el('div', 'copy-grid-sentinel');
+    sentinel.id = 'copy-grid-sentinel';
+    sentinel.setAttribute('aria-hidden', 'true');
+  }
+  grid.append(sentinel);
+  return sentinel;
+}
+
+function appendCopyGridItems(works) {
+  const grid = $('#copy-grid');
+  if (!grid || !works.length) return;
+  const sentinel = $('#copy-grid-sentinel');
+  for (const work of works) {
+    if (!work?.id || copyRenderedIds.has(work.id)) continue;
+    copyRenderedIds.add(work.id);
+    const btn = el('button', `copy-pick${copySelectedWork?.id === work.id ? ' on' : ''}`);
     btn.type = 'button';
+    btn.dataset.artworkId = work.id;
     const img = el('img');
     img.src = work.image_url;
     img.alt = work.username || '';
@@ -506,15 +554,102 @@ function renderCopyGrid() {
     meta.append(el('span', 'copy-pick-likes', `♥ ${work.like_count || 0}`));
     btn.append(img, meta);
     btn.addEventListener('click', () => {
-      selectedCopyWork = work;
-      renderCopyGrid();
+      copySelectedWork = work;
+      grid.querySelectorAll('.copy-pick.on').forEach((node) => node.classList.remove('on'));
+      btn.classList.add('on');
       const startBtn = $('#copy-start');
       if (startBtn) startBtn.disabled = false;
       const status = $('#copy-status');
       if (status) status.textContent = t('copy.selected', { n: name });
     });
-    grid.append(btn);
+    if (sentinel) grid.insertBefore(btn, sentinel);
+    else grid.append(btn);
   }
+  copyGridSentinel();
+}
+
+async function mergeCopyPoolPage() {
+  if (!copyHasMoreApi) return false;
+  const { works, fetched } = await fetchCopyableArtworksPage({
+    limit: COPY_FETCH_SIZE,
+    offset: copyApiOffset,
+  });
+  copyApiOffset += COPY_FETCH_SIZE;
+  if (fetched < COPY_FETCH_SIZE) copyHasMoreApi = false;
+  let added = 0;
+  for (const work of works) {
+    if (!work?.id || copyPoolIds.has(work.id)) continue;
+    copyPoolIds.add(work.id);
+    copyPool.push(work);
+    added += 1;
+  }
+  if (added) sortCopyPool();
+  return fetched > 0;
+}
+
+/** 未表示分をいいね順で追記。足りなければ API から足す。 */
+async function loadMoreCopyWorks({ fillViewport = false } = {}) {
+  if (copyLoadingMore) return;
+  copyLoadingMore = true;
+  const status = $('#copy-status');
+  const grid = $('#copy-grid');
+  try {
+    let guard = 0;
+    do {
+      guard += 1;
+      // 未表示が足りなければ API を足す（フィルタで減るので数回まわる）
+      while (
+        copyPool.filter((w) => !copyRenderedIds.has(w.id)).length < COPY_PAGE_SIZE
+        && copyHasMoreApi
+        && guard < 16
+      ) {
+        const got = await mergeCopyPoolPage();
+        guard += 1;
+        if (!got) break;
+      }
+
+      const pending = copyPool.filter((w) => !copyRenderedIds.has(w.id)).slice(0, COPY_PAGE_SIZE);
+      if (!pending.length) break;
+      appendCopyGridItems(pending);
+
+      if (!fillViewport || !grid) break;
+      // 高さが足りずセンチネルが見えたままだと止めるので、埋まるまで続ける
+      if (grid.scrollHeight > grid.clientHeight + 8) break;
+      if (!copyHasMoreApi && copyPool.every((w) => copyRenderedIds.has(w.id))) break;
+    } while (guard < 16);
+
+    if (status && copyRenderedIds.size && status.textContent === t('gal.loading')) {
+      status.textContent = t('copy.pickHint');
+    }
+  } finally {
+    copyLoadingMore = false;
+    // 下端が見えたままなら続けて読む（IO が再発火しない対策）
+    requestAnimationFrame(() => {
+      if ($('#copy-sheet')?.hidden) return;
+      if (!copyHasMoreApi && copyPool.every((w) => copyRenderedIds.has(w.id))) return;
+      const g = $('#copy-grid');
+      const s = $('#copy-grid-sentinel');
+      if (!g || !s) return;
+      const gr = g.getBoundingClientRect();
+      const sr = s.getBoundingClientRect();
+      if (sr.top <= gr.bottom + 140) void loadMoreCopyWorks();
+    });
+  }
+}
+
+function wireCopyGridInfiniteScroll() {
+  const grid = $('#copy-grid');
+  if (!grid) return;
+  const sentinel = copyGridSentinel();
+  if (!sentinel) return;
+  if (copyScrollObserver) copyScrollObserver.disconnect();
+  copyScrollObserver = new IntersectionObserver((entries) => {
+    if (!entries.some((e) => e.isIntersecting)) return;
+    if ($('#copy-sheet')?.hidden) return;
+    if (!copyHasMoreApi && copyPool.every((w) => copyRenderedIds.has(w.id))) return;
+    void loadMoreCopyWorks();
+  }, { root: grid, rootMargin: '120px', threshold: 0 });
+  copyScrollObserver.observe(sentinel);
 }
 
 function wireCopySheet() {
@@ -523,11 +658,11 @@ function wireCopySheet() {
     if (e.target.id === 'copy-sheet') $('#copy-sheet').hidden = true;
   });
   $('#copy-start')?.addEventListener('click', async () => {
-    if (!selectedCopyWork) return;
+    if (!copySelectedWork) return;
     const startBtn = $('#copy-start');
     if (startBtn) startBtn.disabled = true;
     try {
-      const fresh = await fetchArtwork(selectedCopyWork.short_id || selectedCopyWork.id);
+      const fresh = await fetchArtwork(copySelectedWork.short_id || copySelectedWork.id);
       if (!fresh || !fresh.allow_copy || fresh.visibility === 'private') {
         toast(t('copy.unavailable'));
         return;
@@ -537,7 +672,7 @@ function wireCopySheet() {
     } catch {
       toast(t('copy.loadFail'));
     } finally {
-      if (startBtn) startBtn.disabled = !selectedCopyWork;
+      if (startBtn) startBtn.disabled = !copySelectedWork;
     }
   });
 }
