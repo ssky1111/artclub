@@ -1733,27 +1733,64 @@ body[data-skin='pastel-rpg'] .atelier-tabs button.on {
 }
 .atelier-lead { margin: 0 0 10px; padding: 0 2px; }
 .atelier-panel { margin-bottom: 8px; }
-.atelier-prompt-list { display: flex; flex-direction: column; gap: 18px; }
+.atelier-prompt-list { display: flex; flex-direction: column; gap: 14px; }
 .atelier-prompt-card {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 12px;
+  padding: 10px;
 }
-.atelier-prompt-head {
-  display: flex; align-items: baseline; justify-content: space-between;
-  gap: 8px; margin-bottom: 10px;
+.atelier-prompt-block {
+  display: grid;
+  grid-template-columns: 1.35fr repeat(5, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 6px;
+  align-items: stretch;
 }
-.atelier-prompt-label { font-size: 13px; font-weight: 800; color: var(--brand-ink); }
-.atelier-prompt-count { font-size: 12px; color: var(--muted); }
 .atelier-prompt-photo {
-  width: 100%; aspect-ratio: 4 / 3; object-fit: cover;
-  border-radius: var(--radius-sm); background: var(--surface-2);
-  display: block; margin-bottom: 10px;
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  aspect-ratio: auto;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  display: block;
+  margin: 0;
 }
 .atelier-prompt-photo.is-empty {
   display: flex; align-items: center; justify-content: center;
   color: var(--muted); font-size: 13px; font-weight: 700;
+}
+.atelier-prompt-block .atelier-thumb {
+  border: none; padding: 0; background: transparent;
+  text-align: left; cursor: pointer; font: inherit; color: inherit;
+  min-width: 0;
+}
+.atelier-prompt-block .atelier-thumb-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.atelier-thumb-likes {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(11, 12, 15, .72);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+  pointer-events: none;
 }
 .atelier-hscroll {
   display: flex; gap: 10px; overflow-x: auto;
@@ -1779,6 +1816,11 @@ body[data-skin='pastel-rpg'] .atelier-tabs button.on {
 .atelier-thumb-meta {
   margin-top: 6px; font-size: 11px; font-weight: 700; color: var(--text-soft);
   display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+}
+@media (max-width: 520px) {
+  .atelier-prompt-block {
+    grid-template-columns: 1.2fr repeat(4, minmax(0, 1fr));
+  }
 }
 .atelier-badge {
   font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 999px;
