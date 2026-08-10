@@ -208,14 +208,6 @@ function renderModes() {
       card.append(el('div', 'menu-time', fmtDur(menuDuration(mode))));
     }
     card.append(el('span', 'free-badge', t('home.freeNow')));
-    const drill = DRILLS[mode.drillId];
-    if (drill?.about) {
-      const why = el('details', 'why');
-      const sum = el('summary', null, getLang() === 'ja' ? 'これって何？' : 'What is this?');
-      why.append(sum, el('p', null, tr(drill, 'about')));
-      why.addEventListener('click', (e) => e.stopPropagation());
-      card.append(why);
-    }
     card.addEventListener('click', () => {
       openPaywall(() => {
         if (mode.picker === 'part') return openPartSheet();
