@@ -254,7 +254,6 @@ const DICT = {
   'log.drawings':        { ja: '描いた枚数',           en: 'Drawings' },
   'log.calNote':         { ja: '描いた絵は、その日のマスに貼られます。',
                            en: 'Your drawings appear on the day you made them.' },
-  'log.whatPractised':   { ja: 'なにを練習したか',     en: 'What you practised' },
   'log.notes':           { ja: 'タイムライン',           en: 'Timeline' },
   'log.notesDesc':       { ja: '自分の練習が新しい順に並びます。あとでみんなの投稿やいいねもここに出ます。',
                            en: 'Your sessions, newest first. Likes and everyone’s posts will land here later.' },

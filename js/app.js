@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '65';
+const BUILD = '66';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1947,7 +1947,6 @@ function renderLog() {
   for (const label of labels) dow.append(el('span', null, label));
 
   renderCalendar(history);
-  renderDrillBars(s);
   renderNotes(history);
 }
 
@@ -2086,31 +2085,6 @@ function heatLevel(seconds) {
   if (seconds < 600) return 2;
   if (seconds < 1200) return 3;
   return 4;
-}
-
-function renderDrillBars(s) {
-  const wrap = $('#drill-bars');
-  wrap.innerHTML = '';
-  const entries = [...s.byDrill.entries()].sort((a, b) => b[1] - a[1]);
-  if (!entries.length) {
-    wrap.append(el('p', 'muted small', t('log.noRecord')));
-    return;
-  }
-  const max = entries[0][1];
-  for (const [id, sec] of entries) {
-    const bar = el('div', 'bar');
-    bar.style.width = `${Math.max(4, (sec / max) * 100)}%`;
-    const track = el('div', 'bar-track');
-    track.append(bar);
-
-    const row = el('div', 'bar-row');
-    row.append(
-      el('div', 'bar-label', tr(DRILLS[id], 'name') || id),
-      track,
-      el('div', 'bar-value muted small', fmtDur(sec)),
-    );
-    wrap.append(row);
-  }
 }
 
 function sessionLabel(entry) {
