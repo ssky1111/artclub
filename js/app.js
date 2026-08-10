@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '52';
+const BUILD = '53';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2238,14 +2238,20 @@ function wireAuth() {
 
   function renderSheet() {
     const u = getUser();
+    const loginNote = $('#auth-login-note');
+    const privacyNote = $('#auth-privacy-note');
     if (u) {
       buttons.hidden = true;
       userInfo.hidden = false;
+      if (loginNote) loginNote.hidden = true;
+      if (privacyNote) privacyNote.hidden = true;
       $('#auth-info-avatar').hidden = true;
       $('#auth-info-name').textContent = userName(u);
     } else {
       buttons.hidden = false;
       userInfo.hidden = true;
+      if (loginNote) loginNote.hidden = false;
+      if (privacyNote) privacyNote.hidden = false;
     }
   }
 
