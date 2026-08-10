@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '57';
+const BUILD = '58';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1610,22 +1610,35 @@ async function uploadPendingArtworks() {
   if (getUsername()) {
     upsertProfile(getUsername()).catch(() => {});
   }
-  for (const shot of pendingDrawings) {
-    if (shot.uploaded || !shot.photoId) continue;
+  let uploaded = 0;
+  let failed = 0;
+  for (let i = 0; i < pendingDrawings.length; i++) {
+    const shot = pendingDrawings[i];
+    if (shot.uploaded) continue;
+    // photoId が無いお題でも投稿できるようにフォールバック
+    const promptId = shot.photoId || `session:${sessionId || 'local'}:${i}`;
     try {
       shot.uploading = true;
       const isPublic = globalPublic && !shot.excludeFromGallery;
-      const work = await uploadArtwork(shot.blob, shot.photoId, {
+      const work = await uploadArtwork(shot.blob, promptId, {
         isPublic,
         sessionId,
         mode,
       });
       shot.uploaded = true;
       shot.artworkId = work?.id || null;
-    } catch {
-      /* 個別失敗は一覧表示を止めない */
+      if (!shot.photoId) shot.photoId = promptId;
+      uploaded++;
+    } catch (err) {
+      failed++;
+      console.error('[artworks upload]', err);
+    } finally {
+      shot.uploading = false;
     }
   }
+  if (failed && !uploaded) toast(t('gal.uploadFail'));
+  else if (failed) toast(t('gal.uploadFail'));
+  else if (uploaded) toast(t('gal.uploaded'));
 }
 
 function wireReview() {

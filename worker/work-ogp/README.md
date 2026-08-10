@@ -25,3 +25,7 @@ DNS は既存の artclub.space（Pages / カスタムドメイン）を維持し
 ## Supabase
 
 先にリポジトリ直下の `supabase/artworks.sql` を SQL Editor で実行する。
+
+テーブル（`artworks` / `profiles` / `artwork_likes`）に加え、
+**Storage の `artworks` バケットと RLS ポリシー**もこの SQL に含まれている。
+バケット側のポリシーが無いと、投稿はローカル保存だけ成功してクラウドへ上がらない。
