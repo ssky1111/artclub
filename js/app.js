@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '170';
+const BUILD = '171';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -2368,7 +2368,7 @@ function croquisArtworkIdsFromEntry(entry) {
 }
 
 /** 手動未指定の日: その日の croquis スケッチから表紙を選ぶ。 */
-function autoCalendarCoverId(dayKey, history = getHistory()) {
+function calendarCoverId(dayKey, history = getHistory()) {
   const dayEntries = history
     .filter((h) => h.date === dayKey)
     .sort((a, b) => (a.ts || 0) - (b.ts || 0));
@@ -2377,37 +2377,6 @@ function autoCalendarCoverId(dayKey, history = getHistory()) {
     if (ids.length) return ids[0];
   }
   return null;
-}
-
-function getCalendarCovers() {
-  return settings.calendarCovers || {};
-}
-
-/** その日に表紙候補になりうる artwork ID 一覧（重複なし）。 */
-function dayCoverCandidates(dayKey, history = getHistory()) {
-  const ids = [];
-  const seen = new Set();
-  const add = (id) => {
-    if (id && !seen.has(id)) { seen.add(id); ids.push(id); }
-  };
-  for (const entry of history.filter((h) => h.date === dayKey)) {
-    for (const shot of entry.shots || []) add(shot.artworkId || shot.shortId);
-    add(entry.sheetArtworkId || entry.sheetShortId);
-  }
-  return ids;
-}
-
-function getCalendarCoverId(dayKey, entry, history = getHistory()) {
-  const manual = getCalendarCovers()[dayKey];
-  if (manual && dayCoverCandidates(dayKey, history).includes(manual)) return manual;
-  return autoCalendarCoverId(dayKey, history);
-}
-
-function setCalendarCover(dayKey, artworkId) {
-  const covers = { ...getCalendarCovers() };
-  if (artworkId) covers[dayKey] = artworkId;
-  else delete covers[dayKey];
-  settings = saveSettings({ calendarCovers: covers });
 }
 
 async function loadArtworkUrl(id) {
@@ -2460,7 +2429,7 @@ function renderCalendar(history = getHistory()) {
     if (dayKey === today) cell.classList.add('today');
     cell.append(el('span', 'cal-num', String(day)));
 
-    const coverId = getCalendarCoverId(dayKey, entry, history);
+    const coverId = calendarCoverId(dayKey, history);
     if (coverId || entry?.hasDrawing) {
       cell.classList.add('has-drawing');
       if (coverId) {
@@ -2476,7 +2445,7 @@ function renderCalendar(history = getHistory()) {
   }
 }
 
-/** その日に描いたものを全部ならべる。押すと作品ページ、表紙も選べる。 */
+/** その日に描いたものを全部ならべる。押すと作品ページへ。 */
 async function openDaySheet(dayKey, history = getHistory()) {
   const entries = history.filter((h) => h.date === dayKey);
   $('#sheet-date').textContent = dayKey;
@@ -2504,19 +2473,7 @@ async function openDaySheet(dayKey, history = getHistory()) {
     }
   }
   shots.hidden = items.length === 0;
-
-  const dayEntry = entries.find((e) => e.hasDrawing) || entries[0];
-  const manualCover = getCalendarCovers()[dayKey];
-  const activeCover = getCalendarCoverId(dayKey, dayEntry, history);
-
-  if (items.length) {
-    shots.append(el('p', 'muted small day-cover-label', t('log.coverPick')));
-  }
-
   items.forEach((item) => {
-    const wrap = el('div', 'strip-shot day-cover-pick');
-    if (item.id === activeCover) wrap.classList.add('is-cover');
-
     const btn = el('button', 'strip-item');
     const img = el('img');
     img.src = item.url;
@@ -2525,36 +2482,8 @@ async function openDaySheet(dayKey, history = getHistory()) {
       $('#day-sheet').hidden = true;
       openWorkPageById(item.id);
     });
-
-    const coverBtn = el('button', 'btn ghost small day-cover-btn');
-    coverBtn.type = 'button';
-    coverBtn.textContent = item.id === activeCover && manualCover
-      ? t('log.coverActive')
-      : t('log.setCover');
-    coverBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      setCalendarCover(dayKey, item.id);
-      renderCalendar(history);
-      void openDaySheet(dayKey, history);
-    });
-
-    wrap.append(btn, coverBtn);
-    shots.append(wrap);
+    shots.append(btn);
   });
-
-  if (manualCover && items.length) {
-    const resetWrap = el('div', 'day-cover-reset-wrap');
-    const resetBtn = el('button', 'btn ghost small day-cover-reset');
-    resetBtn.type = 'button';
-    resetBtn.textContent = t('log.coverAuto');
-    resetBtn.addEventListener('click', () => {
-      setCalendarCover(dayKey, null);
-      renderCalendar(history);
-      void openDaySheet(dayKey, history);
-    });
-    resetWrap.append(resetBtn);
-    shots.append(resetWrap);
-  }
 
   const body = $('#sheet-body');
   body.innerHTML = '';
