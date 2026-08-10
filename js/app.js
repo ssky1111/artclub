@@ -46,7 +46,7 @@ import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js'
 window.__i18n = { t };
 import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, userAvatar, hasUsername, setUsername, getUsername } from './auth.js';
 import {
-  uploadArtwork, uploadShareImage, fetchArtworks, fetchPublicArtworks, fetchMyArtworks,
+  uploadArtwork, uploadShareImage, fetchArtworks, fetchArtwork, fetchPublicArtworks, fetchMyArtworks,
   deleteArtwork, toggleLike, workPageUrl, upsertProfile,
 } from './gallery.js';
 
@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '85';
+const BUILD = '86';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1491,6 +1491,7 @@ async function uploadPendingArtworks({ quiet = false } = {}) {
       });
       shot.uploaded = true;
       shot.artworkId = work?.id || null;
+      shot.shortId = work?.short_id || null;
       if (!shot.photoId) shot.photoId = promptId;
       uploaded++;
     } catch (err) {
@@ -1834,9 +1835,9 @@ function wireReview() {
     btn.disabled = true;
     try {
       await uploadPendingArtworks();
-      const workId = pendingDrawings.find((s) => s.artworkId)?.artworkId;
-      if (workId) {
-        shareToX(`${text}\n${workPageUrl(workId)}`);
+      const shot = pendingDrawings.find((s) => s.artworkId || s.shortId);
+      if (shot) {
+        shareToX(`${text}\n${workPageUrl(shot.shortId || shot.artworkId)}`);
       } else if (sheetBlob && getUser()) {
         const url = await uploadShareImage(sheetBlob);
         shareToX(`${text}\n${url}`);
@@ -1972,7 +1973,7 @@ function openGalleryLightbox(work, userId) {
   const share = $('#gallery-lb-share');
   if (work.id) {
     share.hidden = false;
-    share.href = workPageUrl(work.id);
+    share.href = workPageUrl(work);
   } else {
     share.hidden = true;
   }
@@ -2626,8 +2627,15 @@ function applyRoute(route = routeFromLocation()) {
     return;
   }
   if (root === 'work') {
+    const workId = route.parts[1];
     showScreen('home');
     renderHome();
+    if (workId) {
+      fetchArtwork(workId).then((work) => {
+        if (work) openAtelierWork(work);
+        else toast(t('atelier.emptyPublic'));
+      }).catch(() => toast(t('gal.uploadFail')));
+    }
     return;
   }
 

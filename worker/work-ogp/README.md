@@ -5,8 +5,9 @@
 ## 役割
 
 - 作品ごとの OGP（X カード用）
-- 作品の簡易公開ページ
+- 作品の簡易公開ページ（**インラインCSS**。SPA を /work に出すと CSS が壊れる）
 - 通常の ArtClub UI は GitHub Pages のまま
+- `{id}` は **short_id（8桁）** または従来の uuid
 
 ## デプロイ
 
@@ -20,6 +21,9 @@ Cloudflare Dashboard で Routes を追加:
 
 - `artclub.space/work/*` → この Worker
 
+**重要:** `/work/*` を Pages の `index.html` に Rewrite しないこと。  
+相対パス `./css/styles.css` が `/work/css/styles.css` になり画面が壊れる。
+
 DNS は既存の artclub.space（Pages / カスタムドメイン）を維持し、`/work/*` だけ Worker に振る。
 
 ## Supabase
@@ -28,4 +32,4 @@ DNS は既存の artclub.space（Pages / カスタムドメイン）を維持し
 
 テーブル（`artworks` / `profiles` / `artwork_likes`）に加え、
 **Storage の `artworks` バケットと RLS ポリシー**もこの SQL に含まれている。
-バケット側のポリシーが無いと、投稿はローカル保存だけ成功してクラウドへ上がらない。
+`short_id` 列もここで追加される。

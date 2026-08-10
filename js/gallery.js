@@ -27,8 +27,21 @@ function publicUrl(path) {
   return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
 }
 
-export function workPageUrl(id) {
-  return `${SITE_ORIGIN}/work/${id}`;
+export function workPageUrl(workOrId) {
+  if (workOrId && typeof workOrId === 'object') {
+    const key = workOrId.short_id || workOrId.id;
+    return key ? `${SITE_ORIGIN}/work/${key}` : SITE_ORIGIN;
+  }
+  return workOrId ? `${SITE_ORIGIN}/work/${workOrId}` : SITE_ORIGIN;
+}
+
+/** URL用の短いID（8桁）。衝突したら呼び出し側で作り直す。 */
+export function makeShortId(len = 8) {
+  const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+  const bytes = crypto.getRandomValues(new Uint8Array(len));
+  let out = '';
+  for (const b of bytes) out += alphabet[b % 62];
+  return out;
 }
 
 function shrinkForUpload(blob, maxSide = 1200, quality = 0.82) {
@@ -138,6 +151,7 @@ export async function uploadArtwork(drawingBlob, promptId, {
 
   const imageUrl = publicUrl(path);
   const visibility = isPublic ? 'public' : 'private';
+  const shortId = makeShortId(8);
   const fullRow = {
     user_id: user.id,
     prompt_id: promptId,
@@ -149,6 +163,7 @@ export async function uploadArtwork(drawingBlob, promptId, {
     mode,
     username: getUsername() || user.email?.split('@')[0] || null,
     allow_copy: !!allowCopy,
+    short_id: shortId,
   };
   const legacyRow = {
     user_id: user.id,
@@ -166,16 +181,30 @@ export async function uploadArtwork(drawingBlob, promptId, {
     }),
     body: JSON.stringify(fullRow),
   });
-  // マイグレーション前の古い列構成でも動くようにする
+  // short_id 衝突時は1回だけ作り直す
   if (!dbRes.ok) {
-    dbRes = await fetch(`${SUPABASE_URL}/rest/v1/artworks`, {
-      method: 'POST',
-      headers: authHeaders({
-        'Content-Type': 'application/json',
-        Prefer: 'return=representation',
-      }),
-      body: JSON.stringify(legacyRow),
-    });
+    const errText = await dbRes.text();
+    if (/short_id|duplicate|unique/i.test(errText)) {
+      fullRow.short_id = makeShortId(8);
+      dbRes = await fetch(`${SUPABASE_URL}/rest/v1/artworks`, {
+        method: 'POST',
+        headers: authHeaders({
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation',
+        }),
+        body: JSON.stringify(fullRow),
+      });
+    } else {
+      // マイグレーション前の古い列構成でも動くようにする
+      dbRes = await fetch(`${SUPABASE_URL}/rest/v1/artworks`, {
+        method: 'POST',
+        headers: authHeaders({
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation',
+        }),
+        body: JSON.stringify(legacyRow),
+      });
+    }
   }
   if (!dbRes.ok) {
     const text = await dbRes.text();
@@ -292,16 +321,32 @@ export async function fetchMyArtworks({ limit = 60 } = {}) {
 
 export async function fetchArtwork(id) {
   if (!id) return null;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   const params = new URLSearchParams({
     select: '*,artwork_likes(count)',
-    id: `eq.${id}`,
     limit: '1',
   });
+  params.set(isUuid ? 'id' : 'short_id', `eq.${id}`);
   const res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
     headers: authHeaders({ Accept: 'application/json' }),
   });
   if (!res.ok) return null;
   const rows = await res.json();
+  // short_id 未移行の古いリンク用に uuid でもう一度
+  if (!rows.length && !isUuid) {
+    const fallback = new URLSearchParams({
+      select: '*,artwork_likes(count)',
+      id: `eq.${id}`,
+      limit: '1',
+    });
+    const res2 = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${fallback}`, {
+      headers: authHeaders({ Accept: 'application/json' }),
+    });
+    if (!res2.ok) return null;
+    const rows2 = await res2.json();
+    const [work2] = await attachLikeState(rows2.map(normalizeArtwork));
+    return work2 || null;
+  }
   const [work] = await attachLikeState(rows.map(normalizeArtwork));
   return work || null;
 }

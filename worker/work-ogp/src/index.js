@@ -2,11 +2,15 @@
  * Cloudflare Worker — /work/{id} の OGP + 作品ページ
  *
  * - X などのクローラ → og:* meta 付き HTML
- * - ブラウザ → 作品画像とユーザーネームを見せる簡易ページ
- * - それ以外のパス → GitHub Pages へプロキシ（Routes で /work/* のみなら不要）
+ * - ブラウザ → 作品画像とユーザーネームを見せる簡易ページ（インラインCSS）
+ * - id は short_id（8桁）または従来の uuid のどちらでも可
+ *
+ * Routes: artclub.space/work/*
+ * （必ずこの Worker に振ること。Pages の index を /work に出すと CSS が壊れる）
  */
 
 const BOT_RE = /bot|crawl|spider|slurp|facebookexternalhit|twitterbot|linkedinbot|embedly|quora|pinterest|redditbot|applebot|whatsapp|telegram|discord|preview/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function escapeHtml(s) {
   return String(s ?? '')
@@ -18,8 +22,8 @@ function escapeHtml(s) {
 
 async function fetchArtwork(env, id) {
   const url = new URL(`${env.SUPABASE_URL}/rest/v1/artworks`);
-  url.searchParams.set('select', 'id,image_url,username,mode,created_at,visibility,prompt_id');
-  url.searchParams.set('id', `eq.${id}`);
+  url.searchParams.set('select', 'id,short_id,image_url,username,mode,created_at,visibility,prompt_id');
+  url.searchParams.set(UUID_RE.test(id) ? 'id' : 'short_id', `eq.${id}`);
   url.searchParams.set('limit', '1');
 
   const res = await fetch(url, {
@@ -47,15 +51,20 @@ function modeLabel(mode) {
   return mode;
 }
 
+function workKey(work) {
+  return work.short_id || work.id;
+}
+
 function renderWorkHtml(env, work, { forBot = false } = {}) {
   const origin = env.SITE_ORIGIN || 'https://artclub.space';
-  const pageUrl = `${origin}/work/${work.id}`;
+  const key = workKey(work);
+  const pageUrl = `${origin}/work/${key}`;
   const title = `ArtClub - 3分${modeLabel(work.mode)}`;
   const desc = work.username
     ? `${work.username} さんが描いた作品`
     : 'ArtClub で描いたクロッキー';
   const image = work.image_url;
-  const appLink = `${origin}/#work/${work.id}`;
+  const appLink = `${origin}/#work/${encodeURIComponent(key)}`;
 
   if (forBot) {
     return `<!DOCTYPE html>
@@ -101,68 +110,100 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
 <meta name="twitter:description" content="${escapeHtml(desc)}">
 <meta name="twitter:image" content="${escapeHtml(image)}">
 <link rel="canonical" href="${escapeHtml(pageUrl)}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Special+Gothic+Expanded+One&display=swap">
 <style>
-  :root { color-scheme: light; }
+  :root {
+    --bg: #f6f0f8;
+    --surface: #fffdfb;
+    --text: #2a2438;
+    --muted: #8a7f96;
+    --brand: #e891b8;
+    --brand-ink: #c45a8c;
+    --line: #eadff0;
+  }
+  * { box-sizing: border-box; }
   body {
-    margin: 0; min-height: 100vh; display: grid; place-items: center;
-    font-family: "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
-    background: #f6f3ee; color: #1c1a17; padding: 24px;
+    margin: 0; min-height: 100vh;
+    font-family: "DotGothic16", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(232, 145, 184, .18), transparent 40%),
+      radial-gradient(circle at 88% 12%, rgba(168, 196, 240, .2), transparent 36%),
+      var(--bg);
+    color: var(--text);
+    padding: 24px 16px 40px;
+  }
+  .wrap { width: min(100%, 560px); margin: 0 auto; }
+  .brand {
+    font-family: "Special Gothic Expanded One", sans-serif;
+    font-weight: 400; letter-spacing: .04em; font-size: 22px;
+    color: var(--brand-ink); margin: 0 0 18px; text-decoration: none;
+    display: inline-block;
   }
   .card {
-    width: min(100%, 520px); background: #fffdf8; border-radius: 18px;
-    padding: 20px; box-shadow: 0 10px 40px rgba(40, 20, 10, .08);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: 0 10px 30px rgba(80, 40, 70, .06);
   }
-  .brand {
-    font-weight: 800; letter-spacing: .04em; font-size: 14px; color: #e03d7f;
-    margin-bottom: 10px;
-  }
-  h1 { font-size: 22px; margin: 0 0 6px; line-height: 1.3; }
-  .meta { color: #6b6560; font-size: 14px; margin: 0 0 16px; }
-  img {
+  h1 { font-size: 20px; margin: 0 0 6px; line-height: 1.35; font-weight: 700; }
+  .meta { color: var(--muted); font-size: 13px; margin: 0 0 14px; line-height: 1.5; }
+  img.work {
     width: 100%; height: auto; display: block; border-radius: 12px;
-    background: #f0ebe3;
+    background: #f3eef7; border: 1px solid var(--line);
   }
   .actions { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
   a.btn {
     display: inline-flex; align-items: center; justify-content: center;
-    padding: 10px 16px; border-radius: 999px; text-decoration: none;
+    padding: 11px 18px; border-radius: 999px; text-decoration: none;
     font-weight: 700; font-size: 14px;
   }
   a.primary { background: #1c1a17; color: #fff; }
-  a.ghost { background: #efe9e1; color: #1c1a17; }
+  a.ghost { background: #efe6f3; color: var(--text); }
 </style>
 </head>
 <body>
-  <main class="card">
-    <div class="brand">ARTCLUB</div>
-    <h1>${escapeHtml(title)}</h1>
-    <p class="meta">${escapeHtml(desc)}</p>
-    <img src="${escapeHtml(image)}" alt="${escapeHtml(desc)}">
-    <div class="actions">
-      <a class="btn primary" href="${escapeHtml(appLink)}">ArtClub で見る</a>
-      <a class="btn ghost" href="${escapeHtml(origin)}/">トップへ</a>
-    </div>
-  </main>
+  <div class="wrap">
+    <a class="brand" href="${escapeHtml(origin)}/">ARTCLUB</a>
+    <main class="card">
+      <h1>${escapeHtml(title)}</h1>
+      <p class="meta">${escapeHtml(desc)}</p>
+      <img class="work" src="${escapeHtml(image)}" alt="${escapeHtml(desc)}">
+      <div class="actions">
+        <a class="btn primary" href="${escapeHtml(appLink)}">ArtClub で見る</a>
+        <a class="btn ghost" href="${escapeHtml(origin)}/">トップへ</a>
+      </div>
+    </main>
+  </div>
 </body>
 </html>`;
 }
 
-function notFoundHtml() {
-  return `<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><title>Not found</title></head>
-<body style="font-family:system-ui;padding:40px"><h1>作品が見つかりません</h1>
-<p><a href="https://artclub.space/">ArtClub へ戻る</a></p></body></html>`;
+function notFoundHtml(origin = 'https://artclub.space') {
+  return `<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Not found</title>
+<style>body{font-family:system-ui;padding:40px;background:#f6f0f8;color:#2a2438}a{color:#c45a8c}</style>
+</head><body><h1>作品が見つかりません</h1>
+<p><a href="${escapeHtml(origin)}/">ArtClub へ戻る</a></p></body></html>`;
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const match = url.pathname.match(/^\/work\/([^/]+)\/?$/);
+    const origin = env.SITE_ORIGIN || 'https://artclub.space';
 
     if (match) {
       const id = decodeURIComponent(match[1]);
+      // CSS など誤って /work/ 配下に来た静的パスはアプリ本体へ
+      if (id.includes('.') || id === 'css' || id === 'js' || id === 'icons') {
+        return Response.redirect(`${origin}/`, 302);
+      }
       const work = await fetchArtwork(env, id);
       if (!work) {
-        return new Response(notFoundHtml(), {
+        return new Response(notFoundHtml(origin), {
           status: 404,
           headers: { 'content-type': 'text/html; charset=utf-8' },
         });
@@ -177,9 +218,7 @@ export default {
       });
     }
 
-    // /work/* 以外は Pages へ（Worker をルート全体に付けた場合のフォールバック）
-    const pagesBase = env.PAGES_BASE || '';
-    const target = `${env.PAGES_ORIGIN || 'https://ssky1111.github.io'}${pagesBase}${url.pathname}${url.search}`;
-    return fetch(new Request(target, request));
+    // /work 以外がこの Worker に来たときのフォールバック（通常は Routes で来ない）
+    return Response.redirect(`${origin}/`, 302);
   },
 };
