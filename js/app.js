@@ -2294,7 +2294,7 @@ function renderSettings() {
   $('#opt-autoflip').checked = settings.autoFlip;
   $('#opt-keepawake').checked = settings.keepAwake;
   $('#opt-orientation').value = settings.orientation;
-  $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 0.8) * 100));
+  $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 0.9) * 100));
   renderLangChips();
 }
 
