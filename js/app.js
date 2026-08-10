@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '186';
+const BUILD = '187';
 const SITE_PASS_SESSION = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 
@@ -232,16 +232,8 @@ function renderModes() {
   for (const mode of MODES) {
     const card = el('button', 'menu-card');
     card.append(el('div', 'menu-title', tr(mode, 'title')));
-    const drill = mode.drillId ? DRILLS[mode.drillId] : null;
-    const hints = drill ? tr(drill, 'hints') : null;
-    if (Array.isArray(hints) && hints.length) {
-      const sub = el('div', 'menu-sub muted');
-      sub.append(hintList(hints, 'menu-hints'));
-      card.append(sub);
-    } else {
-      const subtitle = tr(mode, 'subtitle');
-      if (subtitle) card.append(el('div', 'menu-sub muted', subtitle));
-    }
+    const subtitle = tr(mode, 'subtitle');
+    if (subtitle) card.append(el('div', 'menu-sub muted', subtitle));
     if (mode.steps) {
       card.append(el('div', 'menu-time', fmtDur(menuDuration(mode))));
     } else if (mode.unlimited) {
