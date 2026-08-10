@@ -68,6 +68,7 @@ const DICT = {
   'auth.profile':          { ja: 'プロフィール',          en: 'Profile' },
   'auth.changeUsername':   { ja: 'ユーザーネームを変更',  en: 'Change username' },
   'auth.saved':            { ja: '保存しました',          en: 'Saved' },
+  'auth.usernameNoEmail':  { ja: 'メールアドレスは使えません', en: 'Email addresses can’t be used' },
 
   /* ---------- サイト入室 ---------- */
   'siteGate.note':        { ja: 'テスト公開中です。パスワードを入力してください。',

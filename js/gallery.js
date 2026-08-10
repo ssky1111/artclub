@@ -84,24 +84,30 @@ function normalizeArtwork(row) {
   };
 }
 
-/** 表示名。自分の作品はプロフィール名を優先（「わたし」にはしない）。 */
+/** 表示名。自分の作品はプロフィール名を優先（「わたし」にはしない）。メールは出さない。 */
 export function artworkDisplayName(work) {
   if (!work) return '';
+  const clean = (name) => {
+    const s = String(name || '').trim();
+    return !s || s.includes('@') ? '' : s;
+  };
   const me = getUser();
   const isMine = me?.id && work.user_id === me.id;
   if (isMine) {
-    return getUsername() || work.username || '';
+    return clean(getUsername()) || clean(work.username) || '';
   }
-  return work.username || 'anonymous';
+  return clean(work.username) || 'anonymous';
 }
 
 /** プロフィールのユーザーネームを Auth ユーザーに同期する。 */
 export async function upsertProfile(username) {
   const user = getUser();
-  if (!user || !username) return null;
+  if (!user) return null;
+  const cleaned = String(username || '').trim().slice(0, 32);
+  if (cleaned.includes('@')) return null;
   const body = {
     id: user.id,
-    username: String(username).trim().slice(0, 32),
+    username: cleaned || null,
     updated_at: new Date().toISOString(),
   };
   const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {

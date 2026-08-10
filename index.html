@@ -35,17 +35,17 @@
 </script>
 </head>
 
-<body data-build="180" data-theme="light">
+<body data-build="181" data-theme="light">
 
-<div id="site-gate" class="site-gate">
-  <div class="site-gate-inner card">
-    <a href="/" class="brand brand-link site-gate-brand" aria-label="ARTCLUB">
-      <span class="brand-text">ARTCLUB</span>
-    </a>
-    <p class="muted small" data-i18n="siteGate.note">テスト公開中です。パスワードを入力してください。</p>
-    <input type="password" id="site-pass" class="input" autocomplete="current-password" data-i18n-ph="siteGate.ph" placeholder="パスワード">
-    <button id="site-pass-btn" class="btn primary big" data-i18n="siteGate.enter">入室</button>
+<div id="site-gate" class="confirm-dialog site-gate-dialog" role="dialog" aria-modal="true" aria-labelledby="site-gate-title">
+  <div class="confirm-dialog-inner site-gate-inner">
+    <div id="site-gate-title" class="site-gate-brand brand-text">ARTCLUB</div>
+    <p id="site-gate-note" class="confirm-dialog-msg">テスト公開中です。パスワードを入力してください。</p>
+    <input type="password" id="site-pass" class="input site-gate-input" autocomplete="current-password" placeholder="パスワード">
     <p id="site-pass-msg" class="muted small site-gate-msg" aria-live="polite"></p>
+    <div class="confirm-dialog-actions">
+      <button id="site-pass-btn" class="confirm-dialog-btn ok" type="button">入室</button>
+    </div>
   </div>
 </div>
 
