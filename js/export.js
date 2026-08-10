@@ -170,12 +170,12 @@ export async function composeSheet(blobs, { date = '', crop = true } = {}) {
     }
   });
 
-  // ARTCLUB は右下（OGPでも読める位置）
+  // ARTCLUB は下中央
   ctx.fillStyle = SOFT;
-  ctx.textAlign = 'right';
+  ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = '600 16px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
-  ctx.fillText('ARTCLUB', W - pad, H - bottomBand / 2);
+  ctx.fillText('ARTCLUB', W / 2, H - bottomBand / 2);
 
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.88));
 }
