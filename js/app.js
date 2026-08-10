@@ -4,7 +4,7 @@
 
 import {
   buildDaily, partForDate, MODES, PARTS, ACTIVE_PARTS, DRILLS, PICKABLE_DRILLS,
-  TIME_CHOICES, COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu, buildCopyMenu,
+  TIME_CHOICES, COUNT_CHOICES, GESTURE_COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu, buildCopyMenu, buildGestureMenu,
   levelLabel, menuDuration,
 } from './theory.js';
 import {
@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '179';
+const BUILD = '180';
 const SITE_PASS_SESSION = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 
@@ -250,6 +250,7 @@ function renderModes() {
     card.addEventListener('click', () => {
       if (mode.picker === 'part') return openPartSheet();
       if (mode.picker === 'copy') return openCopySheet();
+      if (mode.picker === 'gestureCount') return openGestureSheet();
       startSession(mode);
     });
     wrap.append(card);
@@ -292,6 +293,45 @@ function celebrate(history = getHistory()) {
   setTimeout(() => box.remove(), 1800);
 }
 
+
+/* ==================== ジェスチャードローイング ==================== */
+
+let gestureCount = 10;
+
+function openGestureSheet() {
+  renderGestureChips();
+  $('#gesture-sheet').hidden = false;
+}
+
+function renderGestureChips() {
+  const wrap = $('#gesture-count-chips');
+  wrap.innerHTML = '';
+  for (const n of GESTURE_COUNT_CHOICES) {
+    const chip = el('button', `chip${gestureCount === n ? ' on' : ''}`,
+                    getLang() === 'ja' ? `${n}体` : String(n));
+    chip.addEventListener('click', () => { gestureCount = n; renderGestureChips(); });
+    wrap.append(chip);
+  }
+  const note = $('#gesture-note');
+  if (note) {
+    note.textContent = getLang() === 'ja'
+      ? `1体1分 × ${gestureCount}体（合計 ${gestureCount}分）`
+      : `1 min each × ${gestureCount} (total ${gestureCount} min)`;
+  }
+  const start = $('#gesture-start');
+  if (start) start.textContent = t('setup.start', { d: fmtDur(60 * gestureCount) });
+}
+
+function wireGestureSheet() {
+  $('#gesture-close').addEventListener('click', () => { $('#gesture-sheet').hidden = true; });
+  $('#gesture-sheet').addEventListener('click', (e) => {
+    if (e.target.id === 'gesture-sheet') $('#gesture-sheet').hidden = true;
+  });
+  $('#gesture-start').addEventListener('click', () => {
+    $('#gesture-sheet').hidden = true;
+    startSession(buildGestureMenu(gestureCount));
+  });
+}
 
 /* ==================== 部位練習 ==================== */
 
@@ -2347,8 +2387,13 @@ function coverArtworkId(entry) {
 /** セッション定義から、その回の croquis 枚の shot インデックスを出す。 */
 function menuStepsForEntry(entry) {
   if (!entry?.menuId) return null;
-  if (entry.menuId === 'croquisMode' || entry.menuId === 'gestureMode') {
+  if (entry.menuId === 'croquisMode') {
     return MODES.find((m) => m.id === entry.menuId)?.steps || null;
+  }
+  if (entry.menuId === 'gestureMode') {
+    // 体数は可変。履歴の枚数から復元（1体1分）
+    const n = Math.max(1, (entry.shots || []).length || Math.round((entry.seconds || 600) / 60));
+    return buildGestureMenu(n).steps;
   }
   if (entry.menuId === 'daily') return buildDaily(partForDate(entry.date)).steps;
   if (entry.menuId.startsWith('part-')) {
@@ -3509,6 +3554,7 @@ function init() {
   wireLesson();
   wireSetup();
   wirePartSheet();
+  wireGestureSheet();
   wireCopySheet();
   wireLibrary();
   wireCalendar();
