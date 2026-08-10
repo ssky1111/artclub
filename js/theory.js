@@ -163,7 +163,7 @@ export const DRILLS = {
     id: 'copy',
     name: '模写',
     about:
-      '他の人が描いた作品を観察しながら模写する。時間制限はない。' +
+      '他の人が描いたスケッチを観察しながら模写する。時間制限はない。' +
       '完成した線の選び方や省略の仕方を、ゆっくり見て取る。',
     steps: [
       '全体の比率と大きな形を見る',
@@ -424,18 +424,18 @@ export const MODES = [
   {
     id: 'copyMode',
     title: '模写',
-    subtitle: '人気の作品を選んで、時間無制限で描く',
+    subtitle: '人気のスケッチを選んで、時間無制限で描く',
     picker: 'copy',
     drillId: 'copy',
     unlimited: true,
     en: {
       title: 'Copy',
-      subtitle: 'Pick a popular artwork and draw with no time limit',
+      subtitle: 'Pick a popular sketch and draw with no time limit',
     },
   },
 ];
 
-/** 模写モードのメニュー。選んだ作品1枚を時間無制限で描く。 */
+/** 模写モードのメニュー。選んだスケッチ1枚を時間無制限で描く。 */
 export function buildCopyMenu(work) {
   const name = work?.username || 'anonymous';
   return {

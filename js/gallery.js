@@ -1,5 +1,5 @@
 /**
- * gallery.js — みんなの作品ギャラリー / 個別作品
+ * gallery.js — みんなのスケッチギャラリー / 個別スケッチ
  *
  * 画像: Supabase Storage (artworks バケット)
  * メタ: Supabase Database (artworks / artwork_likes / profiles)
@@ -107,7 +107,7 @@ export async function upsertProfile(username) {
 }
 
 /**
- * 作品を保存する。user_id は常にログイン中の Auth ユーザー。
+ * スケッチを保存する。user_id は常にログイン中の Auth ユーザー。
  * kind: 'drawing' | 'sheet'
  * og_image_url: ARTCLUB 入りの OGP 用画像（別ファイル）
  */
@@ -282,7 +282,7 @@ async function attachLikeState(works) {
   }));
 }
 
-/** 同じお題の作品。新しい順。公開＋自分の非公開。 */
+/** 同じお題のスケッチ。新しい順。公開＋自分の非公開。 */
 export async function fetchArtworks(promptId, { limit = 10 } = {}) {
   if (!promptId) return [];
   const base = {
@@ -306,7 +306,7 @@ export async function fetchArtworks(promptId, { limit = 10 } = {}) {
   return attachLikeState(rows);
 }
 
-/** みんなの公開作品（タイムライン用）。新しい順。 */
+/** みんなの公開スケッチ（タイムライン用）。新しい順。 */
 export async function fetchPublicArtworks({ limit = 40 } = {}) {
   let params = new URLSearchParams({
     order: 'created_at.desc',
@@ -336,7 +336,7 @@ export async function fetchPublicArtworks({ limit = 40 } = {}) {
 }
 
 /**
- * 模写モード用。模写OKの公開作品をいいね多い順で返す。
+ * 模写モード用。模写OKの公開スケッチをいいね多い順で返す。
  * PostgREST では like 集計ソートが難しいので、多めに取ってクライアントで並べ替える。
  */
 export async function fetchTopCopyableArtworks({ limit = 30 } = {}) {
@@ -387,7 +387,7 @@ export async function fetchTopCopyableArtworks({ limit = 30 } = {}) {
   return attachLikeState(rows);
 }
 
-/** 自分の作品（公開・非公開どちらも）。 */
+/** 自分のスケッチ（公開・非公開どちらも）。 */
 export async function fetchMyArtworks({ limit = 60 } = {}) {
   const user = getUser();
   if (!user) return [];

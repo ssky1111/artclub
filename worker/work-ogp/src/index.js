@@ -1,8 +1,8 @@
 /**
- * Cloudflare Worker — /work/{id} の OGP + 作品ページ
+ * Cloudflare Worker — /work/{id} の OGP + スケッチページ
  *
  * - X などのクローラ → og:* meta 付き HTML
- * - ブラウザ → ヘッダー付きの作品ページ（インラインCSS）
+ * - ブラウザ → ヘッダー付きのスケッチページ（インラインCSS）
  * - id は short_id（8桁）または従来の uuid のどちらでも可
  *
  * Routes: artclub.space/work/*
@@ -66,7 +66,7 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
   const desc = work.username
     ? (work.kind === 'sheet'
       ? `${work.username} さんのまとめ`
-      : `${work.username} さんが描いた作品`)
+      : `${work.username} さんが描いたスケッチ`)
     : 'ARTCLUB で描いたクロッキー';
   const image = work.og_image_url || work.image_url;
   const authLink = `${origin}/#auth`;
@@ -250,7 +250,7 @@ function notFoundHtml(origin = 'https://artclub.space') {
   return `<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Not found</title>
 <style>body{font-family:system-ui;padding:40px;background:#f4f4f1;color:#111}a{color:#c96f94}</style>
-</head><body><h1>作品が見つかりません</h1>
+</head><body><h1>スケッチが見つかりません</h1>
 <p><a href="${escapeHtml(origin)}/">ARTCLUB へ戻る</a></p></body></html>`;
 }
 

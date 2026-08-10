@@ -328,7 +328,7 @@
   </div>
 </main>
 
-<!-- ============ 作品ページ ============ -->
+<!-- ============ スケッチページ ============ -->
 <main id="screen-work" class="screen">
   <header class="topbar work-topbar">
     <button id="work-back" class="icon-btn" type="button" data-icon="back"
@@ -347,7 +347,7 @@
   </header>
 
   <p id="work-loading" class="muted small" data-i18n="gal.loading">読み込み中…</p>
-  <p id="work-missing" class="muted" hidden data-i18n="gal.workNotFound">作品が見つかりません</p>
+  <p id="work-missing" class="muted" hidden data-i18n="gal.workNotFound">スケッチが見つかりません</p>
 
   <div id="work-content" class="work-page" hidden>
     <img id="work-img" class="work-page-img" alt="">
@@ -360,8 +360,8 @@
     </div>
     <div class="work-page-actions">
       <button id="work-copy" class="btn primary small" hidden data-i18n="atelier.copyAction">模写する</button>
-      <a id="work-share" class="btn small" href="#" target="_blank" rel="noopener" hidden data-i18n="gal.shareWork">この作品をシェア</a>
-      <button id="work-delete" class="btn danger small" data-i18n="gal.delete" hidden>この作品を消す</button>
+      <a id="work-share" class="btn small" href="#" target="_blank" rel="noopener" hidden data-i18n="gal.shareWork">このスケッチをシェア</a>
+      <button id="work-delete" class="btn danger small" data-i18n="gal.delete" hidden>このスケッチを消す</button>
     </div>
   </div>
 
@@ -476,12 +476,12 @@
   </div>
 </div>
 
-<!-- 模写モード：人気作品を選ぶ -->
+<!-- 模写モード：人気スケッチを選ぶ -->
 <div id="copy-sheet" class="sheet" hidden>
   <div class="sheet-inner">
     <button id="copy-close" class="icon-btn sheet-close" data-icon="close"></button>
-    <h2 data-i18n="copy.title">模写する作品を選ぶ</h2>
-    <p class="muted small" data-i18n="copy.note">いいねが多い「模写OK」の作品から選びます。時間制限はありません。</p>
+    <h2 data-i18n="copy.title">模写するスケッチを選ぶ</h2>
+    <p class="muted small" data-i18n="copy.note">いいねが多い「模写OK」のスケッチから選びます。時間制限はありません。</p>
     <p id="copy-status" class="muted small"></p>
     <div id="copy-grid" class="copy-grid"></div>
     <button id="copy-start" class="btn primary big" disabled data-i18n="home.startPlain">はじめる</button>
@@ -635,7 +635,7 @@
     <div class="section-head">
       <h2 data-i18n="log.notes">タイムライン</h2>
     </div>
-    <p class="muted small tl-desc" data-i18n="log.notesDesc">自分の投稿が新しい順に並びます。絵を押すと作品ページが開きます。</p>
+    <p class="muted small tl-desc" data-i18n="log.notesDesc">自分のスケッチが新しい順に並びます。絵を押すとスケッチページが開きます。</p>
     <div id="note-list" class="tl-feed"></div>
   </section>
 </main>
@@ -832,19 +832,19 @@
 
   <section id="atelier-public" class="atelier-panel">
     <div id="atelier-public-feed" class="tl-feed"></div>
-    <p id="atelier-public-empty" class="muted small tl-empty" hidden data-i18n="atelier.emptyPublic">まだ公開投稿がありません</p>
+    <p id="atelier-public-empty" class="muted small tl-empty" hidden data-i18n="atelier.emptyPublic">まだ公開スケッチがありません</p>
   </section>
 
   <section id="atelier-mine" class="atelier-panel" hidden>
     <div id="atelier-mine-feed" class="tl-feed"></div>
-    <p id="atelier-mine-empty" class="muted small tl-empty" hidden data-i18n="atelier.emptyMine">まだ自分の投稿がありません</p>
+    <p id="atelier-mine-empty" class="muted small tl-empty" hidden data-i18n="atelier.emptyMine">まだ自分のスケッチがありません</p>
     <p id="atelier-mine-login" class="muted small tl-empty" hidden data-i18n="atelier.loginMine">ログインすると自分のアトリエが見られます</p>
   </section>
 
   <section id="atelier-prompt" class="atelier-panel" hidden>
     <p class="muted small atelier-lead" data-i18n="atelier.promptDesc">お題写真のとなりに、いいねが多い絵が並びます</p>
     <div id="atelier-prompt-list" class="atelier-prompt-list"></div>
-    <p id="atelier-prompt-empty" class="muted small tl-empty" hidden data-i18n="atelier.emptyPrompt">まだお題別の投稿がありません</p>
+    <p id="atelier-prompt-empty" class="muted small tl-empty" hidden data-i18n="atelier.emptyPrompt">まだお題別のスケッチがありません</p>
   </section>
 </main>
 

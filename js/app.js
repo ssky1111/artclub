@@ -365,7 +365,7 @@ function createArtworkQueue(work) {
     url: work.image_url,
     photoId: `artwork:${work.id}`,
     credit: {
-      kind: getLang() === 'en' ? 'Artwork' : '作品',
+      kind: getLang() === 'en' ? 'Sketch' : 'スケッチ',
       name: work.username || 'anonymous',
       link: workPageUrl(work),
       photoLink: workPageUrl(work),
@@ -2052,7 +2052,7 @@ function wireReview() {
   wireGallery();
 }
 
-/* ==================== みんなの作品ギャラリー ==================== */
+/* ==================== みんなのスケッチギャラリー ==================== */
 
 let galleryPromptIds = [];
 
@@ -2082,7 +2082,7 @@ async function loadSamePromptGallery() {
     const works = await fetchArtworks(pid, { limit: 10 }).catch(() => []);
     allWorks.push(...works);
   }
-  // 同じ作品が複数 prompt にまたがることは稀だが念のため
+  // 同じスケッチが複数 prompt にまたがることは稀だが念のため
   const seen = new Set();
   allWorks = allWorks.filter((w) => {
     if (seen.has(w.id)) return false;
@@ -2148,7 +2148,7 @@ function workRouteKey(work) {
   return work?.short_id || work?.id || '';
 }
 
-/** 作品ページへ。履歴に残すので左上の←で元の画面に戻れる。 */
+/** スケッチページへ。履歴に残すので左上の←で元の画面に戻れる。 */
 function openWorkPage(work) {
   const key = workRouteKey(work);
   if (!key) return;
