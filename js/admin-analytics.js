@@ -321,10 +321,11 @@ function drawLineChart(svg, { labels, series, yLabel }) {
 
 function renderCharts(trend) {
   const labels = trend.map((d) => d.date);
+  const colors = chartColors();
 
   renderLegend($('#analytics-legend-total'), [
-    { label: t('analytics.chartRounds'), color: TOTAL_COLOR },
-    { label: t('analytics.chartUsers'), color: USERS_COLOR },
+    { label: t('analytics.chartRounds'), color: colors.total },
+    { label: t('analytics.chartUsers'), color: colors.users },
   ]);
   drawLineChart($('#analytics-chart-total'), {
     labels,
@@ -332,13 +333,13 @@ function renderCharts(trend) {
     series: [
       {
         key: 'rounds',
-        color: TOTAL_COLOR,
+        color: colors.total,
         thick: true,
         values: trend.map((d) => d.rounds),
       },
       {
         key: 'users',
-        color: USERS_COLOR,
+        color: colors.users,
         values: trend.map((d) => d.users.size),
       },
     ],
@@ -349,7 +350,7 @@ function renderCharts(trend) {
     .map((m) => ({
       key: m.key,
       label: modeLabel(m.key),
-      color: m.color,
+      color: colors.modes[m.key] || m.color,
       values: trend.map((d) => d.modes[m.key] || 0),
     }));
 
