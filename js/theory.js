@@ -410,10 +410,13 @@ export const MODES = [
   {
     id: 'gestureMode',
     title: 'ジェスチャードローイング',
-    subtitle: '1分×10枚。動きと重心だけを取る',
+    subtitle: '1分/体。何体やるかは自分で選ぶ',
+    picker: 'gestureCount',
     drillId: 'gesture',
-    steps: [{ drill: 'gesture', count: 10, seconds: 60, source: 'gesture' }],
-    en: { title: 'Gesture drawing', subtitle: '10 × 1 min. Movement and weight only' },
+    en: {
+      title: 'Gesture drawing',
+      subtitle: '1 min each. Choose how many figures',
+    },
   },
   {
     id: 'partMode',
@@ -444,6 +447,22 @@ export const MODES = [
     },
   },
 ];
+
+/** ジェスチャードローイング。1体1分固定、体数だけ選ぶ。 */
+export function buildGestureMenu(count = 10) {
+  const n = Math.max(1, Number(count) || 10);
+  return {
+    id: 'gestureMode',
+    title: 'ジェスチャードローイング',
+    subtitle: `1分×${n}体。動きと重心だけを取る`,
+    drillId: 'gesture',
+    steps: [{ drill: 'gesture', count: n, seconds: 60, source: 'gesture' }],
+    en: {
+      title: 'Gesture drawing',
+      subtitle: `${n} × 1 min. Movement and weight only`,
+    },
+  };
+}
 
 /** 模写モードのメニュー。選んだスケッチ1枚を時間無制限で描く。 */
 export function buildCopyMenu(work) {
@@ -482,6 +501,8 @@ export function buildPartMenu(part) {
 /** 1枚あたりの時間の選択肢（秒）。 */
 export const TIME_CHOICES = [30, 60, 120, 180, 300, 600];
 export const COUNT_CHOICES = [1, 3, 5, 10, 20];
+/** ジェスチャーモードの体数。1体1分固定なのでここだけ選ぶ。 */
+export const GESTURE_COUNT_CHOICES = [2, 5, 10, 15, 20];
 
 export function timeLabel(seconds) {
   return seconds < 60 ? `${seconds}秒` : `${seconds / 60}分`;

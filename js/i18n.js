@@ -385,6 +385,9 @@ const DICT = {
   'setup.how':           { ja: '描きかた',             en: 'Drill' },
   'setup.start':         { ja: 'はじめる（{d}）',      en: 'Start ({d})' },
   'setup.part':          { ja: 'どこを練習する？',     en: 'Which part?' },
+  'setup.gestureCount':  { ja: '何体やる？',           en: 'How many figures?' },
+  'setup.gestureNote':   { ja: '1体あたり1分。デイリーと同じペースです。',
+                           en: '1 minute per figure — same pace as Daily.' },
 
   /* ---------- トースト ---------- */
   'toast.pickGenre':     { ja: 'ジャンルは1つ以上えらんでください', en: 'Pick at least one genre' },
