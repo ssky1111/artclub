@@ -119,6 +119,11 @@ export const DRILLS = {
     theory: '細部を描く時間を奪うことで、全体の流れと重心だけに注意を向けさせる。' +
             '完成させるためではなく、勢いと重心を掴むための1分。',
     cue: '動きと重心を捉えよう。正確性より印象を大切に、少し誇張して大胆に、一本の線からはじめよう。',
+    hints: [
+      '動きと重心を捉えよう',
+      '正確性より印象を大切に',
+      '少し誇張して大胆に',
+    ],
     view: {},
     en: {
       name: 'Gesture drawing',
@@ -131,6 +136,11 @@ export const DRILLS = {
       steps: ['Find the leg carrying the weight', 'One line from head to toe', 'Two lines: shoulders and hips'],
       theory: 'Taking away the time for detail forces attention onto flow and weight.',
       cue: 'Draw the line of action first. Do not follow the outline.',
+      hints: [
+        'Capture movement and centre of gravity',
+        'Impression over accuracy',
+        'Exaggerate a little — be bold',
+      ],
     },
   },
   croquis: {

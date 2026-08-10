@@ -38,7 +38,7 @@ import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } fro
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
-import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, restorePageScroll, setScreenShownHook } from './ui.js';
+import { $, $$, el, hintList, showScreen, toast, confirmDialog, weekReviewDialog, restorePageScroll, setScreenShownHook } from './ui.js';
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '140';
+const BUILD = '141';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -225,10 +225,17 @@ function renderModes() {
   wrap.innerHTML = '';
   for (const mode of MODES) {
     const card = el('button', 'menu-card');
-    card.append(
-      el('div', 'menu-title', tr(mode, 'title')),
-      el('div', 'menu-sub muted', tr(mode, 'subtitle')),
-    );
+    card.append(el('div', 'menu-title', tr(mode, 'title')));
+    const drill = mode.drillId ? DRILLS[mode.drillId] : null;
+    const hints = drill ? tr(drill, 'hints') : null;
+    if (Array.isArray(hints) && hints.length) {
+      const sub = el('div', 'menu-sub muted');
+      sub.append(hintList(hints, 'menu-hints'));
+      card.append(sub);
+    } else {
+      const subtitle = tr(mode, 'subtitle');
+      if (subtitle) card.append(el('div', 'menu-sub muted', subtitle));
+    }
     if (mode.steps) {
       card.append(el('div', 'menu-time', fmtDur(menuDuration(mode))));
     } else if (mode.unlimited) {
