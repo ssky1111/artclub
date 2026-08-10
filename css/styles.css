@@ -93,6 +93,126 @@ body[data-theme='paper'] {
                   'Hiragino Maru Gothic ProN', 'Yu Gothic UI', system-ui, sans-serif;
 }
 
+/*
+ * パステルRPGスキン。
+ * 明暗（theme）とは別軸。やわらかいパステルと、ゲームUIっぽいふち・影。
+ */
+body[data-skin='pastel-rpg'] {
+  --bg: #f3eef8;
+  --surface: #fff7fb;
+  --surface-2: #efe4f4;
+  --line: #e4d2ea;
+  --line-strong: #d4b9df;
+  --text: #3a2f4a;
+  --text-soft: #5f5070;
+  --muted: #9a89aa;
+  --accent: #7ec8b5;
+  --accent-ink: #1f3f38;
+  --accent-soft: #dff4ee;
+  --accent-dim: #b7e2d6;
+  --cta-bg: #f0a8c0;
+  --cta-ink: #4a2034;
+  --brand: #f0a8c0;
+  --brand-ink: #c45f84;
+  --lime: #b8e986;
+  --lime-ink: #5f9a2e;
+  --mint: #7ec8b5;
+  --sun: #ffd98a;
+  --good: #5f9a2e;
+  --danger: #e8898a;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --lift: 0 3px 0 #e4d2ea;
+  --lift-accent: 0 3px 0 color-mix(in srgb, var(--accent) 45%, #c8b0d4);
+}
+
+body[data-skin='pastel-rpg'][data-theme='dark'] {
+  --bg: #2a2438;
+  --surface: #3a314c;
+  --surface-2: #4a405e;
+  --line: #5a4f70;
+  --line-strong: #6e6286;
+  --text: #f7eef8;
+  --text-soft: #d8cce4;
+  --muted: #a898b8;
+  --accent: #8fd9c6;
+  --accent-ink: #1a2e2a;
+  --accent-soft: #3d4f4a;
+  --accent-dim: #5a7a70;
+  --cta-bg: #f0a8c0;
+  --cta-ink: #3a1828;
+  --brand: #f0a8c0;
+  --brand-ink: #ffc0d4;
+  --lime: #c8f090;
+  --lime-ink: #c8f090;
+  --mint: #8fd9c6;
+  --sun: #ffe0a0;
+  --good: #c8f090;
+  --danger: #f0a0a4;
+  --lift: 0 3px 0 #1e1830;
+  --lift-accent: 0 3px 0 #1e1830;
+}
+
+body[data-skin='pastel-rpg'][data-theme='paper'] {
+  --bg: #f8f2e8;
+  --surface: #fffaf3;
+  --surface-2: #f0e6d8;
+  --line: #e6d8c4;
+  --line-strong: #d4c2a8;
+  --text: #4a3a32;
+  --text-soft: #6a564c;
+  --muted: #a08a7a;
+  --accent: #7ec8b5;
+  --accent-ink: #1f3f38;
+  --accent-soft: #e4f4ee;
+  --accent-dim: #b7e2d6;
+  --cta-bg: #f0a8c0;
+  --cta-ink: #4a2034;
+  --brand: #f0a8c0;
+  --brand-ink: #c45f84;
+  --lift: 0 3px 0 #e6d8c4;
+  --lift-accent: 0 3px 0 #d4c2a8;
+}
+
+/* パステルRPG：やわらかい水玉の地と、ウィンドウっぽいカード */
+body[data-skin='pastel-rpg'] {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 20% 18%, color-mix(in srgb, var(--brand) 22%, transparent) 0 18px, transparent 19px),
+    radial-gradient(circle at 78% 12%, color-mix(in srgb, var(--mint) 24%, transparent) 0 14px, transparent 15px),
+    radial-gradient(circle at 88% 72%, color-mix(in srgb, var(--sun) 28%, transparent) 0 16px, transparent 17px),
+    radial-gradient(circle at 12% 78%, color-mix(in srgb, var(--lime) 20%, transparent) 0 12px, transparent 13px),
+    radial-gradient(color-mix(in srgb, var(--line) 55%, transparent) 1.2px, transparent 1.3px);
+  background-size: auto, auto, auto, auto, 18px 18px;
+  background-attachment: fixed;
+}
+body[data-skin='pastel-rpg'] .card,
+body[data-skin='pastel-rpg'] .streak-card,
+body[data-skin='pastel-rpg'] .menu-card,
+body[data-skin='pastel-rpg'] .primary-card {
+  border-width: 2px;
+  border-style: solid;
+}
+body[data-skin='pastel-rpg'] .btn.primary,
+body[data-skin='pastel-rpg'] .btn.cta {
+  border: 2px solid color-mix(in srgb, var(--cta-ink) 18%, transparent);
+  box-shadow: var(--lift-accent);
+}
+body[data-skin='pastel-rpg'] .chip.on {
+  border-width: 2px;
+}
+body[data-skin='pastel-rpg'] .tabbar {
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border-top: 2px solid var(--line);
+  backdrop-filter: blur(8px);
+}
+body[data-skin='pastel-rpg'] .brand {
+  color: var(--brand-ink);
+}
+body[data-skin='pastel-rpg'] .week-col.on .week-box {
+  color: #fff;
+}
+
 * { box-sizing: border-box; }
 
 .icon { display: block; }
@@ -105,7 +225,7 @@ body[data-theme='paper'] {
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
+  background-color: var(--bg);
   color: var(--text);
   font-family: 'DotGothic16', -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
   font-size: 16px;
