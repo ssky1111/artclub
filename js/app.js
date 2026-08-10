@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '177';
+const BUILD = '178';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -312,17 +312,6 @@ function renderPartChips() {
   }
   const menu = buildPartMenu(currentPart);
   $('#part-note').textContent = tr(menu, 'subtitle');
-
-  // 構造レッスンがある部位だけ、読みに行く導線を出す
-  const lesson = currentPart.lessonId ? lessonById(currentPart.lessonId) : null;
-  const link = $('#part-lesson');
-  link.hidden = !lesson;
-  if (lesson) {
-    link.textContent = getLang() === 'ja'
-      ? `${tr(lesson, 'name')}の構造を読む`
-      : `Read how the ${tr(lesson, 'name').toLowerCase()} are built`;
-    link.onclick = () => { $('#part-sheet').hidden = true; openLesson(lesson.id); };
-  }
 }
 
 function wirePartSheet() {
