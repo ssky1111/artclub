@@ -37,7 +37,7 @@ import {
   saveHiddenTags, invalidateTagConfig, convertToWebp, repairManifestExtensions,
 } from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
-import { composeSheet, cropToInk, downloadBlob, downloadEach, shareToX } from './export.js';
+import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
 import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog } from './ui.js';
@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '41';
+const BUILD = '42';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1438,40 +1438,24 @@ async function finishSession(result) {
     updatePublishNote(true);
   }
 
-  // 先にトリミングしてからふりかえりを出す（余白付きが一瞬映らないように）
+  // 個別画像はそのまま。まとめ画像だけインク範囲でトリミングする
   $('#sheet-preview').hidden = true;
+  renderDrawingStrip();
+  showScreen('review');
   if (pendingDrawings.length > 0) {
-    await cropPendingDrawings();
-    renderDrawingStrip();
-    showScreen('review');
     const blob = await composeSheet(
-      pendingDrawings.map((s) => s.croppedBlob || s.blob),
-      { date: dateKey(), crop: false },
+      pendingDrawings.map((s) => s.blob),
+      { date: dateKey(), crop: true },
     );
     if (blob) {
       sheetBlob = blob;
       $('#sheet-img').src = URL.createObjectURL(blob);
       $('#sheet-preview').hidden = false;
     }
-  } else {
-    renderDrawingStrip();
-    showScreen('review');
   }
 
   // 同じお題の作品を自動表示（アップロードもここで）
   loadSamePromptGallery();
-}
-
-/** 描いた範囲だけに切り出した Blob を各ショットに載せる。 */
-async function cropPendingDrawings() {
-  await Promise.all(pendingDrawings.map(async (shot) => {
-    if (shot.croppedBlob || !shot.blob) return;
-    try {
-      shot.croppedBlob = await cropToInk(shot.blob);
-    } catch {
-      shot.croppedBlob = shot.blob;
-    }
-  }));
 }
 
 /* ==================== ふりかえり ==================== */
@@ -1492,7 +1476,7 @@ function renderDrawingStrip() {
   pendingDrawings.forEach((shot, i) => {
     const item = el('button', 'strip-item');
     const img = el('img');
-    img.src = URL.createObjectURL(shot.croppedBlob || shot.blob);
+    img.src = URL.createObjectURL(shot.blob);
     img.alt = '';
     item.append(img);
     item.addEventListener('click', () => openDrawing(i));
@@ -1506,7 +1490,7 @@ function openDrawing(index) {
   const shot = pendingDrawings[index];
   if (!shot) return;
   drawingIndex = index;
-  $('#draw-img').src = URL.createObjectURL(shot.croppedBlob || shot.blob);
+  $('#draw-img').src = URL.createObjectURL(shot.blob);
   $('#draw-lightbox').hidden = false;
 }
 
@@ -1519,10 +1503,7 @@ function wireDrawingLightbox() {
   $('#draw-dl').addEventListener('click', () => {
     const shot = pendingDrawings[drawingIndex];
     if (shot) {
-      downloadBlob(
-        shot.croppedBlob || shot.blob,
-        `artclub-${dateKey()}-${drawingIndex + 1}.jpg`,
-      );
+      downloadBlob(shot.blob, `artclub-${dateKey()}-${drawingIndex + 1}.jpg`);
     }
   });
   $('#draw-share-x').addEventListener('click', async () => {
@@ -1530,11 +1511,10 @@ function wireDrawingLightbox() {
     if (!shot) return;
     const btn = $('#draw-share-x');
     const text = t('rev.shareText', { n: 1, d: '' });
-    const blob = shot.croppedBlob || shot.blob;
     if (getUser()) {
       btn.disabled = true;
       try {
-        const url = await uploadShareImage(blob);
+        const url = await uploadShareImage(shot.blob);
         shareToX(`${text}\n${url}`);
       } catch { shareToX(text); }
       btn.disabled = false;
@@ -1567,7 +1547,7 @@ async function uploadPendingArtworks() {
     if (shot.uploaded || !shot.photoId) continue;
     try {
       shot.uploading = true;
-      const work = await uploadArtwork(shot.croppedBlob || shot.blob, shot.photoId, {
+      const work = await uploadArtwork(shot.blob, shot.photoId, {
         isPublic,
         sessionId,
         mode,
@@ -1587,7 +1567,7 @@ function wireReview() {
 
   $('#dl-all').addEventListener('click', () => {
     downloadEach(
-      pendingDrawings.map((s) => s.croppedBlob || s.blob),
+      pendingDrawings.map((s) => s.blob),
       `artclub-${dateKey()}`,
     );
   });
