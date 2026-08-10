@@ -1700,6 +1700,11 @@ body[data-theme='dark'] .google-btn {
   align-items: center;
   gap: 8px;
 }
+.work-topbar #work-back {
+  background: transparent;
+  border-radius: 0;
+}
+.work-topbar #work-back:hover { background: transparent; }
 .work-brand {
   margin: 0;
   min-width: 0;

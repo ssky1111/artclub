@@ -148,10 +148,10 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
   .back {
     width: 40px; height: 40px; padding: 0;
     display: inline-flex; align-items: center; justify-content: center;
-    border: none; border-radius: 999px; background: transparent;
+    border: none; border-radius: 0; background: transparent;
     color: var(--text); cursor: pointer;
   }
-  .back:hover { background: var(--surface-2); }
+  .back:hover { background: transparent; }
   .back svg { display: block; }
   .brand {
     font-family: "Special Gothic Expanded One", sans-serif;
