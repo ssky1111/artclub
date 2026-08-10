@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '166';
+const BUILD = '167';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -2322,6 +2322,62 @@ function coverArtworkId(entry) {
   return shot?.artworkId || shot?.shortId || null;
 }
 
+/** セッション定義から、その回の croquis 枚の shot インデックスを出す。 */
+function menuStepsForEntry(entry) {
+  if (!entry?.menuId) return null;
+  if (entry.menuId === 'croquisMode' || entry.menuId === 'gestureMode') {
+    return MODES.find((m) => m.id === entry.menuId)?.steps || null;
+  }
+  if (entry.menuId === 'daily') return buildDaily(partForDate(entry.date)).steps;
+  if (entry.menuId.startsWith('part-')) {
+    const part = PARTS.find((p) => entry.menuId === `part-${p.id}`);
+    return part ? buildPartMenu(part).steps : null;
+  }
+  return null;
+}
+
+function croquisShotIndices(steps) {
+  const indices = [];
+  let i = 0;
+  for (const step of steps || []) {
+    for (let c = 0; c < (step.count || 0); c++) {
+      if (step.drill === 'croquis') indices.push(i);
+      i++;
+    }
+  }
+  return indices;
+}
+
+/** その回の croquis 分だけ artwork ID を返す（ジェスチャー等は除く）。 */
+function croquisArtworkIdsFromEntry(entry) {
+  const shots = entry?.shots || [];
+  const steps = menuStepsForEntry(entry);
+  if (steps) {
+    return croquisShotIndices(steps)
+      .map((idx) => shots[idx]?.artworkId || shots[idx]?.shortId)
+      .filter(Boolean);
+  }
+  if (entry.menuId === 'croquisMode') {
+    return shots.map((s) => s.artworkId || s.shortId).filter(Boolean);
+  }
+  if (entry.byDrill?.croquis && !entry.byDrill?.gesture) {
+    return shots.map((s) => s.artworkId || s.shortId).filter(Boolean);
+  }
+  return [];
+}
+
+/** 手動未指定の日: その日の croquis スケッチから表紙を選ぶ。 */
+function autoCalendarCoverId(dayKey, history = getHistory()) {
+  const dayEntries = history
+    .filter((h) => h.date === dayKey)
+    .sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  for (const entry of dayEntries) {
+    const ids = croquisArtworkIdsFromEntry(entry);
+    if (ids.length) return ids[0];
+  }
+  return null;
+}
+
 function getCalendarCovers() {
   return settings.calendarCovers || {};
 }
@@ -2343,7 +2399,7 @@ function dayCoverCandidates(dayKey, history = getHistory()) {
 function getCalendarCoverId(dayKey, entry, history = getHistory()) {
   const manual = getCalendarCovers()[dayKey];
   if (manual && dayCoverCandidates(dayKey, history).includes(manual)) return manual;
-  return coverArtworkId(entry);
+  return autoCalendarCoverId(dayKey, history);
 }
 
 function setCalendarCover(dayKey, artworkId) {
