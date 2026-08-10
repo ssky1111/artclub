@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '92';
+const BUILD = '93';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2886,18 +2886,8 @@ function updateAuthUI(u) {
   updateWorkAuthUI(u);
 
   const loggedIn = !!u;
-  const heroStats = $('.hero-stats');
-  if (heroStats) heroStats.hidden = !loggedIn;
-  const streakMain = $('.streak-main');
-  if (streakMain) streakMain.hidden = !loggedIn;
-  const xpRow = $('.xp-row');
-  if (xpRow) xpRow.hidden = !loggedIn;
-  const levelChip = $('.level-chip');
-  if (levelChip) levelChip.hidden = !loggedIn;
-  const streakSub = $('.streak-sub');
-  if (streakSub) streakSub.hidden = !loggedIn;
-  const weekBlock = $('.week-block');
-  if (weekBlock) weekBlock.hidden = !loggedIn;
+  const heroCard = $('.streak-card.hero');
+  if (heroCard) heroCard.hidden = !loggedIn;
   const logTab = $('[data-tab="log"]');
   if (logTab) logTab.hidden = !loggedIn;
 }
