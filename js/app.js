@@ -1467,6 +1467,7 @@ async function persistPendingLocally() {
 async function uploadPendingArtworks({ quiet = false } = {}) {
   const user = getUser();
   if (!user || !pendingDrawings.length) return { uploaded: 0, failed: 0 };
+  const drawings = [...pendingDrawings];
   const globalPublic = $('#publish-toggle')?.checked !== false;
   const sessionId = pendingSessionMeta?.sessionId || null;
   const mode = pendingSessionMeta?.mode || null;
@@ -1476,8 +1477,8 @@ async function uploadPendingArtworks({ quiet = false } = {}) {
   let uploaded = 0;
   let failed = 0;
   let lastErr = null;
-  for (let i = 0; i < pendingDrawings.length; i++) {
-    const shot = pendingDrawings[i];
+  for (let i = 0; i < drawings.length; i++) {
+    const shot = drawings[i];
     if (shot.uploaded) continue;
     const promptId = shot.photoId || `session:${sessionId || 'local'}:${i}`;
     try {
@@ -1502,7 +1503,7 @@ async function uploadPendingArtworks({ quiet = false } = {}) {
   }
   if (uploaded) {
     updateLastSession({
-      shots: pendingDrawings.map((shot, i) => ({
+      shots: drawings.map((shot, i) => ({
         index: i,
         photoId: shot.photoId || null,
         seconds: shot.seconds || null,
