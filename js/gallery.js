@@ -84,15 +84,15 @@ function normalizeArtwork(row) {
   };
 }
 
-/** 表示名。DB の username が空でも、自分の作品ならプロフィールから補う。 */
-export function artworkDisplayName(work, { mineLabel = 'Me' } = {}) {
+/** 表示名。自分の作品はプロフィール名を優先（「わたし」にはしない）。 */
+export function artworkDisplayName(work) {
   if (!work) return '';
-  if (work.username) return work.username;
   const me = getUser();
-  if (me?.id && work.user_id === me.id) {
-    return getUsername() || userName(me) || mineLabel;
+  const isMine = me?.id && work.user_id === me.id;
+  if (isMine) {
+    return getUsername() || userName(me) || work.username || '';
   }
-  return 'anonymous';
+  return work.username || 'anonymous';
 }
 
 /** プロフィールのユーザーネームを Auth ユーザーに同期する。 */
