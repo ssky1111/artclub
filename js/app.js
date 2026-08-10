@@ -60,7 +60,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '193';
+const BUILD = '194';
 const SITE_PASS_KEY = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 /** サイトパスワード解除の有効期限（約1週間） */
@@ -243,6 +243,9 @@ function renderModes() {
       card.append(el('div', 'menu-time', fmtDur(menuDuration(mode))));
     } else if (mode.unlimited) {
       card.append(el('div', 'menu-time', t('copy.unlimited')));
+    }
+    if (mode.id !== 'copyMode') {
+      card.append(el('span', 'free-badge', t('home.freeNow')));
     }
     card.addEventListener('click', () => {
       if (mode.picker === 'part') return openPartSheet();
