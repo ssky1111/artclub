@@ -90,28 +90,17 @@ export async function downloadEach(blobs, prefix = 'artclub') {
   }
 }
 
-/** 枚数に応じた行ごとの枚数。5枚は上3・下2。 */
+/**
+ * 枚数を上列・下列（必要なら3段）にバランスよく割る。
+ * 余りは上の行から順に1枚ずつ足す（例: 5→[3,2], 7→[4,3]）。
+ */
 function sheetRowCounts(n) {
   if (n <= 0) return [];
-  if (n === 5) return [3, 2];
-  if (n === 4) return [2, 2];
-  if (n === 3) return [3];
-  if (n === 2) return [2];
-  if (n === 1) return [1];
-  if (n === 6) return [3, 3];
-  if (n === 7) return [4, 3];
-  if (n === 8) return [4, 4];
-  if (n === 9) return [3, 3, 3];
-  if (n === 10) return [4, 3, 3];
-  // それ以外はだいたい3列
-  const cols = 3;
-  const rows = [];
-  let left = n;
-  while (left > 0) {
-    rows.push(Math.min(cols, left));
-    left -= cols;
-  }
-  return rows;
+  if (n <= 3) return [n];
+  const rowCount = n <= 8 ? 2 : 3;
+  const base = Math.floor(n / rowCount);
+  const rem = n % rowCount;
+  return Array.from({ length: rowCount }, (_, i) => base + (i < rem ? 1 : 0));
 }
 
 export async function composeSheet(blobs, { date = '', crop = true } = {}) {
