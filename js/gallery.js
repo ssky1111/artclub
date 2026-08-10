@@ -101,24 +101,38 @@ export async function uploadArtwork(drawingBlob, promptId, {
 } = {}) {
   await ensureFreshSession();
   const user = getUser();
-  if (!user) throw new Error('not logged in');
+  if (!user?.id) throw new Error('not logged in');
   if (!promptId) throw new Error('prompt_id required');
 
   const compressed = await shrinkForUpload(drawingBlob);
   const ts = Date.now();
+  // 先頭のフォルダ名が自分の user id であることが Storage 側の許可条件
   const path = `${user.id}/${ts}.webp`;
 
-  const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
+  const putImage = () => fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
     method: 'POST',
-    headers: {
-      ...authHeaders(),
-      'Content-Type': 'image/webp',
-      'x-upsert': 'true',
-    },
+    headers: { ...authHeaders(), 'Content-Type': 'image/webp' },
     body: compressed,
   });
+
+  let uploadRes = await putImage();
+  // 弾かれたら、トークンが古かった可能性を潰してから1回だけやり直す
+  if (uploadRes.status === 400 || uploadRes.status === 401 || uploadRes.status === 403) {
+    await ensureFreshSession({ force: true });
+    if (!getSession()?.access_token) {
+      throw new Error('ログインの期限が切れました。ログインし直してから投稿してください。');
+    }
+    uploadRes = await putImage();
+  }
   if (!uploadRes.ok) {
     const text = await uploadRes.text();
+    if (/row-level security|Unauthorized/i.test(text)) {
+      throw new Error(
+        'Storage のポリシーに拒否されました。Supabase の artworks バケットに '
+        + 'supabase/storage-policies.sql のポリシーが入っているか確認してください。'
+        + ` (${uploadRes.status} ${text})`,
+      );
+    }
     throw new Error(`upload failed: ${uploadRes.status} ${text}`);
   }
 
@@ -318,14 +332,15 @@ export async function toggleLike(artworkId, liked) {
 }
 
 export async function uploadShareImage(blob) {
+  await ensureFreshSession();
   const user = getUser();
-  if (!user) throw new Error('not logged in');
+  if (!user?.id) throw new Error('not logged in');
   const compressed = await shrinkForUpload(blob);
   const ts = Date.now();
   const path = `${user.id}/share-${ts}.webp`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
     method: 'POST',
-    headers: { ...authHeaders(), 'Content-Type': 'image/webp', 'x-upsert': 'true' },
+    headers: { ...authHeaders(), 'Content-Type': 'image/webp' },
     body: compressed,
   });
   if (!res.ok) throw new Error(`upload failed: ${res.status}`);
