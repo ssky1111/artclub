@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '60';
+const BUILD = '61';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1412,6 +1412,124 @@ function sessionModeFrom(entry) {
   return entry.menuTitle || 'Practice';
 }
 
+function formatErr(err) {
+  const raw = err?.message || String(err || 'unknown');
+  return raw.length > 160 ? `${raw.slice(0, 160)}…` : raw;
+}
+
+async function persistPendingLocally() {
+  const entryId = pendingSessionMeta?.sessionId;
+  if (!entryId || !pendingDrawings.length) {
+    if (entryId && sheetBlob) {
+      try { await putDrawing(`${entryId}#sheet`, sheetBlob); } catch {}
+    }
+    return updateLastSession({
+      hasDrawing: pendingDrawings.length > 0,
+      drawingCount: pendingDrawings.length || null,
+      hasSheet: !!sheetBlob,
+      shots: pendingDrawings.map((shot, i) => ({
+        index: i,
+        photoId: shot.photoId || null,
+        seconds: shot.seconds || null,
+        artworkId: shot.artworkId || null,
+      })),
+    });
+  }
+  try {
+    await Promise.all([
+      ...pendingDrawings.map((shot, i) => putDrawing(`${entryId}#${i}`, shot.blob)),
+      ...(sheetBlob ? [putDrawing(`${entryId}#sheet`, sheetBlob)] : []),
+    ]);
+  } catch (err) {
+    console.error('[local save]', err);
+    toast(`${t('toast.saveFail')}\n${formatErr(err)}`, 6000);
+  }
+  return updateLastSession({
+    hasDrawing: true,
+    drawingCount: pendingDrawings.length,
+    hasSheet: !!sheetBlob,
+    shots: pendingDrawings.map((shot, i) => ({
+      index: i,
+      photoId: shot.photoId || null,
+      seconds: shot.seconds || null,
+      artworkId: shot.artworkId || null,
+    })),
+  });
+}
+
+async function uploadPendingArtworks({ quiet = false } = {}) {
+  const user = getUser();
+  if (!user || !pendingDrawings.length) return { uploaded: 0, failed: 0 };
+  const globalPublic = $('#publish-toggle')?.checked !== false;
+  const sessionId = pendingSessionMeta?.sessionId || null;
+  const mode = pendingSessionMeta?.mode || null;
+  if (getUsername()) {
+    upsertProfile(getUsername()).catch(() => {});
+  }
+  let uploaded = 0;
+  let failed = 0;
+  let lastErr = null;
+  for (let i = 0; i < pendingDrawings.length; i++) {
+    const shot = pendingDrawings[i];
+    if (shot.uploaded) continue;
+    const promptId = shot.photoId || `session:${sessionId || 'local'}:${i}`;
+    try {
+      shot.uploading = true;
+      const isPublic = globalPublic && !shot.excludeFromGallery;
+      const work = await uploadArtwork(shot.blob, promptId, {
+        isPublic,
+        sessionId,
+        mode,
+      });
+      shot.uploaded = true;
+      shot.artworkId = work?.id || null;
+      if (!shot.photoId) shot.photoId = promptId;
+      uploaded++;
+    } catch (err) {
+      failed++;
+      lastErr = err;
+      console.error('[artworks upload]', err);
+    } finally {
+      shot.uploading = false;
+    }
+  }
+  if (uploaded) {
+    updateLastSession({
+      shots: pendingDrawings.map((shot, i) => ({
+        index: i,
+        photoId: shot.photoId || null,
+        seconds: shot.seconds || null,
+        artworkId: shot.artworkId || null,
+      })),
+    });
+  }
+  if (!quiet) {
+    if (failed) toast(`${t('gal.uploadFail')}\n${formatErr(lastErr)}`, 8000);
+    else if (uploaded) toast(t('gal.uploaded'));
+  }
+  return { uploaded, failed, lastErr };
+}
+
+async function finishLeavingReview() {
+  updateLastSession({
+    rating: null,
+    note: $('#review-note').value.trim() || null,
+    hasDrawing: pendingDrawings.length > 0,
+    drawingCount: pendingDrawings.length || null,
+    hasSheet: !!sheetBlob,
+    shots: pendingDrawings.map((shot, i) => ({
+      index: i,
+      photoId: shot.photoId || null,
+      seconds: shot.seconds || null,
+      artworkId: shot.artworkId || null,
+    })),
+    missed: null,
+  });
+  pendingDrawings = [];
+  pendingSessionMeta = null;
+  sheetBlob = null;
+}
+
 async function finishSession(result) {
   const entry = saveResult(result);
   if (settings.sfx) sfx.fanfare();
@@ -1438,10 +1556,10 @@ async function finishSession(result) {
     updatePublishNote(true);
   }
 
-  // 個別画像はそのまま。まとめ画像だけインク範囲でトリミングする
   $('#sheet-preview').hidden = true;
   renderDrawingStrip();
   showScreen('review');
+
   if (pendingDrawings.length > 0) {
     const blob = await composeSheet(
       pendingDrawings.map((s) => s.blob),
@@ -1454,7 +1572,12 @@ async function finishSession(result) {
     }
   }
 
-  // 同じお題の作品を自動表示（アップロードもここで）
+  // ふりかえりに入った時点で端末保存＋クラウド投稿する
+  await persistPendingLocally();
+  if (getUser() && pendingDrawings.length) {
+    void uploadPendingArtworks();
+  }
+
   loadSamePromptGallery();
 }
 
@@ -1601,45 +1724,6 @@ function updatePublishNote(isPublic) {
   note.hidden = isPublic;
 }
 
-async function uploadPendingArtworks() {
-  const user = getUser();
-  if (!user || !pendingDrawings.length) return;
-  const globalPublic = $('#publish-toggle')?.checked !== false;
-  const sessionId = pendingSessionMeta?.sessionId || null;
-  const mode = pendingSessionMeta?.mode || null;
-  if (getUsername()) {
-    upsertProfile(getUsername()).catch(() => {});
-  }
-  let uploaded = 0;
-  let failed = 0;
-  for (let i = 0; i < pendingDrawings.length; i++) {
-    const shot = pendingDrawings[i];
-    if (shot.uploaded) continue;
-    // photoId が無いお題でも投稿できるようにフォールバック
-    const promptId = shot.photoId || `session:${sessionId || 'local'}:${i}`;
-    try {
-      shot.uploading = true;
-      const isPublic = globalPublic && !shot.excludeFromGallery;
-      const work = await uploadArtwork(shot.blob, promptId, {
-        isPublic,
-        sessionId,
-        mode,
-      });
-      shot.uploaded = true;
-      shot.artworkId = work?.id || null;
-      if (!shot.photoId) shot.photoId = promptId;
-      uploaded++;
-    } catch (err) {
-      failed++;
-      console.error('[artworks upload]', err);
-    } finally {
-      shot.uploading = false;
-    }
-  }
-  if (failed) toast(t('gal.uploadFail'));
-  else if (uploaded) toast(t('gal.uploaded'));
-}
-
 function wireReview() {
   $('#publish-toggle').addEventListener('change', (e) => {
     updatePublishNote(e.target.checked);
@@ -1674,42 +1758,25 @@ function wireReview() {
       } else {
         shareToX(text);
       }
-    } catch {
+    } catch (err) {
+      console.error('[share]', err);
+      toast(`${t('gal.uploadFail')}\n${formatErr(err)}`, 8000);
       shareToX(text);
     }
     btn.disabled = false;
   });
 
-  $('#review-save').addEventListener('click', async () => {
-    // まだ上げていなければ、ここでクラウドにも残す
-    await uploadPendingArtworks();
-    const entry = updateLastSession({
-      rating: null,
-      note: $('#review-note').value.trim() || null,
-      hasDrawing: pendingDrawings.length > 0,
-      drawingCount: pendingDrawings.length || null,
-      shots: pendingDrawings.map((shot, i) => ({
-        index: i,
-        photoId: shot.photoId || null,
-        seconds: shot.seconds || null,
-        artworkId: shot.artworkId || null,
-      })),
-      missed: null,
-    });
-    if (entry) {
-      try {
-        await Promise.all(pendingDrawings.map((shot, i) => putDrawing(`${entry.id}#${i}`, shot.blob)));
-      } catch { toast(t('toast.saveFail')); }
-    }
-    pendingDrawings = [];
-    pendingSessionMeta = null;
-    sheetBlob = null;
+  $('#review-home').addEventListener('click', async () => {
+    await finishLeavingReview();
     renderHome();
     showScreen('home');
     celebrate();
   });
 
-  $('#review-again').addEventListener('click', () => lastStart?.());
+  $('#review-again').addEventListener('click', async () => {
+    await finishLeavingReview();
+    lastStart?.();
+  });
 
   wireGallery();
 }
@@ -1992,6 +2059,17 @@ async function openDaySheet(dayKey, history = getHistory()) {
       .map(([id, sec]) => `${tr(DRILLS[id], 'name') || id} ${fmtDur(sec)}`).join(' / ');
     if (drills) block.append(el('p', 'muted small', drills));
     if (entry.note) block.append(el('p', 'note-body', entry.note));
+
+    const sheet = await getDrawing(`${entry.id}#sheet`).catch(() => null);
+    if (sheet) {
+      const dl = el('button', 'btn primary small');
+      dl.type = 'button';
+      dl.textContent = t('rev.dlSheet');
+      dl.addEventListener('click', () => {
+        downloadBlob(sheet, `artclub-${dayKey}-${entry.id}.jpg`);
+      });
+      block.append(dl);
+    }
     body.append(block);
   }
   if (!entries.length) body.append(el('p', 'muted small', t('log.noRecord')));

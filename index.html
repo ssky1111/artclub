@@ -19,7 +19,18 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="60">
+<body data-build="61" data-theme="light" data-skin="pastel-rpg">
+<script>
+/* 設定があれば先に当てる。無ければ上の data-skin でパステルのまま */
+(function () {
+  try {
+    var s = JSON.parse(localStorage.getItem('croqui.settings.v1') || '{}');
+    document.body.dataset.theme = s.theme || 'light';
+    if (s.skin === 'default') delete document.body.dataset.skin;
+    else document.body.dataset.skin = s.skin || 'pastel-rpg';
+  } catch (e) {}
+})();
+</script>
 
 <!-- 明暗ポスタライズ用のSVGフィルタ（ノタン練習で使う） -->
 <svg class="filter-defs" aria-hidden="true" focusable="false">
@@ -287,8 +298,8 @@
   </section>
 
   <div class="stack">
-    <button id="review-save" class="btn primary big" data-i18n="rev.save">保存して終わる</button>
-    <button id="review-again" class="btn ghost" data-i18n="rev.again">もう一周やる</button>
+    <button id="review-again" class="btn primary big" data-i18n="rev.again">もう一周やる</button>
+    <button id="review-home" class="btn ghost" data-i18n="rev.home">ホームに戻る</button>
   </div>
 </main>
 

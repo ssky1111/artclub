@@ -122,8 +122,8 @@ body[data-skin='pastel-rpg'] {
   --danger: #e8898a;
   --radius: 18px;
   --radius-sm: 12px;
-  --lift: 0 4px 0 #d4bfe0, inset 0 2px 0 rgba(255, 255, 255, .65);
-  --lift-accent: 0 4px 0 #12110f, inset 0 2px 0 rgba(255, 255, 255, .22);
+  --lift: none;
+  --lift-accent: none;
 }
 
 body[data-skin='pastel-rpg'][data-theme='dark'] {
@@ -149,8 +149,8 @@ body[data-skin='pastel-rpg'][data-theme='dark'] {
   --sun: #ffe0a0;
   --good: #c8f090;
   --danger: #f0a0a4;
-  --lift: 0 4px 0 #1e1830, inset 0 2px 0 rgba(255, 255, 255, .12);
-  --lift-accent: 0 4px 0 #0e0d0c, inset 0 2px 0 rgba(255, 255, 255, .28);
+  --lift: none;
+  --lift-accent: none;
 }
 
 body[data-skin='pastel-rpg'][data-theme='paper'] {
@@ -170,8 +170,8 @@ body[data-skin='pastel-rpg'][data-theme='paper'] {
   --cta-ink: #ffffff;
   --brand: #e8a8bc;
   --brand-ink: #c9789a;
-  --lift: 0 4px 0 #e6d8c4, inset 0 2px 0 rgba(255, 255, 255, .7);
-  --lift-accent: 0 4px 0 #12110f, inset 0 2px 0 rgba(255, 255, 255, .22);
+  --lift: none;
+  --lift-accent: none;
 }
 
 /* パステルRPG：やわらかい水玉の地と、ウィンドウっぽいカード */
@@ -193,60 +193,40 @@ body[data-skin='pastel-rpg'] .primary-card {
   border-width: 2px;
   border-style: solid;
 }
-/* 立体ボタンの下影がカードで切れないようにする */
-body[data-skin='pastel-rpg'] .primary-card {
-  overflow: visible;
-}
 body[data-skin='pastel-rpg'] .primary-card .btn.primary {
-  margin-bottom: 4px;
+  margin-bottom: 0;
 }
 
-/* RPG風の立体ボタン：上ハイライト＋下のふち＋押すと沈む */
+/* フラットなピルボタン */
 body[data-skin='pastel-rpg'] .btn {
-  border: 2px solid color-mix(in srgb, var(--text) 14%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--text) 12%, transparent);
   border-radius: 999px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--surface) 55%, #fff) 0%,
-    var(--surface-2) 100%
-  );
-  box-shadow: var(--lift);
+  background: var(--surface-2);
+  box-shadow: none;
   font-weight: 700;
   letter-spacing: .02em;
 }
 body[data-skin='pastel-rpg'] .btn:active {
-  transform: translateY(3px);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, var(--line-strong) 80%, transparent),
-    inset 0 2px 4px rgba(60, 40, 80, .14);
+  transform: scale(.98);
+  opacity: .88;
+  box-shadow: none;
 }
 body[data-skin='pastel-rpg'] .btn.primary,
 body[data-skin='pastel-rpg'] .btn.cta {
   color: var(--cta-ink);
-  border-color: color-mix(in srgb, var(--cta-bg) 70%, #000);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--cta-bg) 72%, #fff) 0%,
-    var(--cta-bg) 55%,
-    color-mix(in srgb, var(--cta-bg) 82%, #000) 100%
-  );
-  box-shadow: var(--lift-accent);
-  text-shadow: 0 1px 0 rgba(0, 0, 0, .28);
+  border-color: var(--cta-bg);
+  background: var(--cta-bg);
+  box-shadow: none;
+  text-shadow: none;
 }
 body[data-skin='pastel-rpg'] .btn.primary:active,
 body[data-skin='pastel-rpg'] .btn.cta:active {
-  transform: translateY(3px);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, var(--cta-bg) 70%, #000),
-    inset 0 2px 4px rgba(0, 0, 0, .22);
-  text-shadow: none;
+  transform: scale(.98);
+  opacity: .9;
+  box-shadow: none;
 }
 body[data-skin='pastel-rpg'] .btn.ghost {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--surface) 70%, #fff) 0%,
-    var(--surface) 100%
-  );
+  background: transparent;
   border-color: var(--line-strong);
 }
 body[data-skin='pastel-rpg'] .btn.big {
@@ -255,79 +235,58 @@ body[data-skin='pastel-rpg'] .btn.big {
   padding-bottom: 16px;
 }
 body[data-skin='pastel-rpg'] .chip {
-  border: 2px solid var(--line);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--surface) 60%, #fff) 0%,
-    var(--surface-2) 100%
-  );
-  box-shadow: 0 3px 0 var(--line), inset 0 1px 0 rgba(255, 255, 255, .55);
+  border: 1.5px solid var(--line);
+  background: var(--surface-2);
+  box-shadow: none;
 }
 body[data-skin='pastel-rpg'] .chip:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 var(--line), inset 0 2px 3px rgba(60, 40, 80, .12);
+  transform: scale(.98);
+  opacity: .88;
+  box-shadow: none;
 }
 body[data-skin='pastel-rpg'] .chip.on {
-  border-width: 2px;
+  border-width: 1.5px;
   border-color: color-mix(in srgb, var(--accent-ink) 28%, transparent);
   color: var(--accent-ink);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--accent) 55%, #fff) 0%,
-    var(--accent) 100%
-  );
-  box-shadow:
-    0 3px 0 color-mix(in srgb, var(--accent) 45%, #6a8f84),
-    inset 0 1px 0 rgba(255, 255, 255, .45);
+  background: var(--accent);
+  box-shadow: none;
 }
 body[data-skin='pastel-rpg'] .menu-card {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--surface) 50%, #fff) 0%,
-    var(--surface) 100%
-  );
-  box-shadow: var(--lift);
+  background: var(--surface);
+  box-shadow: none;
 }
 body[data-skin='pastel-rpg'] .menu-card:active {
-  transform: translateY(3px);
-  box-shadow:
-    0 1px 0 var(--line),
-    inset 0 2px 4px rgba(60, 40, 80, .1);
+  transform: scale(.99);
+  opacity: .92;
+  box-shadow: none;
 }
 body[data-skin='pastel-rpg'] .tabbar button.on {
-  border: 2px solid color-mix(in srgb, var(--cta-ink) 22%, transparent);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--cta-bg) 65%, #fff) 0%,
-    var(--cta-bg) 100%
-  );
-  box-shadow:
-    0 3px 0 color-mix(in srgb, var(--cta-ink) 20%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, .4);
+  border: 1.5px solid transparent;
+  background: var(--cta-bg);
+  color: var(--cta-ink);
+  box-shadow: none;
 }
 body[data-skin='pastel-rpg'] .tabbar button.on:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--cta-ink) 20%, transparent);
+  transform: scale(.98);
+  opacity: .9;
+  box-shadow: none;
 }
 body[data-skin='pastel-rpg'] .confirm-dialog-btn {
-  border: 2px solid color-mix(in srgb, var(--text) 14%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--text) 12%, transparent);
   border-radius: 999px;
-  box-shadow: var(--lift);
+  box-shadow: none;
   font-weight: 700;
 }
 body[data-skin='pastel-rpg'] .confirm-dialog-btn.ok {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--cta-bg) 62%, #fff) 0%,
-    var(--cta-bg) 100%
-  );
+  background: var(--cta-bg);
   color: var(--cta-ink);
-  border-color: color-mix(in srgb, var(--cta-ink) 28%, transparent);
-  box-shadow: var(--lift-accent);
+  border-color: var(--cta-bg);
+  box-shadow: none;
 }
 body[data-skin='pastel-rpg'] .confirm-dialog-btn:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 var(--line), inset 0 2px 4px rgba(60, 40, 80, .14);
+  transform: scale(.98);
+  opacity: .9;
+  box-shadow: none;
 }
 body[data-skin='pastel-rpg'] .tabbar {
   background: color-mix(in srgb, var(--surface) 92%, transparent);
@@ -1137,9 +1096,10 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
   position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom));
   transform: translate(-50%, 12px);
   background: var(--surface-2); border: 1px solid var(--line);
-  padding: 10px 18px; border-radius: 999px; font-size: 14px;
+  padding: 10px 18px; border-radius: 16px; font-size: 13px;
   opacity: 0; transition: opacity .2s, transform .2s; z-index: 50;
-  max-width: 90vw; text-align: center;
+  max-width: min(92vw, 420px); text-align: center;
+  white-space: pre-wrap; word-break: break-word; line-height: 1.35;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
