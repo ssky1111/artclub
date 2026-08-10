@@ -762,7 +762,7 @@ html:lang(ja) .atelier-tabs button { font-family: var(--font-ja); }
 .drawing-strip-vertical .strip-shot {
   flex-direction: column;
   align-items: stretch;
-  gap: 8px;
+  gap: 10px;
 }
 .drawing-strip-vertical .strip-item {
   width: 100%;
@@ -778,31 +778,41 @@ html:lang(ja) .atelier-tabs button { font-family: var(--font-ja); }
 .strip-shot-controls {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex: 1;
+  justify-content: center;
+  gap: 14px 20px;
+  width: 100%;
   min-width: 0;
   margin-top: 0;
+  padding: 2px 4px 0;
+}
+.drawing-strip-vertical .strip-shot-controls {
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding-top: 4px;
 }
 .strip-control-group {
   display: flex;
   align-items: center;
+  justify-content: center;
   min-width: 0;
-  flex: 1;
+  flex: 0 0 auto;
 }
 .strip-control-group--copy {
-  justify-content: flex-end;
+  justify-content: center;
 }
 .strip-shot-controls .toggle-row {
   flex: 0 1 auto;
   min-width: 0;
-  gap: 4px;
+  gap: 6px;
   font-size: 12px;
   font-weight: 600;
   padding: 0;
   border-radius: 0;
   background: transparent;
+  justify-content: center;
 }
 .strip-shot-controls .toggle-row > span:first-child {
   min-width: 0;
