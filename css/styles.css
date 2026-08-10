@@ -504,24 +504,30 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
   right: 10px;
   bottom: 10px;
   z-index: 4;
-  width: 40px;
-  height: 40px;
-  padding: 0;
+  width: auto;
+  height: 36px;
+  padding: 0 12px 0 10px;
   border: none;
-  border-radius: 50%;
+  border-radius: 999px;
   background: rgba(11, 12, 15, .72);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   cursor: pointer;
   backdrop-filter: blur(4px);
   box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
   transition: transform .06s, background .15s;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  white-space: nowrap;
 }
 .ref-swap:hover { background: rgba(11, 12, 15, .88); }
 .ref-swap:active { transform: scale(.94); }
-.ref-swap .icon { width: 18px; height: 18px; }
+.ref-swap .icon { width: 18px; height: 18px; flex-shrink: 0; }
 
 .grid-overlay {
   position: absolute; inset: 0; pointer-events: none;
@@ -832,13 +838,17 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
 .ref-swap.on-mini {
   right: 6px;
   bottom: 6px;
-  width: 30px;
-  height: 30px;
+  height: 28px;
+  padding: 0 8px 0 6px;
+  font-size: 11px;
+  gap: 4px;
 }
 .ref-swap.on-mini .icon { width: 14px; height: 14px; }
 .ref-mini-wrap:has(.ref-mini.big) .ref-swap.on-mini {
-  width: 40px;
-  height: 40px;
+  height: 36px;
+  padding: 0 12px 0 10px;
+  font-size: 12px;
+  gap: 6px;
 }
 .ref-mini-wrap:has(.ref-mini.big) .ref-swap.on-mini .icon {
   width: 18px;
