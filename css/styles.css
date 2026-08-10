@@ -1502,6 +1502,15 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
   font-family: inherit;
   line-height: 1.2;
 }
+
+@media (max-width: 520px) {
+  .brand { font-size: 19px; }
+  .brand.plain { font-size: 18px; }
+  .brand-text { font-size: 20px; }
+  .work-brand .brand-text { font-size: 17px; }
+  .atelier-brand .brand-text { font-size: 18px; }
+  .beta { font-size: 9px; }
+}
 .lang-btn {
   font: inherit; font-size: 12px; font-weight: 800; letter-spacing: .06em; cursor: pointer;
   background: var(--surface); color: var(--text); border: none;
