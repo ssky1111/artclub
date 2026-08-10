@@ -301,9 +301,14 @@ body[data-skin='pastel-rpg'] .tabbar {
 body[data-skin='pastel-rpg'] .brand {
   color: var(--brand-ink);
 }
-#screen-review .brand {
+.review-page-title {
+  margin: 0 0 14px;
+  font-size: 23px;
+  font-family: var(--font-display);
+  font-weight: 800;
   color: var(--brand-ink);
 }
+.screen-page-title { margin: 0 0 14px; }
 body[data-skin='pastel-rpg'] .week-col.on .week-box {
   color: #fff;
 }
@@ -400,10 +405,10 @@ html:lang(ja) .atelier-tabs button { font-family: var(--font-ja); }
 .screen.center.is-active { display: flex; align-items: center; justify-content: center; min-height: 100dvh; }
 
 .topbar {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: flex-start;
   gap: 8px; margin-bottom: 18px;
 }
-.topbar-actions { display: flex; gap: 6px; }
+.topbar-actions { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
 .brand {
   font-size: 23px; margin: 0; letter-spacing: .03em;
   font-family: var(--font-display); font-weight: 800; color: var(--text);
@@ -1792,19 +1797,20 @@ body[data-theme='dark'] .google-btn {
 /* ---------- スケッチページ ---------- */
 
 .work-topbar {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
   gap: 8px;
 }
 .work-topbar #work-back {
   background: transparent;
   border-radius: 0;
+  flex-shrink: 0;
 }
 .work-topbar #work-back:hover { background: transparent; }
 .work-brand {
   margin: 0;
   min-width: 0;
+  flex-shrink: 0;
 }
 .work-brand .brand-text {
   font-size: 20px;
@@ -1913,20 +1919,17 @@ body[data-theme='dark'] .google-btn {
 /* ---------- アトリエ ---------- */
 
 .atelier-topbar {
-  display: grid;
-  grid-template-columns: minmax(40px, auto) minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
   gap: 8px;
 }
-.atelier-topbar-spacer { width: 40px; height: 40px; }
 .atelier-auth-actions {
   justify-content: flex-end;
   flex-wrap: wrap;
 }
 .atelier-brand {
   margin: 0;
-  justify-content: center;
-  text-align: center;
+  flex-shrink: 0;
 }
 .atelier-brand .brand-text {
   font-size: 22px;
