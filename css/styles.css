@@ -1780,6 +1780,85 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 .range { width: 100%; accent-color: var(--accent); margin: 6px 0 2px; }
 #screen-admin .input { margin-bottom: 6px; }
 
+/* ---------- 管理：デイリー解析 ---------- */
+
+.analytics-date-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.analytics-date-label {
+  flex: 1;
+  min-width: 10ch;
+  text-align: center;
+  font-weight: 700;
+  font-size: 15px;
+}
+.analytics-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.analytics-stat {
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 12px 10px;
+  text-align: center;
+}
+.analytics-stat-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.analytics-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+.analytics-table-wrap {
+  overflow-x: auto;
+  margin-top: 6px;
+}
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.analytics-table th,
+.analytics-table td {
+  padding: 8px 6px;
+  text-align: left;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  vertical-align: middle;
+}
+.analytics-table th {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 700;
+}
+.analytics-num { font-variant-numeric: tabular-nums; font-weight: 700; }
+.analytics-muted { color: var(--muted); font-size: 12px; }
+.analytics-empty { text-align: center; color: var(--muted); padding: 16px 6px !important; }
+.analytics-bar-wrap {
+  height: 4px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+.analytics-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  min-width: 2px;
+}
+
+@media (max-width: 480px) {
+  .analytics-summary { grid-template-columns: 1fr; }
+}
+
 /* ---------- ログイン ---------- */
 
 .auth-btn {

@@ -288,6 +288,28 @@ const DICT = {
   'admin.published':     { ja: 'リポジトリに入っている写真', en: 'Photos in the repository' },
   'admin.localOnly':     { ja: 'この端末だけにある写真', en: 'Photos only on this device' },
 
+  'analytics.title':     { ja: 'デイリー解析',         en: 'Daily analytics' },
+  'analytics.open':      { ja: 'ひらく',               en: 'Open' },
+  'analytics.teaser':    { ja: '日ごとのデイリー利用回数を確認できます。',
+                           en: 'See daily practice usage by day.' },
+  'analytics.backAdmin': { ja: '管理に戻る',           en: 'Back to admin' },
+  'analytics.refresh':   { ja: '更新',                 en: 'Refresh' },
+  'analytics.today':     { ja: '今日',                 en: 'Today' },
+  'analytics.loading':   { ja: '読み込み中…',         en: 'Loading…' },
+  'analytics.needAdminLogin': { ja: '管理者アカウントでログインしてください。',
+                           en: 'Sign in with an admin account.' },
+  'analytics.loadFail':  { ja: '読み込みに失敗しました', en: 'Failed to load' },
+  'analytics.totalRounds': { ja: '合計回数',           en: 'Total rounds' },
+  'analytics.userCount': { ja: '人数',                 en: 'Users' },
+  'analytics.avgRounds': { ja: '平均回数',             en: 'Avg rounds' },
+  'analytics.byUser':    { ja: 'ユーザー別',           en: 'By user' },
+  'analytics.user':      { ja: 'ユーザー',             en: 'User' },
+  'analytics.rounds':    { ja: '回数',                 en: 'Rounds' },
+  'analytics.last':      { ja: '最終',                 en: 'Last' },
+  'analytics.trend':     { ja: '直近7日',             en: 'Last 7 days' },
+  'analytics.date':      { ja: '日付',                 en: 'Date' },
+  'analytics.noData':    { ja: 'この日のデータはありません', en: 'No data for this day' },
+
   /* ---------- 解剖学の本 ---------- */
   'books.title':         { ja: '解剖学の本',           en: 'Anatomy books' },
   'books.note':          { ja: '著作権の切れた美術解剖書の図版を Wikimedia Commons から読み込みます。' +

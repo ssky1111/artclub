@@ -35,7 +35,7 @@
 </script>
 </head>
 
-<body data-build="189" data-theme="light">
+<body data-build="190" data-theme="light">
 
 <div id="site-gate" class="confirm-dialog site-gate-dialog" role="dialog" aria-modal="true" aria-labelledby="site-gate-title">
   <div class="confirm-dialog-inner site-gate-inner">
@@ -690,6 +690,14 @@
   </section>
 
   <div id="admin-body" hidden>
+
+    <section class="card">
+      <div class="section-head">
+        <h2 data-i18n="analytics.title">デイリー解析</h2>
+        <button id="admin-analytics-link" type="button" class="btn primary small" data-i18n="analytics.open">ひらく</button>
+      </div>
+      <p class="muted small" data-i18n="analytics.teaser">日ごとのデイリー利用回数を確認できます。</p>
+    </section>
     
     <section class="card">
       <div class="section-head">
@@ -778,6 +786,72 @@
     <section class="card">
       <div class="section-head"><h2 data-i18n="admin.published">リポジトリに入っている写真</h2></div>
       <div id="admin-bundled" class="lib-grid"></div>
+    </section>
+  </div>
+</main>
+
+<main id="screen-admin-analytics" class="screen">
+  <header class="topbar">
+    <a href="/" class="brand brand-link" aria-label="ARTCLUB">
+      <span class="brand-text">ARTCLUB</span>
+    </a>
+    <button id="analytics-admin-link" class="icon-btn" type="button" data-icon="back" data-i18n-title="analytics.backAdmin" title="管理に戻る"></button>
+    <div class="topbar-actions">
+      <button id="analytics-refresh" class="btn ghost small" type="button" data-i18n="analytics.refresh">更新</button>
+    </div>
+  </header>
+
+  <h1 class="menu-title screen-page-title" data-i18n="analytics.title">デイリー解析</h1>
+
+  <section class="card" id="analytics-gate" hidden>
+    <p class="muted" data-i18n="analytics.needAdminLogin">管理者アカウントでログインしてください。</p>
+  </section>
+
+  <div id="analytics-shell" hidden>
+    <section class="card">
+      <div class="analytics-date-row">
+        <button id="analytics-prev" class="btn ghost small" type="button" aria-label="前の日">‹</button>
+        <div id="analytics-date-label" class="analytics-date-label"></div>
+        <button id="analytics-next" class="btn ghost small" type="button" aria-label="次の日">›</button>
+        <button id="analytics-today" class="btn ghost small" type="button" data-i18n="analytics.today">今日</button>
+      </div>
+      <p id="analytics-loading" class="muted small" data-i18n="analytics.loading">読み込み中…</p>
+      <p id="analytics-error" class="muted small" hidden></p>
+      <div id="analytics-body" hidden>
+        <div id="analytics-summary" class="analytics-summary"></div>
+
+        <div class="section-head" style="margin-top:16px">
+          <h2 data-i18n="analytics.byUser">ユーザー別</h2>
+        </div>
+        <div class="analytics-table-wrap">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th data-i18n="analytics.user">ユーザー</th>
+                <th data-i18n="analytics.rounds">回数</th>
+                <th data-i18n="analytics.last">最終</th>
+              </tr>
+            </thead>
+            <tbody id="analytics-users"></tbody>
+          </table>
+        </div>
+
+        <div class="section-head" style="margin-top:16px">
+          <h2 data-i18n="analytics.trend">直近7日</h2>
+        </div>
+        <div class="analytics-table-wrap">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th data-i18n="analytics.date">日付</th>
+                <th data-i18n="analytics.rounds">回数</th>
+                <th data-i18n="analytics.userCount">人数</th>
+              </tr>
+            </thead>
+            <tbody id="analytics-trend"></tbody>
+          </table>
+        </div>
+      </div>
     </section>
   </div>
 </main>

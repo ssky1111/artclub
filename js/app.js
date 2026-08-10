@@ -48,6 +48,9 @@ import {
   fetchTopCopyableArtworks, deleteArtwork, updateArtwork, toggleLike, workPageUrl, upsertProfile, artworkDisplayName,
 } from './gallery.js';
 import { initFeedback } from './feedback.js';
+import {
+  wireAdminAnalytics, openAdminAnalytics,
+} from './admin-analytics.js';
 /*
  * index.html の data-build と揃えておく番号。
  *
@@ -57,7 +60,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '189';
+const BUILD = '190';
 const SITE_PASS_SESSION = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 
@@ -3180,6 +3183,11 @@ function applyRoute(route = routeFromLocation()) {
   const sub = route.parts[1];
 
   if (root === 'admin') {
+    if (sub === 'analytics') {
+      showScreen('admin-analytics');
+      openAdminAnalytics();
+      return;
+    }
     openAdmin();
     return;
   }
@@ -3683,6 +3691,7 @@ function init() {
   wireCalendar();
   wireSettings();
   wireAdmin();
+  wireAdminAnalytics({ onNavigate: navigateTo });
   wireRoutes();
 
   setScreenShownHook((name) => {
