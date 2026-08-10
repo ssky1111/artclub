@@ -134,8 +134,6 @@ const DICT = {
   'atelier.privateBadge': { ja: '非公開',                 en: 'Private' },
   'atelier.noPromptPhoto':{ ja: 'お題写真なし',           en: 'No prompt photo' },
   'copy.title':           { ja: '模写するスケッチを選ぶ',     en: 'Choose a drawing to copy' },
-  'copy.note':            { ja: 'いいねが多い「模写OK」のスケッチから選びます。時間制限はありません。',
-                            en: 'Pick from highly liked copyable sketches. No time limit.' },
   'copy.pickHint':        { ja: 'スケッチを選んで「はじめる」を押してください', en: 'Select a sketch, then tap Start' },
   'copy.empty':           { ja: 'いま模写できるスケッチがありません', en: 'No copyable artworks yet' },
   'copy.loadFail':        { ja: 'スケッチを読み込めませんでした', en: 'Could not load artworks' },
