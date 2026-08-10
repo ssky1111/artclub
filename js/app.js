@@ -59,18 +59,25 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '67';
+const BUILD = '68';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
     sessionStorage.removeItem('artclub.reloading');
     return true;
   }
-  if (sessionStorage.getItem('artclub.reloading')) return true;   // 無限に往復させない
+  // 古い HTML/JS の食い違いで壊れるので、キャッシュを捨てて1回だけ読み直す
+  if (sessionStorage.getItem('artclub.reloading')) return true;
   sessionStorage.setItem('artclub.reloading', '1');
-  caches?.keys?.().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+  Promise.resolve()
+    .then(() => (caches?.keys ? caches.keys() : []))
+    .then((keys) => Promise.all((keys || []).map((k) => caches.delete(k))))
+    .then(() => (navigator.serviceWorker?.getRegistrations
+      ? navigator.serviceWorker.getRegistrations()
+      : []))
+    .then((regs) => Promise.all((regs || []).map((r) => r.unregister())))
     .catch(() => {})
-    .finally(() => location.reload());
+    .finally(() => { location.reload(); });
   return false;
 }
 
