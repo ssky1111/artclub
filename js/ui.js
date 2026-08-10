@@ -79,6 +79,16 @@ export function el(tag, className, text) {
   return node;
 }
 
+/** ドリル説明などの箇条書き（− 付き） */
+export function hintList(hints, className = 'hint-list') {
+  const ul = document.createElement('ul');
+  ul.className = className;
+  for (const line of hints || []) {
+    ul.append(el('li', null, line));
+  }
+  return ul;
+}
+
 export function confirmDialog(message, { okLabel, cancelLabel } = {}) {
   const { t } = window.__i18n ?? {};
   const wrap = $('#confirm-dialog');

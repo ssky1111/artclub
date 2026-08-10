@@ -9,7 +9,7 @@
 import { DRILLS } from './theory.js';
 import { createTimer, sfx } from './timer.js';
 import { createPad } from './draw.js';
-import { $, $$, showScreen, toast, fmtClock, confirmDialog } from './ui.js';
+import { $, $$, showScreen, toast, fmtClock, confirmDialog, hintList } from './ui.js';
 import { paintIcons } from './icons.js';
 import { t, tr, fmtDur, getLang } from './i18n.js';
 import { saveSettings } from './storage.js';
@@ -201,9 +201,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     const isGesture = item.drillId === 'gesture';
     dom.bridgeDesc.hidden = !isGesture;
     if (isGesture) {
-      dom.bridgeDesc.textContent = getLang() === 'en'
-        ? 'Capture the movement and centre of gravity. Impression over accuracy — exaggerate a little, be bold, and start with a single line.'
-        : '動きと重心を捉えよう。正確性より印象を大切に、少し誇張して大胆に、一本の線からはじめよう。';
+      dom.bridgeDesc.replaceChildren(hintList(tr(drill, 'hints'), 'bridge-hints'));
     }
     dom.bridgeMeta.textContent = item.unlimited
       ? (getLang() === 'en' ? `${item.countInStep} · no time limit` : `${item.countInStep}枚 · 時間無制限`)
