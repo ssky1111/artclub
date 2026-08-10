@@ -113,7 +113,7 @@ body[data-skin='pastel-rpg'] {
   --cta-bg: #f0a8c0;
   --cta-ink: #4a2034;
   --brand: #f0a8c0;
-  --brand-ink: #c45f84;
+  --brand-ink: #e85a9b;
   --lime: #b8e986;
   --lime-ink: #5f9a2e;
   --mint: #7ec8b5;
@@ -170,7 +170,7 @@ body[data-skin='pastel-rpg'][data-theme='paper'] {
   --cta-bg: #f0a8c0;
   --cta-ink: #4a2034;
   --brand: #f0a8c0;
-  --brand-ink: #c45f84;
+  --brand-ink: #e85a9b;
   --lift: 0 4px 0 #e6d8c4, inset 0 2px 0 rgba(255, 255, 255, .7), inset 0 -2px 0 rgba(120, 80, 50, .08);
   --lift-accent: 0 4px 0 #d4c2a8, inset 0 2px 0 rgba(255, 255, 255, .5), inset 0 -2px 0 rgba(90, 30, 55, .12);
 }
@@ -330,6 +330,12 @@ body[data-skin='pastel-rpg'] .tabbar {
 }
 body[data-skin='pastel-rpg'] .brand {
   color: var(--brand-ink);
+}
+#screen-review .brand {
+  color: #e85a9b;
+}
+body[data-skin='pastel-rpg'] #screen-review .brand {
+  color: #f06aad;
 }
 body[data-skin='pastel-rpg'] .week-col.on .week-box {
   color: #fff;
