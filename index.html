@@ -237,7 +237,12 @@
 </main>
 
 <main id="screen-review" class="screen">
-  <header class="topbar"><h1 class="brand" data-i18n="rev.title">おつかれさま</h1></header>
+  <header class="topbar">
+    <a href="/" class="brand brand-link" aria-label="ARTCLUB">
+      <span class="brand-text">ARTCLUB</span>
+    </a>
+  </header>
+  <h1 class="review-page-title" data-i18n="rev.title">おつかれさま</h1>
 
   <section class="card" id="sheet-card">
     <div id="sheet-preview" class="sheet-preview" hidden>
@@ -297,11 +302,11 @@
 
 <main id="screen-work" class="screen">
   <header class="topbar work-topbar">
-    <button id="work-back" class="icon-btn" type="button" data-icon="back"
-            data-i18n-title="common.back" title="もどる"></button>
     <a href="/" class="brand brand-link work-brand" aria-label="ARTCLUB">
       <span class="brand-text">ARTCLUB</span>
     </a>
+    <button id="work-back" class="icon-btn" type="button" data-icon="back"
+            data-i18n-title="common.back" title="もどる"></button>
     <div class="topbar-actions work-auth-actions">
       <button id="work-signup-btn" class="auth-btn auth-btn-secondary" type="button"
               data-i18n="auth.signup">新規登録</button>
@@ -343,12 +348,14 @@
 
 <main id="screen-lesson" class="screen">
   <header class="topbar">
+    <a href="/" class="brand brand-link" aria-label="ARTCLUB">
+      <span class="brand-text">ARTCLUB</span>
+    </a>
     <button class="icon-btn" data-nav="home" data-icon="back"></button>
-    <h1 id="lesson-name" class="brand">—</h1>
-    <span></span>
   </header>
 
   <section class="card">
+    <h1 id="lesson-name" class="menu-title">—</h1>
     <div id="lesson-tagline" class="focus-title"></div>
     <p id="lesson-problem" class="lesson-problem"></p>
   </section>
@@ -386,10 +393,13 @@
 
 <main id="screen-books" class="screen">
   <header class="topbar">
+    <a href="/" class="brand brand-link" aria-label="ARTCLUB">
+      <span class="brand-text">ARTCLUB</span>
+    </a>
     <button class="icon-btn" data-nav="home" data-icon="back"></button>
-    <h1 class="brand plain" data-i18n="books.title">解剖学の本</h1>
-    <span></span>
   </header>
+
+  <h1 class="menu-title screen-page-title" data-i18n="books.title">解剖学の本</h1>
 
   <p class="muted small" data-i18n="books.note"></p>
 
@@ -502,11 +512,17 @@
 
 <main id="screen-library" class="screen">
   <header class="topbar">
+    <a href="/" class="brand brand-link" aria-label="ARTCLUB">
+      <span class="brand-text">ARTCLUB</span>
+    </a>
     <button class="icon-btn" data-nav="home" data-icon="back"></button>
-    <h1 class="brand plain" data-i18n="lib.title">写真</h1>
-    <button id="lib-add" class="icon-btn" data-icon="plus" title="追加"></button>
+    <div class="topbar-actions">
+      <button id="lib-add" class="icon-btn" data-icon="plus" title="追加"></button>
+    </div>
   </header>
   <input type="file" id="lib-input" accept="image/*" multiple hidden>
+
+  <h1 class="menu-title screen-page-title" data-i18n="lib.title">写真</h1>
 
   <p class="muted small" data-i18n="lib.note"></p>
 
@@ -558,9 +574,13 @@
 
 <main id="screen-log" class="screen">
   <header class="topbar">
-    <h1 class="brand plain" data-i18n="log.title">きろく</h1>
-    <button id="log-settings-btn" class="icon-btn" data-nav="settings" data-icon="settings"
-            data-i18n-title="common.settings"></button>
+    <a href="/" class="brand brand-link" aria-label="ARTCLUB">
+      <span class="brand-text">ARTCLUB</span>
+    </a>
+    <div class="topbar-actions">
+      <button id="log-settings-btn" class="icon-btn" data-nav="settings" data-icon="settings"
+              data-i18n-title="common.settings"></button>
+    </div>
   </header>
 
   <section class="card">
@@ -598,9 +618,13 @@
 
 <main id="screen-admin" class="screen">
   <header class="topbar">
+    <a href="/" class="brand brand-link" aria-label="ARTCLUB">
+      <span class="brand-text">ARTCLUB</span>
+    </a>
     <button class="icon-btn" data-nav="home" data-icon="back"></button>
-    <h1 class="brand plain" data-i18n="admin.title">管理</h1>
-    <button id="admin-lock" class="btn ghost small" data-i18n="admin.lockAgain">ロックする</button>
+    <div class="topbar-actions">
+      <button id="admin-lock" class="btn ghost small" data-i18n="admin.lockAgain">ロックする</button>
+    </div>
   </header>
 
   
@@ -710,10 +734,13 @@
 
 <main id="screen-settings" class="screen">
   <header class="topbar">
+    <a href="/" class="brand brand-link" aria-label="ARTCLUB">
+      <span class="brand-text">ARTCLUB</span>
+    </a>
     <button class="icon-btn" data-nav="home" data-icon="back"></button>
-    <h1 class="brand" data-i18n="set.title">設定</h1>
-    <span></span>
   </header>
+
+  <h1 class="menu-title screen-page-title" data-i18n="set.title">設定</h1>
 
   <section class="card" id="profile-card" hidden>
     <div class="section-head"><h2 data-i18n="auth.profile">プロフィール</h2></div>
@@ -777,7 +804,6 @@
 
 <main id="screen-atelier" class="screen">
   <header class="topbar atelier-topbar">
-    <span class="atelier-topbar-spacer" aria-hidden="true"></span>
     <a href="/" class="brand brand-link atelier-brand" aria-label="ARTCLUB">
       <span class="brand-text">ARTCLUB</span>
     </a>
