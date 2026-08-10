@@ -2105,8 +2105,14 @@ function workRouteKey(work) {
 function openWorkPage(work) {
   const key = workRouteKey(work);
   if (!key) return;
+  openWorkPageById(key);
+}
+
+/** ID / short_id だけ分かっているとき（きろくなど） */
+function openWorkPageById(id) {
+  if (!id) return;
   workCanGoBack = true;
-  navigateTo(`work/${key}`);
+  navigateTo(`work/${id}`);
 }
 
 function openAtelierWork(work) {
@@ -2408,16 +2414,8 @@ async function openDaySheet(dayKey, history = getHistory()) {
     img.src = item.url;
     btn.append(img);
     btn.addEventListener('click', () => {
-      $('#draw-img').src = item.url;
-      drawingIndex = -1;
-      $('#draw-remove').hidden = true;
-      if ($('#draw-exclude')) $('#draw-exclude').hidden = true;
-      $('#draw-dl').onclick = () => {
-        fetch(item.url).then((r) => r.blob()).then((blob) => {
-          downloadBlob(blob, `artclub-${dayKey}-${i + 1}.webp`);
-        }).catch(() => {});
-      };
-      $('#draw-lightbox').hidden = false;
+      $('#day-sheet').hidden = true;
+      openWorkPageById(item.id);
     });
     shots.append(btn);
   });
@@ -2553,12 +2551,7 @@ async function renderHistoryRecordPost(entry) {
       img.alt = '';
       img.loading = 'lazy';
       media.append(img);
-      media.addEventListener('click', async () => {
-        try {
-          const work = await fetchArtwork(imageId);
-          if (work) openWorkPage(work);
-        } catch { /* noop */ }
-      });
+      media.addEventListener('click', () => openWorkPageById(imageId));
       main.append(media);
     }
   }
