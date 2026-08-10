@@ -19,7 +19,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="63" data-theme="light" data-skin="pastel-rpg">
+<body data-build="69" data-theme="light" data-skin="pastel-rpg">
 <script>
 /* 設定があれば先に当てる。無ければ上の data-skin でパステルのまま */
 (function () {
@@ -542,19 +542,6 @@
   </header>
 
   <section class="card">
-    <div class="stat-grid">
-      <div class="stat"><div id="st-streak" class="stat-num">0</div>
-        <div class="stat-label" data-i18n="log.streak">連続日数</div></div>
-      <div class="stat"><div id="st-best" class="stat-num">0</div>
-        <div class="stat-label" data-i18n="log.best">最長記録</div></div>
-      <div class="stat"><div id="st-minutes" class="stat-num">0</div>
-        <div class="stat-label" data-i18n="log.minutes">合計(分)</div></div>
-      <div class="stat"><div id="st-drawings" class="stat-num">0</div>
-        <div class="stat-label" data-i18n="log.drawings">描いた枚数</div></div>
-    </div>
-  </section>
-
-  <section class="card">
     <div class="section-head">
       <button id="cal-prev" class="icon-btn" data-icon="back" data-icon-size="18"></button>
       <h2 id="cal-title">—</h2>
@@ -565,14 +552,12 @@
     <p class="muted small" data-i18n="log.calNote"></p>
   </section>
 
-  <section class="card">
-    <div class="section-head"><h2 data-i18n="log.whatPractised">なにを練習したか</h2></div>
-    <div id="drill-bars" class="drill-bars"></div>
-  </section>
-
-  <section class="card">
-    <div class="section-head"><h2 data-i18n="log.notes">ふりかえりノート</h2></div>
-    <div id="note-list" class="note-list"></div>
+  <section class="card tl-card">
+    <div class="section-head">
+      <h2 data-i18n="log.notes">タイムライン</h2>
+    </div>
+    <p class="muted small tl-desc" data-i18n="log.notesDesc">自分の練習が新しい順に並びます。あとでみんなの投稿やいいねもここに出ます。</p>
+    <div id="note-list" class="tl-feed"></div>
   </section>
 </main>
 

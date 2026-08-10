@@ -36,7 +36,7 @@ import {
   removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
   saveHiddenTags, invalidateTagConfig, convertToWebp, repairManifestExtensions,
 } from './supabase.js';
-import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
+import { totalXp, levelProgress, graceStreak, takeLevelUp } from './game.js';
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
@@ -59,18 +59,25 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '63';
+const BUILD = '69';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
     sessionStorage.removeItem('artclub.reloading');
     return true;
   }
-  if (sessionStorage.getItem('artclub.reloading')) return true;   // 無限に往復させない
+  // 古い HTML/JS の食い違いで壊れるので、キャッシュを捨てて1回だけ読み直す
+  if (sessionStorage.getItem('artclub.reloading')) return true;
   sessionStorage.setItem('artclub.reloading', '1');
-  caches?.keys?.().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+  Promise.resolve()
+    .then(() => (caches?.keys ? caches.keys() : []))
+    .then((keys) => Promise.all((keys || []).map((k) => caches.delete(k))))
+    .then(() => (navigator.serviceWorker?.getRegistrations
+      ? navigator.serviceWorker.getRegistrations()
+      : []))
+    .then((regs) => Promise.all((regs || []).map((r) => r.unregister())))
     .catch(() => {})
-    .finally(() => location.reload());
+    .finally(() => { location.reload(); });
   return false;
 }
 
@@ -1934,11 +1941,6 @@ let sheetBlob = null;
 
 function renderLog() {
   const history = getHistory();
-  const s = stats(history);
-  $('#st-streak').textContent = String(graceStreak(history).streak);
-  $('#st-best').textContent = String(bestGraceStreak(history));
-  $('#st-minutes').textContent = String(s.minutes);
-  $('#st-drawings').textContent = String(totalDrawings(history));
 
   const dow = $('#cal-dow');
   dow.innerHTML = '';
@@ -1948,7 +1950,6 @@ function renderLog() {
   for (const label of labels) dow.append(el('span', null, label));
 
   renderCalendar(history);
-  renderDrillBars(s);
   renderNotes(history);
 }
 
@@ -2053,8 +2054,11 @@ async function openDaySheet(dayKey, history = getHistory()) {
   for (const entry of entries) {
     const block = el('div', 'note-item');
     const head = el('div', 'note-head');
-    head.append(el('span', 'note-date', entry.menuTitle || '—'));
-    if (entry.lessonId) head.append(el('span', 'rate-tag', tr(lessonById(entry.lessonId), 'name') || ''));
+    head.append(el('span', 'note-date', entry.menuTitle || sessionLabel(entry) || '—'));
+    if (entry.lessonId && !entry.menuTitle) {
+      const lessonName = tr(lessonById(entry.lessonId), 'name');
+      if (lessonName) head.append(el('span', 'rate-tag', lessonName));
+    }
     block.append(head);
     const drills = Object.entries(entry.byDrill || {})
       .map(([id, sec]) => `${tr(DRILLS[id], 'name') || id} ${fmtDur(sec)}`).join(' / ');
@@ -2086,56 +2090,97 @@ function heatLevel(seconds) {
   return 4;
 }
 
-function renderDrillBars(s) {
-  const wrap = $('#drill-bars');
-  wrap.innerHTML = '';
-  const entries = [...s.byDrill.entries()].sort((a, b) => b[1] - a[1]);
-  if (!entries.length) {
-    wrap.append(el('p', 'muted small', t('log.noRecord')));
-    return;
+function sessionLabel(entry) {
+  if (entry?.menuTitle) return entry.menuTitle;
+  if (entry?.lessonId) {
+    const name = tr(lessonById(entry.lessonId), 'name');
+    if (name) return t('log.practisedPart', { n: name });
   }
-  const max = entries[0][1];
-  for (const [id, sec] of entries) {
-    const bar = el('div', 'bar');
-    bar.style.width = `${Math.max(4, (sec / max) * 100)}%`;
-    const track = el('div', 'bar-track');
-    track.append(bar);
+  return '';
+}
 
-    const row = el('div', 'bar-row');
-    row.append(
-      el('div', 'bar-label', tr(DRILLS[id], 'name') || id),
-      track,
-      el('div', 'bar-value muted small', fmtDur(sec)),
-    );
-    wrap.append(row);
+function formatTlDate(entry) {
+  if (entry?.ts) {
+    const d = new Date(entry.ts);
+    if (!Number.isNaN(d.getTime())) {
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    }
   }
+  if (!entry?.date) return '';
+  const m = String(entry.date).match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${Number(m[2])}/${Number(m[3])}` : entry.date;
+}
+
+function avatarGlyph(name) {
+  const s = String(name || '').trim();
+  return s ? s.slice(0, 1) : 'あ';
 }
 
 function renderNotes(history) {
   const wrap = $('#note-list');
   wrap.innerHTML = '';
-  const notes = history.filter((h) => h.note || h.hasDrawing || h.missed?.length).slice(-20).reverse();
-  if (!notes.length) {
-    wrap.append(el('p', 'muted small', t('log.noNotes')));
+  // メモか絵があるセッションをTL投稿として新しい順に
+  const posts = history
+    .filter((h) => h.note || h.hasDrawing)
+    .slice(-30)
+    .reverse();
+  if (!posts.length) {
+    wrap.append(el('p', 'muted small tl-empty', t('log.noNotes')));
     return;
   }
-  const ratingText = { 1: t('rev.rate1'), 2: t('rev.rate2'), 3: t('rev.rate3') };
-  for (const entry of notes) {
-    const item = el('div', 'note-item');
-    const head = el('div', 'note-head');
-    head.append(el('span', 'note-date', entry.date));
-    if (entry.rating) head.append(el('span', `rate-tag r${entry.rating}`, ratingText[entry.rating]));
-    if (entry.lessonId) head.append(el('span', 'rate-tag', tr(lessonById(entry.lessonId), 'name') || ''));
-    item.append(head);
-    if (entry.note) item.append(el('p', 'note-body', entry.note));
+
+  const displayName = getUsername() || t('log.me');
+  for (const entry of posts) {
+    const post = el('article', 'tl-post');
+    post.dataset.sessionId = entry.id || '';
+
+    const avatar = el('div', 'tl-avatar', avatarGlyph(displayName));
+    const main = el('div', 'tl-main');
+
+    const meta = el('header', 'tl-meta');
+    meta.append(el('span', 'tl-name', displayName));
+    meta.append(el('span', 'tl-dot', '·'));
+    const time = el('time', 'tl-time', formatTlDate(entry));
+    if (entry.date) time.dateTime = entry.date;
+    meta.append(time);
+    const label = sessionLabel(entry);
+    if (label) meta.append(el('span', 'tl-menu', label));
+    main.append(meta);
+
+    if (entry.note) main.append(el('p', 'tl-body', entry.note));
+
     if (entry.hasDrawing) {
-      const img = el('img', 'note-thumb');
+      const media = el('div', 'tl-media');
+      const img = el('img');
+      img.alt = label || t('rev.drawn');
+      img.loading = 'lazy';
+      media.append(img);
+      main.append(media);
       loadDrawing(entry.id)
         .then((blob) => { if (blob) img.src = URL.createObjectURL(blob); })
-        .catch(() => {});
-      item.append(img);
+        .catch(() => { media.remove(); });
     }
-    wrap.append(item);
+
+    const actions = el('div', 'tl-actions');
+    const likeBtn = el('button', 'tl-like');
+    likeBtn.type = 'button';
+    likeBtn.setAttribute('aria-label', t('log.like'));
+    likeBtn.dataset.liked = '0';
+    likeBtn.innerHTML = `<span class="gallery-heart">♥</span><span class="tl-like-count">0</span>`;
+    // いまは自分のローカル記録用の見た目だけ。クラウドいいねは後で接続する
+    likeBtn.addEventListener('click', () => {
+      const on = likeBtn.dataset.liked === '1';
+      const next = !on;
+      likeBtn.dataset.liked = next ? '1' : '0';
+      likeBtn.classList.toggle('on', next);
+      const n = Number(likeBtn.querySelector('.tl-like-count')?.textContent || 0);
+      likeBtn.querySelector('.tl-like-count').textContent = String(Math.max(0, n + (next ? 1 : -1)));
+    });
+    actions.append(likeBtn);
+    main.append(actions);
+
+    post.append(avatar, main);
+    wrap.append(post);
   }
 }
 
