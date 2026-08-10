@@ -242,10 +242,6 @@ export function userName(u = user) {
   return u.email?.split('@')[0] || '';
 }
 
-export function userAvatar() {
-  return '';
-}
-
 export function getUsername() {
   return usernameMem || '';
 }

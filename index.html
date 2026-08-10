@@ -27,7 +27,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="118" data-theme="light">
+<body data-build="119" data-theme="light">
 <script>
 /* テーマは設定ロード後に JS が当てる（端末 localStorage には依存しない） */
 </script>
@@ -65,9 +65,6 @@
     </a>
     <div class="topbar-actions">
       <button id="auth-btn" class="auth-btn" title="ログイン" data-i18n-title="auth.login">
-        <span id="auth-avatar-wrap" class="auth-avatar-wrap" hidden>
-          <img id="auth-avatar" class="auth-avatar" alt="">
-        </span>
         <span id="auth-login-label" class="auth-login-label" data-i18n="auth.login">ログイン</span>
       </button>
       <button id="lang-btn" class="lang-btn" title="日本語 / English">EN</button>
@@ -503,7 +500,6 @@
     </div>
     <div id="auth-user-info" class="auth-user-info" hidden>
       <div class="auth-user-row">
-        <img id="auth-info-avatar" class="auth-info-avatar" alt="" hidden>
         <div>
           <div id="auth-info-name" class="auth-info-name"></div>
           <div class="muted small" data-i18n="auth.loggedIn">ログイン中</div>
