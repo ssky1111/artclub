@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '64';
+const BUILD = '65';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2122,31 +2122,88 @@ function sessionLabel(entry) {
   return '';
 }
 
+function formatTlDate(entry) {
+  if (entry?.ts) {
+    const d = new Date(entry.ts);
+    if (!Number.isNaN(d.getTime())) {
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    }
+  }
+  if (!entry?.date) return '';
+  const m = String(entry.date).match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${Number(m[2])}/${Number(m[3])}` : entry.date;
+}
+
+function avatarGlyph(name) {
+  const s = String(name || '').trim();
+  return s ? s.slice(0, 1) : 'あ';
+}
+
 function renderNotes(history) {
   const wrap = $('#note-list');
   wrap.innerHTML = '';
-  // メモがあるものだけ。絵だけの記録はカレンダー側で見る
-  const notes = history.filter((h) => h.note).slice(-20).reverse();
-  if (!notes.length) {
-    wrap.append(el('p', 'muted small', t('log.noNotes')));
+  // メモか絵があるセッションをTL投稿として新しい順に
+  const posts = history
+    .filter((h) => h.note || h.hasDrawing)
+    .slice(-30)
+    .reverse();
+  if (!posts.length) {
+    wrap.append(el('p', 'muted small tl-empty', t('log.noNotes')));
     return;
   }
-  for (const entry of notes) {
-    const item = el('div', 'note-item');
-    const head = el('div', 'note-head');
-    head.append(el('span', 'note-date', entry.date));
+
+  const displayName = getUsername() || t('log.me');
+  for (const entry of posts) {
+    const post = el('article', 'tl-post');
+    post.dataset.sessionId = entry.id || '';
+
+    const avatar = el('div', 'tl-avatar', avatarGlyph(displayName));
+    const main = el('div', 'tl-main');
+
+    const meta = el('header', 'tl-meta');
+    meta.append(el('span', 'tl-name', displayName));
+    meta.append(el('span', 'tl-dot', '·'));
+    const time = el('time', 'tl-time', formatTlDate(entry));
+    if (entry.date) time.dateTime = entry.date;
+    meta.append(time);
     const label = sessionLabel(entry);
-    if (label) head.append(el('span', 'note-menu', label));
-    item.append(head);
-    item.append(el('p', 'note-body', entry.note));
+    if (label) meta.append(el('span', 'tl-menu', label));
+    main.append(meta);
+
+    if (entry.note) main.append(el('p', 'tl-body', entry.note));
+
     if (entry.hasDrawing) {
-      const img = el('img', 'note-thumb');
+      const media = el('div', 'tl-media');
+      const img = el('img');
+      img.alt = label || t('rev.drawn');
+      img.loading = 'lazy';
+      media.append(img);
+      main.append(media);
       loadDrawing(entry.id)
         .then((blob) => { if (blob) img.src = URL.createObjectURL(blob); })
-        .catch(() => {});
-      item.append(img);
+        .catch(() => { media.remove(); });
     }
-    wrap.append(item);
+
+    const actions = el('div', 'tl-actions');
+    const likeBtn = el('button', 'tl-like');
+    likeBtn.type = 'button';
+    likeBtn.setAttribute('aria-label', t('log.like'));
+    likeBtn.dataset.liked = '0';
+    likeBtn.innerHTML = `<span class="gallery-heart">♥</span><span class="tl-like-count">0</span>`;
+    // いまは自分のローカル記録用の見た目だけ。クラウドいいねは後で接続する
+    likeBtn.addEventListener('click', () => {
+      const on = likeBtn.dataset.liked === '1';
+      const next = !on;
+      likeBtn.dataset.liked = next ? '1' : '0';
+      likeBtn.classList.toggle('on', next);
+      const n = Number(likeBtn.querySelector('.tl-like-count')?.textContent || 0);
+      likeBtn.querySelector('.tl-like-count').textContent = String(Math.max(0, n + (next ? 1 : -1)));
+    });
+    actions.append(likeBtn);
+    main.append(actions);
+
+    post.append(avatar, main);
+    wrap.append(post);
   }
 }
 

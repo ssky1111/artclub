@@ -1085,6 +1085,65 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
 .rate-tag { font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
 .rate-tag.r3 { color: var(--good); border-color: color-mix(in srgb, var(--good) 40%, transparent); }
 
+/* ---------- タイムライン（きろく） ---------- */
+
+.tl-card { padding-left: 0; padding-right: 0; }
+.tl-card .section-head,
+.tl-card .tl-desc { padding-left: var(--pad); padding-right: var(--pad); }
+.tl-desc { margin: -4px 0 8px; }
+.tl-feed { display: flex; flex-direction: column; }
+.tl-post {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 10px;
+  padding: 14px var(--pad);
+  border-top: 1px solid var(--line);
+}
+.tl-post:first-child { border-top: 1px solid var(--line); }
+.tl-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--brand) 28%, var(--surface-2));
+  color: var(--brand-ink); font-weight: 800; font-size: 15px;
+  font-family: var(--font-display);
+}
+.tl-main { min-width: 0; }
+.tl-meta {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 6px;
+  font-size: 13px; line-height: 1.3;
+}
+.tl-name { font-weight: 800; color: var(--text); }
+.tl-dot, .tl-time, .tl-menu { color: var(--muted); font-size: 12px; }
+.tl-menu {
+  width: 100%; margin-top: 1px; font-weight: 600;
+  color: var(--brand-ink);
+}
+.tl-body {
+  margin: 8px 0 0; font-size: 15px; line-height: 1.55; color: var(--text);
+  white-space: pre-wrap; word-break: break-word;
+}
+.tl-media {
+  margin-top: 10px; border-radius: var(--radius-sm); overflow: hidden;
+  border: 1px solid var(--line); background: var(--surface-2);
+}
+.tl-media img {
+  display: block; width: 100%; height: auto; max-height: 360px; object-fit: contain;
+  background: #fff;
+}
+.tl-actions {
+  display: flex; align-items: center; gap: 8px; margin-top: 10px;
+}
+.tl-like {
+  appearance: none; border: none; background: transparent; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  font: inherit; font-size: 13px; font-weight: 700;
+  color: var(--muted); padding: 4px 8px 4px 2px; border-radius: 999px;
+}
+.tl-like:hover { background: color-mix(in srgb, var(--brand) 12%, transparent); }
+.tl-like.on { color: var(--brand-ink); }
+.tl-like .gallery-heart { font-size: 14px; line-height: 1; }
+.tl-empty { padding: 8px var(--pad) 4px; }
+
 /* ---------- 設定 ---------- */
 
 .radios { display: flex; flex-direction: column; gap: 10px; }
