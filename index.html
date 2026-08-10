@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#f7f7f5">
 <title>ARTCLUB — 毎日3分の絵の練習</title>
 <script>
-/* /work/xxx のように深いパスで開くと ./css が壊れるので、サイト根を base にする */
 (function () {
   var b = document.createElement('base');
   b.href = location.pathname.indexOf('/artclub') === 0 ? '/artclub/' : '/';
@@ -23,16 +22,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Special+Gothic+Expanded+One&display=swap">
 <link rel="stylesheet" href="./css/styles.css">
 </head>
-<!--
-  data-build は js/app.js の BUILD と揃えてある。
-  古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
--->
-<body data-build="137" data-theme="light">
-<script>
-/* テーマは設定ロード後に JS が当てる（端末 localStorage には依存しない） */
-</script>
 
-<!-- 明暗ポスタライズ用のSVGフィルタ（ノタン練習で使う） -->
+<body data-build="138" data-theme="light">
+
 <svg class="filter-defs" aria-hidden="true" focusable="false">
   <defs>
     <filter id="f-posterize3" color-interpolation-filters="sRGB">
@@ -54,7 +46,6 @@
   </defs>
 </svg>
 
-<!-- ============ ホーム ============ -->
 <main id="screen-home" class="screen is-active">
   <header class="topbar">
     <a href="/" class="brand brand-link" aria-label="ARTCLUB">
@@ -104,7 +95,7 @@
       <div class="xp-track"><div id="xp-fill" class="xp-fill"></div></div>
     </div>
 
-    <!-- 直近1週間、1日に何枚描いたか -->
+    
     <div class="week-block">
       <div class="label" data-i18n="home.week">この1週間</div>
       <div id="week-bars" class="week-bars" aria-label="この1週間に描いた枚数"></div>
@@ -118,7 +109,6 @@
     <div id="mode-cards"></div>
   </section>
 
-
   <p class="credit-note muted small" data-i18n="home.unsplash"></p>
   <p class="legal-links credit-note">
     <a href="/privacy/" data-i18n="legal.privacy">プライバシーポリシー</a>
@@ -126,7 +116,6 @@
   </p>
 </main>
 
-<!-- ============ セッション ============ -->
 <main id="screen-session" class="screen session">
   <div class="stage">
     <div id="stage-inner" class="stage-inner">
@@ -170,11 +159,7 @@
       </div>
     </div>
 
-    <!--
-      描くモード。
-      上の帯にタイマーを真ん中で出し、その下を「左＝お題／右＝キャンバス」に割る。
-      画面が狭いときは左を畳んで、お題は小窓（ref-mini）に退避する。
-    -->
+    
     <div id="pad-wrap" class="pad-wrap" hidden>
       <div class="pad-hud">
         <button id="pad-quit" class="pad-icon" data-icon="close" data-i18n-title="common.cancel"></button>
@@ -238,7 +223,6 @@
   </div>
 </main>
 
-<!-- ============ 休憩／ドリル切替 ============ -->
 <main id="screen-bridge" class="screen center">
   <div class="bridge-card">
     <div class="label" id="bridge-label">つぎは</div>
@@ -256,7 +240,6 @@
   </div>
 </main>
 
-<!-- ============ ふりかえり ============ -->
 <main id="screen-review" class="screen">
   <header class="topbar"><h1 class="brand" data-i18n="rev.title">おつかれさま</h1></header>
 
@@ -316,7 +299,6 @@
   </div>
 </main>
 
-<!-- ============ スケッチページ ============ -->
 <main id="screen-work" class="screen">
   <header class="topbar work-topbar">
     <button id="work-back" class="icon-btn" type="button" data-icon="back"
@@ -363,7 +345,6 @@
   </section>
 </main>
 
-<!-- ============ 解剖レッスン ============ -->
 <main id="screen-lesson" class="screen">
   <header class="topbar">
     <button class="icon-btn" data-nav="home" data-icon="back"></button>
@@ -407,7 +388,6 @@
   </div>
 </main>
 
-<!-- ============ 解剖学の本（図版と日本語訳） ============ -->
 <main id="screen-books" class="screen">
   <header class="topbar">
     <button class="icon-btn" data-nav="home" data-icon="back"></button>
@@ -430,7 +410,6 @@
   </section>
 </main>
 
-<!-- 練習をはじめる前の設定 -->
 <div id="setup-sheet" class="sheet" hidden>
   <div class="sheet-inner">
     <button id="setup-close" class="icon-btn sheet-close" data-icon="close"></button>
@@ -451,7 +430,6 @@
   </div>
 </div>
 
-<!-- 部位練習でどこをやるか -->
 <div id="part-sheet" class="sheet" hidden>
   <div class="sheet-inner">
     <button id="part-close" class="icon-btn sheet-close" data-icon="close"></button>
@@ -459,12 +437,11 @@
     <div id="part-chips" class="chips big-chips"></div>
     <p id="part-note" class="muted small"></p>
     <button id="part-start" class="btn primary big" data-i18n="home.startPlain">はじめる</button>
-    <!-- 手や脚は、見ても描けない。先に中身を読めるようにしておく -->
+    
     <button id="part-lesson" class="btn ghost small" hidden></button>
   </div>
 </div>
 
-<!-- 模写モード：人気スケッチを選ぶ -->
 <div id="copy-sheet" class="sheet" hidden>
   <div class="sheet-inner">
     <button id="copy-close" class="icon-btn sheet-close" data-icon="close"></button>
@@ -476,7 +453,6 @@
   </div>
 </div>
 
-<!-- ログイン -->
 <div id="auth-sheet" class="sheet" hidden>
   <div class="sheet-inner auth-sheet-inner">
     <button id="auth-close" class="icon-btn sheet-close" data-icon="close"></button>
@@ -510,7 +486,6 @@
   </div>
 </div>
 
-<!-- ユーザーネーム登録 -->
 <div id="username-sheet" class="sheet" hidden>
   <div class="sheet-inner" style="text-align:center">
     <button id="username-close" class="icon-btn sheet-close" data-icon="close" data-i18n-title="common.close"></button>
@@ -520,7 +495,6 @@
   </div>
 </div>
 
-<!-- 回数制限の案内 -->
 <div id="pay-sheet" class="sheet" hidden>
   <div class="sheet-inner">
     <button id="pay-close" class="icon-btn sheet-close" data-icon="close"></button>
@@ -530,7 +504,6 @@
   </div>
 </div>
 
-<!-- 写真の管理 -->
 <main id="screen-library" class="screen">
   <header class="topbar">
     <button class="icon-btn" data-nav="home" data-icon="back"></button>
@@ -548,7 +521,6 @@
   <p id="lib-empty" class="muted small" hidden data-i18n="lib.empty"></p>
 </main>
 
-<!-- 写真1枚の詳細（タグと、これまでの記録） -->
 <div id="photo-sheet" class="sheet" hidden>
   <div class="sheet-inner">
     <button id="photo-close" class="icon-btn sheet-close" data-icon="close"></button>
@@ -561,7 +533,6 @@
   </div>
 </div>
 
-<!-- カレンダーの1日 -->
 <div id="day-sheet" class="sheet" hidden>
   <div class="sheet-inner">
     <button id="sheet-close" class="icon-btn sheet-close" data-icon="close"></button>
@@ -572,14 +543,12 @@
   </div>
 </div>
 
-<!-- 図版の拡大 -->
 <div id="lightbox" class="lightbox" hidden>
   <button id="lightbox-close" class="icon-btn lightbox-close" data-icon="close"></button>
   <img id="lightbox-img" alt="">
   <div id="lightbox-caption" class="lightbox-caption"></div>
 </div>
 
-<!-- 描いた絵の拡大。押したら消える、ではなく、押したら大きくなる -->
 <div id="draw-lightbox" class="lightbox" hidden>
   <button id="draw-close" class="icon-btn lightbox-close" data-icon="close"></button>
   <img id="draw-img" alt="描いた絵">
@@ -591,7 +560,6 @@
   </div>
 </div>
 
-<!-- ============ 記録 ============ -->
 <main id="screen-log" class="screen">
   <header class="topbar">
     <h1 class="brand plain" data-i18n="log.title">きろく</h1>
@@ -632,7 +600,6 @@
   </section>
 </main>
 
-<!-- ============ 管理（/admin で入る） ============ -->
 <main id="screen-admin" class="screen">
   <header class="topbar">
     <button class="icon-btn" data-nav="home" data-icon="back"></button>
@@ -640,7 +607,7 @@
     <button id="admin-lock" class="btn ghost small" data-i18n="admin.lockAgain">ロックする</button>
   </header>
 
-  <!-- 鍵をかけるところ -->
+  
   <section class="card" id="admin-gate">
     <div class="section-head"><h2 data-i18n="admin.lock">パスワード</h2></div>
     <p id="admin-gate-note" class="muted small"></p>
@@ -653,7 +620,7 @@
   </section>
 
   <div id="admin-body" hidden>
-    <!-- Supabase 写真管理 -->
+    
     <section class="card">
       <div class="section-head">
         <h2>Supabase の写真</h2>
@@ -675,7 +642,7 @@
       </div>
     </section>
 
-    <!-- タグ管理 -->
+    
     <section class="card">
       <div class="section-head"><h2>タグ管理</h2></div>
       <p class="muted small">タグを追加・削除できます</p>
@@ -686,7 +653,7 @@
       </div>
     </section>
 
-    <!-- 一括タグ付けシート -->
+    
     <div id="bulk-tag-sheet" class="sheet" hidden>
       <div class="sheet-inner">
         <button id="bulk-tag-close" class="icon-btn sheet-close" data-icon="close"></button>
@@ -701,7 +668,7 @@
       </div>
     </div>
 
-    <!-- この端末の写真 -->
+    
     <section class="card">
       <div class="section-head">
         <h2 data-i18n="admin.localOnly">この端末だけにある写真</h2>
@@ -745,7 +712,6 @@
   </div>
 </main>
 
-<!-- ============ 設定 ============ -->
 <main id="screen-settings" class="screen">
   <header class="topbar">
     <button class="icon-btn" data-nav="home" data-icon="back"></button>
@@ -765,7 +731,6 @@
     <div class="section-head"><h2 data-i18n="common.language">言語</h2></div>
     <div id="lang-chips" class="chips"></div>
   </section>
-
 
   <section class="card">
     <div class="section-head"><h2 data-i18n="set.practice">練習の設定</h2></div>
@@ -814,7 +779,6 @@
 
 </main>
 
-<!-- ============ アトリエ ============ -->
 <main id="screen-atelier" class="screen">
   <header class="topbar atelier-topbar">
     <span class="atelier-topbar-spacer" aria-hidden="true"></span>
@@ -885,7 +849,6 @@
   </div>
 </div>
 
-<!-- フィードバック（右端タブ + 吹き出し） -->
 <button id="feedback-tab" class="feedback-tab" type="button" data-i18n-title="fb.tabTitle" title="フィードバック" aria-expanded="false" aria-controls="feedback-sheet">
   <span class="feedback-tab-label" data-i18n="fb.tab">フィードバック</span>
 </button>
