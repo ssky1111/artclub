@@ -677,10 +677,15 @@ html:lang(ja) .atelier-tabs button { font-family: var(--font-ja); }
 .hint-list,
 .menu-hints,
 .bridge-hints {
-  list-style: none;
+  list-style: disc;
   margin: 0;
-  padding: 0;
+  padding: 0 0 0 1.35em;
   text-align: left;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-soft);
 }
 .bridge-cue .hint-list,
 .bridge-cue .bridge-hints {
@@ -689,26 +694,12 @@ html:lang(ja) .atelier-tabs button { font-family: var(--font-ja); }
 .hint-list li,
 .menu-hints li,
 .bridge-hints li {
-  position: relative;
-  padding-left: 1.1em;
-  margin: 0.2em 0;
-  font-weight: 700;
-  line-height: 1.55;
-}
-.hint-list li::before,
-.menu-hints li::before,
-.bridge-hints li::before {
-  content: '−';
-  position: absolute;
-  left: 0;
+  margin: 0.25em 0;
+  padding-left: 0.15em;
+  font-weight: 400;
 }
 .menu-sub .menu-hints {
   font-size: 13px;
-  font-weight: 400;
-  font-family: var(--font-body);
-}
-.menu-sub .menu-hints li {
-  font-weight: 400;
 }
 .bridge-meta { margin-bottom: 6px; font-size: 22px; font-weight: 800; font-family: var(--font-ja); color: var(--text); }
 
