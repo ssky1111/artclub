@@ -372,7 +372,7 @@ export async function fetchPublicArtworks({ limit = 40 } = {}) {
 
 /**
  * 模写モード用。模写OKの公開スケッチをいいね多い順で返す。
- * 自分の模写OKも含める（β期は自分しかいないことが多く、除外すると常に空になる）。
+ * 自分の絵は出さない（他人のスケッチを模写するモード）。
  * PostgREST では like 集計ソートが難しいので、多めに取ってクライアントで並べ替える。
  */
 export async function fetchTopCopyableArtworks({ limit = 30 } = {}) {
@@ -412,10 +412,8 @@ export async function fetchTopCopyableArtworks({ limit = 30 } = {}) {
     .filter((w) => w.visibility !== 'private' && w.is_public !== false)
     .filter((w) => w.kind !== 'sheet')
     .filter((w) => w.allow_copy === true)
-    .map((w) => ({ ...w, is_mine: !!(me && w.user_id === me) }))
+    .filter((w) => !me || w.user_id !== me)
     .sort((a, b) => {
-      // 他人を先に、同点ならいいね・新しさ
-      if (a.is_mine !== b.is_mine) return a.is_mine ? 1 : -1;
       const likeDiff = (b.like_count || 0) - (a.like_count || 0);
       if (likeDiff) return likeDiff;
       return new Date(b.created_at) - new Date(a.created_at);
