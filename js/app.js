@@ -1522,17 +1522,23 @@ function wireDrawingLightbox() {
   });
   $('#draw-dl').addEventListener('click', () => {
     const shot = pendingDrawings[drawingIndex];
-    if (shot) downloadBlob(shot.blob, `artclub-${dateKey()}-${drawingIndex + 1}.jpg`);
+    if (shot) {
+      downloadBlob(
+        shot.croppedBlob || shot.blob,
+        `artclub-${dateKey()}-${drawingIndex + 1}.jpg`,
+      );
+    }
   });
   $('#draw-share-x').addEventListener('click', async () => {
     const shot = pendingDrawings[drawingIndex];
     if (!shot) return;
     const btn = $('#draw-share-x');
     const text = t('rev.shareText', { n: 1, d: '' });
+    const blob = shot.croppedBlob || shot.blob;
     if (getUser()) {
       btn.disabled = true;
       try {
-        const url = await uploadShareImage(shot.blob);
+        const url = await uploadShareImage(blob);
         shareToX(`${text}\n${url}`);
       } catch { shareToX(text); }
       btn.disabled = false;
