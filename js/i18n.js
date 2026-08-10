@@ -85,7 +85,7 @@ const DICT = {
   'atelier.tabPrompt':    { ja: 'お題別',                 en: 'By prompt' },
   'atelier.publicDesc':   { ja: 'みんなの公開スケッチが新しい順に流れます', en: 'Public sketches, newest first' },
   'atelier.mineDesc':     { ja: '自分の投稿（非公開も含む）', en: 'Your posts (including private)' },
-  'atelier.promptDesc':   { ja: 'お題写真のあとに、自分とみんなの絵が横に並びます', en: 'Prompt photo first, then drawings side by side' },
+  'atelier.promptDesc':   { ja: 'お題写真のとなりに、いいねが多い絵が並びます', en: 'Prompt on the left, top-liked drawings beside it' },
   'atelier.emptyPublic':  { ja: 'まだ公開投稿がありません', en: 'No public posts yet' },
   'atelier.emptyMine':    { ja: 'まだ自分の投稿がありません', en: 'You have no posts yet' },
   'atelier.loginMine':    { ja: 'ログインすると自分のアトリエが見られます', en: 'Log in to see your atelier' },

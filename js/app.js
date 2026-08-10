@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '84';
+const BUILD = '85';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2487,7 +2487,7 @@ async function renderAtelierByPrompt() {
   empty.hidden = true;
 
   const [publicWorks, myWorks, photos] = await Promise.all([
-    fetchPublicArtworks({ limit: 80 }).catch(() => []),
+    fetchPublicArtworks({ limit: 120 }).catch(() => []),
     getUser() ? fetchMyArtworks({ limit: 80 }).catch(() => []) : Promise.resolve([]),
     ensureAtelierPhotoIndex(),
   ]);
@@ -2508,34 +2508,36 @@ async function renderAtelierByPrompt() {
     return;
   }
 
-  const me = getUser()?.id;
+  // いいねが多いお題を上に
+  promptIds.sort((a, b) => {
+    const score = (id) => byPrompt.get(id).reduce((s, w) => s + (w.like_count || 0), 0);
+    return score(b) - score(a);
+  });
+
   for (const promptId of promptIds) {
-    const works = byPrompt.get(promptId)
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const topWorks = [...byPrompt.get(promptId)]
+      .sort((a, b) => {
+        const likeDiff = (b.like_count || 0) - (a.like_count || 0);
+        if (likeDiff) return likeDiff;
+        return new Date(b.created_at) - new Date(a.created_at);
+      })
+      .slice(0, 10); // 2行 × 横5枚
+
     const card = el('section', 'atelier-prompt-card');
-    const head = el('div', 'atelier-prompt-head');
-    head.append(el('span', 'atelier-prompt-label', t('atelier.promptPhoto')));
-    head.append(el('span', 'atelier-prompt-count', `${works.length}`));
-    card.append(head);
+    const block = el('div', 'atelier-prompt-block');
 
     const photo = photos.get(promptId);
     if (photo) {
       const img = el('img', 'atelier-prompt-photo');
-      img.alt = t('atelier.promptPhoto');
+      img.alt = '';
       setPhotoSrc(img, photo);
-      card.append(img);
+      block.append(img);
     } else {
-      card.append(el('div', 'atelier-prompt-photo is-empty', t('atelier.noPromptPhoto')));
+      block.append(el('div', 'atelier-prompt-photo is-empty', '—'));
     }
 
-    const scroller = el('div', 'atelier-hscroll');
-    // 自分の絵を先に
-    const ordered = [
-      ...works.filter((w) => w.user_id === me),
-      ...works.filter((w) => w.user_id !== me),
-    ];
-    for (const work of ordered) {
-      const btn = el('button', `atelier-thumb${work.user_id === me ? ' is-mine' : ''}`);
+    for (const work of topWorks) {
+      const btn = el('button', `atelier-thumb${work.user_id === getUser()?.id ? ' is-mine' : ''}`);
       btn.type = 'button';
       const frame = el('div', 'atelier-thumb-frame');
       const img = el('img');
@@ -2543,16 +2545,15 @@ async function renderAtelierByPrompt() {
       img.alt = work.username || '';
       img.loading = 'lazy';
       frame.append(img);
+      if (work.like_count > 0) {
+        frame.append(el('span', 'atelier-thumb-likes', `♥ ${work.like_count}`));
+      }
       btn.append(frame);
-      const meta = el('div', 'atelier-thumb-meta');
-      meta.append(el('span', null, work.user_id === me ? t('atelier.you') : (work.username || '—')));
-      if (work.allow_copy) meta.append(el('span', 'atelier-badge copy', t('atelier.copyable')));
-      if (work.visibility === 'private') meta.append(el('span', 'atelier-badge private', t('atelier.privateBadge')));
-      btn.append(meta);
       btn.addEventListener('click', () => openAtelierWork(work));
-      scroller.append(btn);
+      block.append(btn);
     }
-    card.append(scroller);
+
+    card.append(block);
     list.append(card);
   }
 }
