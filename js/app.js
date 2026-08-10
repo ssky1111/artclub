@@ -840,7 +840,7 @@ function wireAdmin() {
   });
 
   $('#admin-lock').addEventListener('click', () => { adminOpen = false; openAdmin(); });
-  $('#admin-open').addEventListener('click', () => { location.hash = '#admin'; openAdmin(); });
+  $('#admin-open')?.addEventListener('click', () => { location.hash = '#admin'; openAdmin(); });
 
   $('#admin-add').addEventListener('click', () => $('#admin-input').click());
   $('#admin-input').addEventListener('change', async (e) => {
