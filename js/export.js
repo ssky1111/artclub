@@ -104,9 +104,10 @@ export async function composeSheet(blobs, { date = '', crop = true } = {}) {
 
   const W = 1200;
   const H = 630;
-  const pad = 32;
+  const pad = 28;
   const gap = 16;
-  const leftW = 200;
+  const topBand = 52;
+  const bottomBand = 40;
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
@@ -116,21 +117,19 @@ export async function composeSheet(blobs, { date = '', crop = true } = {}) {
   ctx.fillStyle = PAPER;
   ctx.fillRect(0, 0, W, H);
 
-  ctx.fillStyle = INK;
-  ctx.textBaseline = 'top';
-  ctx.font = '700 32px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
-  ctx.fillText('ARTCLUB', pad, pad);
-
+  // 日付は上中央
   if (date) {
     ctx.fillStyle = SOFT;
-    ctx.font = '600 20px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
-    ctx.fillText(date, pad, pad + 44);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '600 22px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
+    ctx.fillText(date, W / 2, topBand / 2);
   }
 
-  const areaX = pad + leftW;
-  const areaW = W - areaX - pad;
-  const areaY = pad;
-  const areaH = H - pad * 2;
+  const areaX = pad;
+  const areaW = W - pad * 2;
+  const areaY = topBand;
+  const areaH = H - topBand - bottomBand;
 
   const n = images.length;
   const cols = Math.min(n, Math.ceil(Math.sqrt(n * (areaW / areaH))));
@@ -152,6 +151,13 @@ export async function composeSheet(blobs, { date = '', crop = true } = {}) {
     const h = img.height * scale;
     ctx.drawImage(img, cx + (cell - w) / 2, cy + (cell - h) / 2, w, h);
   });
+
+  // ARTCLUB は下中央に小さく
+  ctx.fillStyle = SOFT;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '600 14px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
+  ctx.fillText('ARTCLUB', W / 2, H - bottomBand / 2);
 
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.88));
 }
