@@ -58,7 +58,7 @@ import { submitFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '126';
+const BUILD = '127';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -176,10 +176,11 @@ function renderDaily(history) {
   const top = $('#menu-primary');
   top.innerHTML = '';
 
-  const hero = el('div', 'card primary-card');
+  const pendingDaily = !loggedIn || rounds === 0;
+  const hero = el('div', `card primary-card${pendingDaily ? ' daily-pending' : ''}`);
 
   const headRow = el('div', 'primary-head');
-  headRow.append(el('div', 'menu-kicker', t('home.todayLabel')));
+  headRow.append(el('div', 'menu-kicker', pendingDaily ? t('home.dailyKicker') : t('home.todayLabel')));
   // 周回数はログイン中のクラウド履歴だけ。ログアウトでは出さない
   if (loggedIn && rounds > 0) {
     const done = el('div', 'done-badge');
@@ -188,10 +189,15 @@ function renderDaily(history) {
       el('span', 'done-text', rounds === 1 ? t('home.roundDone') : t('home.roundN', { n: rounds })),
     );
     headRow.append(done);
+  } else if (pendingDaily) {
+    headRow.append(el('span', 'pill daily-pending-pill', t('home.todayYet')));
   }
   hero.append(headRow);
 
   hero.append(el('div', 'menu-title big', tr(daily, 'title')));
+  if (pendingDaily) {
+    hero.append(el('p', 'menu-sub', t('home.dailyPendingSub')));
+  }
 
   const cta = el('button', 'btn primary big', t('home.startPlain'));
   cta.addEventListener('click', () => {
@@ -3232,6 +3238,8 @@ function wireFeedback() {
   const send = $('#feedback-send');
   if (!tab || !sheet || !message || !send) return;
 
+  sheet.hidden = true;
+
   const open = () => {
     sheet.hidden = false;
     message.focus();
@@ -3243,10 +3251,19 @@ function wireFeedback() {
     restorePageScroll();
   };
 
-  tab.addEventListener('click', open);
+  tab.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (sheet.hidden) open();
+    else close();
+  });
   $('#feedback-close')?.addEventListener('click', close);
-  sheet.addEventListener('click', (e) => {
-    if (e.target.id === 'feedback-sheet') close();
+  document.addEventListener('click', (e) => {
+    if (sheet.hidden) return;
+    if (e.target.closest('#feedback-sheet') || e.target.closest('#feedback-tab')) return;
+    close();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !sheet.hidden) close();
   });
 
   send.addEventListener('click', async () => {

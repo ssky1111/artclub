@@ -145,6 +145,8 @@ const DICT = {
   'home.week':           { ja: 'この1週間',              en: 'This week' },
   'home.weekNote':       { ja: '1日に描いた枚数。',      en: 'Drawings per day.' },
   'home.todayLabel':     { ja: '今日の練習',              en: "Today's Practice" },
+  'home.dailyKicker':    { ja: 'きょうのデイリー',        en: "Today's daily" },
+  'home.dailyPendingSub': { ja: '今日はまだ。短い1セットから', en: 'Not yet today — start with a short set.' },
   'home.modes':          { ja: 'モード',                 en: 'Modes' },
   'home.more':           { ja: 'そのほか',               en: 'More' },
   'home.custom':         { ja: 'じぶんで決めて描く',      en: 'Custom session' },

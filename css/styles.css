@@ -840,7 +840,32 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
 }
 .primary-card .menu-title.big { color: var(--text); }
 .primary-card .menu-title.big { font-size: 32px; font-weight: 900; line-height: 1.2; font-family: var(--font-display); letter-spacing: .04em; }
-.primary-card .menu-sub { color: var(--text-soft); font-size: 14px; }
+.primary-card .menu-sub { color: var(--text-soft); font-size: 14px; margin: 6px 0 0; }
+
+/* 今日の DAILY がまだのとき */
+.primary-card.daily-pending {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 40%, transparent);
+}
+.primary-card.daily-pending .menu-kicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.primary-card.daily-pending .menu-kicker::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand);
+  flex: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 28%, transparent);
+}
+.pill.daily-pending-pill {
+  background: color-mix(in srgb, var(--brand) 16%, var(--surface));
+  color: var(--brand-ink);
+  border-color: color-mix(in srgb, var(--brand) 35%, transparent);
+  font-weight: 700;
+}
 
 .menu-card.slim {
   display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
@@ -2132,6 +2157,49 @@ button.tl-media img {
 }
 
 /* ---------- フィードバック（右端タブ） ---------- */
+
+/*
+ * 全画面シートにしない。開いていてもページのスクロールを奪わない。
+ * （誤タップや閉じ忘れで「スクロールできない」に見えるのを防ぐ）
+ */
+.feedback-panel {
+  position: fixed;
+  z-index: 65;
+  right: max(8px, env(safe-area-inset-right));
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(360px, calc(100vw - 56px));
+  pointer-events: none;
+  background: none;
+}
+.feedback-panel[hidden] {
+  display: none !important;
+  pointer-events: none !important;
+}
+.feedback-panel-inner {
+  pointer-events: auto;
+  position: relative;
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 36px color-mix(in srgb, #000 16%, transparent);
+  max-height: min(85dvh, 560px);
+  overflow-y: auto;
+  padding: var(--pad);
+  padding-top: calc(var(--pad) + 4px);
+  animation: feedback-in .22s ease-out;
+}
+.feedback-panel-inner h2 { margin: 4px 0 12px; font-size: 20px; }
+.feedback-panel-inner .sheet-close { position: absolute; top: 8px; right: 8px; }
+@keyframes feedback-in {
+  from { transform: translateX(10px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+body[data-screen='session'] .feedback-panel,
+body[data-screen='review'] .feedback-panel,
+body.in-session .feedback-panel {
+  display: none !important;
+}
 
 .feedback-tab {
   position: fixed;
