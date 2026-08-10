@@ -2435,7 +2435,10 @@ async function openDaySheet(dayKey, history = getHistory()) {
   for (const entry of entries) {
     const block = el('div', 'note-item');
     const head = el('div', 'note-head');
-    head.append(el('span', 'note-date', entry.menuTitle || sessionLabel(entry) || '—'));
+    const title = entry.menuTitle || sessionLabel(entry) || '—';
+    const time = formatSessionTime(entry);
+    // DAILY は何時にやったかを出しておく（他メニューも同じ欄で時刻が分かる）
+    head.append(el('span', 'note-date', time ? `${title} · ${time}` : title));
     if (entry.lessonId && !entry.menuTitle) {
       const lessonName = tr(lessonById(entry.lessonId), 'name');
       if (lessonName) head.append(el('span', 'rate-tag', lessonName));
@@ -2495,6 +2498,14 @@ function formatTlDate(entry) {
   if (!entry?.date) return '';
   const m = String(entry.date).match(/(\d{4})-(\d{2})-(\d{2})/);
   return m ? `${Number(m[2])}/${Number(m[3])}` : entry.date;
+}
+
+/** きろく用。ローカル時刻の HH:MM */
+function formatSessionTime(entry) {
+  if (!entry?.ts) return '';
+  const d = new Date(entry.ts);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 function avatarGlyph(name) {
