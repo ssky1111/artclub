@@ -433,15 +433,23 @@ html:lang(ja) .atelier-tabs button { font-family: var(--font-ja); }
 /* ---------- サイト入室ゲート（閉じられないダイアログ） ---------- */
 
 .site-gate-dialog {
-  z-index: 10000;
+  z-index: 10000 !important;
   background: rgba(30, 20, 25, .55);
+  pointer-events: auto !important;
 }
-html[data-site-unlocked] .site-gate-dialog { display: none; }
+html[data-site-unlocked] .site-gate-dialog,
+.site-gate-dialog[hidden] {
+  display: none !important;
+  pointer-events: none !important;
+}
 .site-gate-inner {
   display: flex;
   flex-direction: column;
   gap: 12px;
   text-align: center;
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
 }
 .site-gate-brand {
   font-family: var(--font-display);
@@ -456,6 +464,19 @@ html[data-site-unlocked] .site-gate-dialog { display: none; }
 }
 .site-gate-input { text-align: center; }
 .site-gate-msg { min-height: 1.2em; margin: 0; }
+.site-gate-msg.is-error {
+  color: var(--danger);
+  font-weight: 700;
+}
+.site-gate-dialog.is-shake .site-gate-inner {
+  animation: site-gate-shake .35s ease;
+}
+@keyframes site-gate-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-4px); }
+}
 .site-gate-inner .confirm-dialog-actions { justify-content: stretch; }
 .site-gate-inner .confirm-dialog-btn.ok {
   width: 100%;

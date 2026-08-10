@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '183';
+const BUILD = '184';
 const SITE_PASS_SESSION = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 
@@ -3562,6 +3562,13 @@ function isSiteUnlocked() {
 function markSiteUnlocked() {
   try { sessionStorage.setItem(SITE_PASS_SESSION, '1'); } catch { /* */ }
   document.documentElement.dataset.siteUnlocked = '1';
+  const gate = $('#site-gate');
+  if (gate) gate.hidden = true;
+}
+
+function siteGateCopy(key, fallback) {
+  const text = t(key);
+  return text === key ? fallback : text;
 }
 
 function wireSiteGate(onUnlock) {
@@ -3574,52 +3581,72 @@ function wireSiteGate(onUnlock) {
     onUnlock();
     return;
   }
+
+  // sessionStorage では解除済みでも、HTML属性が無いとゲートが残ったまま
+  // ハンドラ未設定で「入力しても入れない」状態になる
   if (isSiteUnlocked()) {
+    markSiteUnlocked();
     onUnlock();
     return;
   }
 
-  // data-i18n に頼らずここで文言を入れる（キー生表示を防ぐ）
-  if (note) {
-    const text = t('siteGate.note');
-    note.textContent = text === 'siteGate.note'
-      ? 'テスト公開中です。パスワードを入力してください。'
-      : text;
-  }
-  if (input) {
-    const ph = t('siteGate.ph');
-    input.placeholder = ph === 'siteGate.ph' ? 'パスワード' : ph;
-  }
-  if (btn) {
-    const label = t('siteGate.enter');
-    btn.textContent = label === 'siteGate.enter' ? '入室' : label;
+  gate.hidden = false;
+  if (note) note.textContent = siteGateCopy('siteGate.note', 'テスト公開中です。パスワードを入力してください。');
+  if (input) input.placeholder = siteGateCopy('siteGate.ph', 'パスワード');
+  if (btn) btn.textContent = siteGateCopy('siteGate.enter', '入室');
+
+  function showGateError(text) {
+    if (!msg) return;
+    msg.textContent = text;
+    msg.classList.add('is-error');
+    gate.classList.remove('is-shake');
+    // reflow してアニメ再発火
+    void gate.offsetWidth;
+    gate.classList.add('is-shake');
   }
 
-  function tryUnlock() {
-    if (!input.value) {
-      const ph = t('siteGate.ph');
-      msg.textContent = ph === 'siteGate.ph' ? 'パスワード' : ph;
+  function tryUnlock(e) {
+    e?.preventDefault?.();
+    if (!input) return;
+    const value = String(input.value || '').trim();
+    if (!value) {
+      showGateError(siteGateCopy('siteGate.needPass', 'パスワードを入力してください'));
+      input.focus();
       return;
     }
-    if (input.value !== SITE_PASS) {
-      const wrong = t('siteGate.wrong');
-      msg.textContent = wrong === 'siteGate.wrong' ? 'パスワードが違います' : wrong;
+    if (value !== SITE_PASS) {
+      showGateError(siteGateCopy('siteGate.wrong', 'パスワードが違います'));
+      input.select();
+      input.focus();
       return;
+    }
+    if (msg) {
+      msg.textContent = '';
+      msg.classList.remove('is-error');
     }
     markSiteUnlocked();
-    msg.textContent = '';
     onUnlock();
     restorePageScroll();
   }
 
   // 閉じられない：背景クリック・Esc では閉じない
-  gate.addEventListener('click', (e) => { e.stopPropagation(); });
+  gate.addEventListener('click', (e) => {
+    if (e.target === gate) e.stopPropagation();
+  });
   gate.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') e.preventDefault();
   });
-  btn.addEventListener('click', tryUnlock);
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
-  input.focus();
+  btn?.addEventListener('click', tryUnlock);
+  input?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') tryUnlock(e);
+  });
+  // 入力し直したらエラー表示を消す
+  input?.addEventListener('input', () => {
+    if (!msg) return;
+    msg.textContent = '';
+    msg.classList.remove('is-error');
+  });
+  input?.focus();
 }
 
 function startApp() {
