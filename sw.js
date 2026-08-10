@@ -3,7 +3,7 @@
  * （毎回ちがう写真が出ることに意味があるし、端末を圧迫したくないので）。
  */
 
-const CACHE = 'artclub-v167';
+const CACHE = 'artclub-v168';
 const SHELL = [
   './',
   './index.html',
