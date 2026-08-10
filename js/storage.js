@@ -102,6 +102,24 @@ export function addDays(dateStr, delta) {
   return dateKey(d);
 }
 
+/**
+ * 直近1週間（きょう含む）に書いたふりかえりノート。
+ * 新しい順。中身が空のものは除く。
+ */
+export function recentReviewNotes(days = 7, history = getHistory()) {
+  const today = dateKey();
+  const from = addDays(today, -(days - 1));
+  return history
+    .filter((h) => h?.note && typeof h.note === 'string' && h.note.trim()
+      && h.date && h.date >= from && h.date <= today)
+    .map((h) => ({
+      date: h.date,
+      note: h.note.trim(),
+      title: h.menuTitle || null,
+    }))
+    .reverse();
+}
+
 /* ---------- 集計 ---------- */
 
 /** 日付 -> その日の練習秒数 */

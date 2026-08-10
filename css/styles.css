@@ -841,6 +841,32 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
 @keyframes confirm-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes confirm-scale-in { from { transform: scale(.92); opacity: 0; } to { transform: none; opacity: 1; } }
 
+/* ---------- DAILY 開始前：直近1週間の振り返り ---------- */
+
+.week-review-inner { max-width: 380px; }
+.week-review-title {
+  margin: 0 0 14px; font-size: 17px; font-weight: 800;
+  font-family: var(--font-ja); letter-spacing: .02em; line-height: 1.4;
+}
+.week-review-list {
+  list-style: none; margin: 0 0 14px; padding: 0;
+  max-height: min(40vh, 260px); overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.week-review-list li {
+  padding: 10px 12px; border-radius: 10px;
+  background: var(--surface-2); font-size: 14px; line-height: 1.55;
+}
+.week-review-list .week-review-date {
+  display: block; font-size: 11px; color: var(--muted);
+  margin-bottom: 4px; letter-spacing: .04em;
+}
+.week-review-lead {
+  margin: 0 0 18px; font-size: 14px; line-height: 1.6; color: var(--text-soft);
+}
+.week-review-inner .confirm-dialog-actions { justify-content: stretch; }
+.week-review-inner .confirm-dialog-btn.ok { width: 100%; padding: 12px 20px; }
+
 @media (min-width: 720px) {
   .hud-cue p { font-size: 14px; }
 }

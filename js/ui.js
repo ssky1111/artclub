@@ -77,3 +77,45 @@ export function confirmDialog(message, { okLabel, cancelLabel } = {}) {
     okBtn.focus();
   });
 }
+
+/**
+ * DAILY 開始前の振り返りモーダル。
+ * notes: [{ date, note }] — 無ければすぐ resolve。
+ */
+export function weekReviewDialog(notes) {
+  if (!notes?.length) return Promise.resolve();
+
+  const { t } = window.__i18n ?? {};
+  const wrap = $('#week-review-dialog');
+  const list = $('#week-review-list');
+  const okBtn = $('#week-review-ok');
+  const title = $('#week-review-title');
+
+  title.textContent = '直近1週間分の振り返りワード';
+  list.innerHTML = '';
+  for (const item of notes) {
+    const li = document.createElement('li');
+    const date = document.createElement('span');
+    date.className = 'week-review-date';
+    date.textContent = item.date;
+    li.append(date, document.createTextNode(item.note));
+    list.append(li);
+  }
+  okBtn.textContent = t ? t('home.startPlain') : 'はじめる';
+  wrap.hidden = false;
+
+  return new Promise((resolve) => {
+    function done() {
+      wrap.hidden = true;
+      okBtn.removeEventListener('click', onOk);
+      wrap.removeEventListener('click', onBackdrop);
+      resolve();
+    }
+    function onOk() { done(); }
+    function onBackdrop(e) { if (e.target === wrap) done(); }
+
+    okBtn.addEventListener('click', onOk);
+    wrap.addEventListener('click', onBackdrop);
+    okBtn.focus();
+  });
+}

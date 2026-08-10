@@ -10,6 +10,7 @@ import {
 import {
   getSettings, saveSettings, getHistory, addSession, updateLastSession,
   dateKey, addDays, dailyTotals, drawingsByDay, totalDrawings, roundsToday, stats,
+  recentReviewNotes,
 } from './storage.js';
 import { LESSONS, PD_BOOKS, lessonById } from './anatomy.js';
 import { createPhotoQueue } from './images.js';
@@ -39,7 +40,7 @@ import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } fro
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
-import { $, $$, el, showScreen, toast, confirmDialog } from './ui.js';
+import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog } from './ui.js';
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
@@ -55,7 +56,7 @@ import { uploadArtwork, uploadShareImage, fetchArtworks, deleteArtwork } from '.
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '29';
+const BUILD = '30';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -177,8 +178,8 @@ function renderDaily(history) {
 
   const cta = el('button', 'btn primary big', t('home.startPlain'));
   cta.addEventListener('click', () => {
-    if (rounds >= 4) return openPaywall(() => startSession(daily, { part }));
-    startSession(daily, { part });
+    if (rounds >= 4) return openPaywall(() => startDaily(daily, part));
+    startDaily(daily, part);
   });
   hero.append(cta);
 
@@ -315,9 +316,16 @@ function wirePartSheet() {
       paywallCallback = null;
     } else {
       const part = partForDate(dateKey());
-      startSession(buildDaily(part), { part });
+      startDaily(buildDaily(part), part);
     }
   });
+}
+
+/** DAILY 開始。直近1週間の振り返りワードがあれば先にモーダルで出す。 */
+async function startDaily(daily, part) {
+  const notes = recentReviewNotes(7);
+  if (notes.length) await weekReviewDialog(notes);
+  startSession(daily, { part });
 }
 
 /* ==================== はじめる前の設定 ==================== */
