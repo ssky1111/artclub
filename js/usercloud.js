@@ -2,7 +2,8 @@
  * usercloud.js — ユーザーデータの Supabase 永続化。
  *
  * localStorage に残すのは認証トークンと管理用シークレットだけ。
- * 練習履歴・設定・復習カード・言語・ゲーム状態・カレンダー表紙はここ経由。
+ * 練習履歴・設定・復習カード・言語・ゲーム状態はここ経由。
+ * カレンダー表紙は sessions の shots から導出（専用テーブルは当面不要）。
  */
 
 import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
@@ -74,6 +75,10 @@ function sessionRow(entry) {
     user_id: getUser().id,
     day_date: entry.date,
     ts: Number(entry.ts) || 0,
+    menu_id: entry.menuId || null,
+    seconds: Number(entry.seconds) || 0,
+    drawing_count: Number(entry.drawingCount) || 0,
+    has_drawing: !!(entry.hasDrawing || entry.drawingCount),
     payload: entry,
     updated_at: new Date().toISOString(),
   };
@@ -148,55 +153,8 @@ export async function upsertPracticeSessions(entries = []) {
   return ok;
 }
 
-/* ---------- calendar covers ---------- */
+/* ---------- calendar covers（任意・未使用） ----------
+ * カレンダー表紙は sessions.payload.shots[].artworkId から導出する。
+ * 手動指定 UI が必要になったら supabase/user-data.sql に表を足してここを復活させる。
+ */
 
-export async function fetchCalendarCovers() {
-  if (!(await ready())) return {};
-  const user = getUser();
-  const params = new URLSearchParams({
-    select: 'day_date,artwork_id',
-    user_id: `eq.${user.id}`,
-  });
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/calendar_covers?${params}`, {
-    headers: authHeaders({ Accept: 'application/json' }),
-  });
-  if (!res.ok) return {};
-  const rows = await res.json();
-  const map = {};
-  for (const row of rows) {
-    if (row.day_date && row.artwork_id) map[row.day_date] = row.artwork_id;
-  }
-  return map;
-}
-
-/** artworkId が null ならその日の指定を削除 */
-export async function setCalendarCover(dayDate, artworkId) {
-  if (!(await ready()) || !dayDate) return null;
-  const user = getUser();
-  if (!artworkId) {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/calendar_covers?user_id=eq.${user.id}&day_date=eq.${dayDate}`,
-      { method: 'DELETE', headers: authHeaders() },
-    );
-    if (!res.ok) throw new Error(`cover delete failed: ${res.status}`);
-    return null;
-  }
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/calendar_covers`, {
-    method: 'POST',
-    headers: authHeaders({
-      'Content-Type': 'application/json',
-      Prefer: 'resolution=merge-duplicates,return=representation',
-    }),
-    body: JSON.stringify({
-      user_id: user.id,
-      day_date: dayDate,
-      artwork_id: artworkId,
-      updated_at: new Date().toISOString(),
-    }),
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`cover upsert failed: ${res.status} ${text}`);
-  }
-  return artworkId;
-}

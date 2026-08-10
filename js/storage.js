@@ -220,22 +220,24 @@ export async function hydrateUserData() {
         .slice(-1000);
     }
 
-    // 端末にだけあった分をクラウドへ
-    if (hadLegacy || historyCache.length) {
+    // 初回ログイン or 移行分をクラウドへ（prefs 行が無ければ必ず作る）
+    if (!prefs || hadLegacy || historyCache.length) {
       try {
         await upsertUserPrefs({
           settings: getSettings(),
           cards: getCards(),
           game: getGameState(),
-          ...(legacyLang || prefs?.lang ? { lang: prefs?.lang || legacyLang } : {}),
+          lang: prefs?.lang || legacyLang || 'ja',
         });
       } catch (err) {
         console.error('[prefs migrate]', err);
       }
-      try {
-        await upsertPracticeSessions(historyCache);
-      } catch (err) {
-        console.error('[sessions migrate]', err);
+      if (historyCache.length) {
+        try {
+          await upsertPracticeSessions(historyCache);
+        } catch (err) {
+          console.error('[sessions migrate]', err);
+        }
       }
     }
 
