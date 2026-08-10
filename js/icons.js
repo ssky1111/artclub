@@ -49,6 +49,8 @@ const PATHS = {
   target:   '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>',
   bone:     '<path d="M7 17l10-10"/><circle cx="5.5" cy="18.5" r="2.2"/><circle cx="8" cy="16" r="2.2"/><circle cx="18.5" cy="5.5" r="2.2"/><circle cx="16" cy="8" r="2.2"/>',
   repeat:   '<path d="M4 9h13a3 3 0 013 3v1"/><path d="M8 5L4 9l4 4"/><path d="M20 15H7a3 3 0 01-3-3v-1"/><path d="M16 19l4-4-4-4"/>',
+  // 写真枠＋差し替え矢印。「やり直し」のループ矢印だけだと意味が伝わりにくい
+  photoSwap: '<rect x="2.5" y="4.5" width="14" height="12" rx="2"/><circle cx="7" cy="8.5" r="1.1"/><path d="M4.5 14.2l3-3.2 2.2 2.1 2.4-2.6 3.4 3.7"/><path d="M18 10.2a3.8 3.8 0 10-.4 2.6"/><path d="M16.2 7.6L18.6 9l-2.5.9"/>',
 };
 
 /** SVG 文字列を返す。CSS の color がそのまま線の色になる。 */

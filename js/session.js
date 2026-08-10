@@ -51,8 +51,6 @@ export function createSessionRunner({ onFinish, onQuit }) {
     padHint: $('#pad-hint'),
     padOpacity: $('#pad-opacity'),
     padOpacityNum: $('#pad-opacity-num'),
-    padSwap: $('#pad-swap'),
-    swapBtn: $('#swap-btn'),
     stageSwap: $('#stage-swap'),
     padRefSwap: $('#pad-ref-swap'),
     refMiniSwap: $('#ref-mini-swap'),
@@ -508,7 +506,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     state.currentPhotoId = photo.photoId || null;
     renderAttribution(photo);
   }
-  for (const btn of [dom.padSwap, dom.swapBtn, dom.stageSwap, dom.padRefSwap, dom.refMiniSwap]) {
+  for (const btn of [dom.stageSwap, dom.padRefSwap, dom.refMiniSwap]) {
     btn?.addEventListener('click', (e) => {
       e.stopPropagation();
       swapPhoto();
