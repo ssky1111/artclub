@@ -194,6 +194,8 @@ function renderDaily(history) {
 
   const cta = el('button', 'btn primary big', t('home.startPlain'));
   cta.addEventListener('click', () => {
+    // 未ログインは先にログイン。端末に古い回数が残っていても上限シートは出さない
+    if (!getUser()) return startDaily(daily, part);
     if (rounds >= DAILY_FREE_LIMIT) return openDailyLimitSheet();
     startDaily(daily, part);
   });
@@ -2306,6 +2308,10 @@ function wireGallery() {
 function startDailyFromCtr() {
   const part = partForDate(dateKey());
   const daily = buildDaily(part);
+  if (!getUser()) {
+    startDaily(daily, part);
+    return;
+  }
   const rounds = roundsToday('daily', getHistory());
   if (rounds >= DAILY_FREE_LIMIT) openDailyLimitSheet();
   else startDaily(daily, part);
