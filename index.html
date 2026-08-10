@@ -27,7 +27,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="97" data-theme="light">
+<body data-build="98" data-theme="light">
 <script>
 /* 設定があれば先に当てる。無ければ／移行前はシンプル（data-skin なし） */
 (function () {
@@ -517,14 +517,13 @@
   </div>
 </div>
 
-<!-- 2周目の課金導線（いまは無料開放中） -->
+<!-- 課金／回数制限の案内 -->
 <div id="pay-sheet" class="sheet" hidden>
   <div class="sheet-inner">
     <button id="pay-close" class="icon-btn sheet-close" data-icon="close"></button>
-    <span class="free-badge" data-i18n="home.freeNow">無料開放中</span>
-    <h2 data-i18n="home.paywallTitle">デイリー5回以上無料開放中</h2>
-    <p class="muted small" data-i18n="home.paywallBody"></p>
-    <button id="pay-continue" class="btn primary big" data-i18n="home.paywallCta"></button>
+    <h2 id="pay-title" data-i18n="home.paywallTitle">つづける</h2>
+    <p id="pay-body" class="muted small" data-i18n="home.paywallBody"></p>
+    <button id="pay-continue" class="btn primary big" data-i18n="home.paywallCta">はじめる</button>
   </div>
 </div>
 

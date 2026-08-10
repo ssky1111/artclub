@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '97';
+const BUILD = '98';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -166,7 +166,7 @@ function renderWeekBars(history) {
  * 「11分」と書いてあると、11分ある日にしか押さなくなる。
  * 押してから中身が出てくるほうが、実際には手が動く。
  *
- * 1日1周までは無料、2周目から先はいずれ有料にする。いまは全部開けてある。
+ * 1日2回までは無料。それ以上は案内を出して止める。
  */
 function renderDaily(history) {
   const rounds = roundsToday('daily', history);
@@ -194,7 +194,7 @@ function renderDaily(history) {
 
   const cta = el('button', 'btn primary big', t('home.startPlain'));
   cta.addEventListener('click', () => {
-    if (rounds >= 4) return openPaywall(() => startDaily(daily, part));
+    if (rounds >= DAILY_FREE_LIMIT) return openDailyLimitSheet();
     startDaily(daily, part);
   });
   hero.append(cta);
@@ -250,8 +250,35 @@ function renderExtras() {
 }
 
 let paywallCallback = null;
+const DAILY_FREE_LIMIT = 2;
+
+function setPaySheetCopy({ titleKey, bodyKey, ctaKey }) {
+  const title = $('#pay-title');
+  const body = $('#pay-body');
+  const cta = $('#pay-continue');
+  if (title) title.textContent = t(titleKey);
+  if (body) body.textContent = t(bodyKey);
+  if (cta) cta.textContent = t(ctaKey);
+}
+
 function openPaywall(onContinue) {
   paywallCallback = onContinue || null;
+  setPaySheetCopy({
+    titleKey: 'home.paywallTitle',
+    bodyKey: 'home.paywallBody',
+    ctaKey: 'home.paywallCta',
+  });
+  $('#pay-sheet').hidden = false;
+}
+
+/** デイリー無料上限。続ける導線は出さず、閉じるだけ。 */
+function openDailyLimitSheet() {
+  paywallCallback = null;
+  setPaySheetCopy({
+    titleKey: 'home.dailyLimitTitle',
+    bodyKey: 'home.dailyLimitBody',
+    ctaKey: 'home.dailyLimitCta',
+  });
   $('#pay-sheet').hidden = false;
 }
 
@@ -319,13 +346,9 @@ function wirePartSheet() {
   });
   $('#pay-continue').addEventListener('click', () => {
     $('#pay-sheet').hidden = true;
-    if (paywallCallback) {
-      paywallCallback();
-      paywallCallback = null;
-    } else {
-      const part = partForDate(dateKey());
-      startDaily(buildDaily(part), part);
-    }
+    const fn = paywallCallback;
+    paywallCallback = null;
+    if (fn) fn();
   });
 }
 
@@ -2165,7 +2188,7 @@ function startDailyFromCtr() {
   const part = partForDate(dateKey());
   const daily = buildDaily(part);
   const rounds = roundsToday('daily', getHistory());
-  if (rounds >= 4) openPaywall(() => startDaily(daily, part));
+  if (rounds >= DAILY_FREE_LIMIT) openDailyLimitSheet();
   else startDaily(daily, part);
 }
 
