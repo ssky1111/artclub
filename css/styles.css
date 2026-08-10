@@ -174,17 +174,10 @@ body[data-skin='pastel-rpg'][data-theme='paper'] {
   --lift-accent: none;
 }
 
-/* パステルRPG：やわらかい水玉の地と、ウィンドウっぽいカード */
+/* パステルRPG：フラットな面（グラデーションなし） */
 body[data-skin='pastel-rpg'] {
   background-color: var(--bg);
-  background-image:
-    radial-gradient(circle at 20% 18%, color-mix(in srgb, var(--brand) 22%, transparent) 0 18px, transparent 19px),
-    radial-gradient(circle at 78% 12%, color-mix(in srgb, var(--mint) 24%, transparent) 0 14px, transparent 15px),
-    radial-gradient(circle at 88% 72%, color-mix(in srgb, var(--sun) 28%, transparent) 0 16px, transparent 17px),
-    radial-gradient(circle at 12% 78%, color-mix(in srgb, var(--lime) 20%, transparent) 0 12px, transparent 13px),
-    radial-gradient(color-mix(in srgb, var(--line) 55%, transparent) 1.2px, transparent 1.3px);
-  background-size: auto, auto, auto, auto, 18px 18px;
-  background-attachment: fixed;
+  background-image: none;
 }
 body[data-skin='pastel-rpg'] .card,
 body[data-skin='pastel-rpg'] .streak-card,
@@ -197,11 +190,12 @@ body[data-skin='pastel-rpg'] .primary-card .btn.primary {
   margin-bottom: 0;
 }
 
-/* フラットなピルボタン */
+/* フラットなピルボタン（グラデーションなし） */
 body[data-skin='pastel-rpg'] .btn {
   border: 1.5px solid color-mix(in srgb, var(--text) 12%, transparent);
   border-radius: 999px;
   background: var(--surface-2);
+  background-image: none;
   box-shadow: none;
   font-weight: 700;
   letter-spacing: .02em;
@@ -216,6 +210,7 @@ body[data-skin='pastel-rpg'] .btn.cta {
   color: var(--cta-ink);
   border-color: var(--cta-bg);
   background: var(--cta-bg);
+  background-image: none;
   box-shadow: none;
   text-shadow: none;
 }
@@ -237,6 +232,7 @@ body[data-skin='pastel-rpg'] .btn.big {
 body[data-skin='pastel-rpg'] .chip {
   border: 1.5px solid var(--line);
   background: var(--surface-2);
+  background-image: none;
   box-shadow: none;
 }
 body[data-skin='pastel-rpg'] .chip:active {
@@ -249,10 +245,12 @@ body[data-skin='pastel-rpg'] .chip.on {
   border-color: color-mix(in srgb, var(--accent-ink) 28%, transparent);
   color: var(--accent-ink);
   background: var(--accent);
+  background-image: none;
   box-shadow: none;
 }
 body[data-skin='pastel-rpg'] .menu-card {
   background: var(--surface);
+  background-image: none;
   box-shadow: none;
 }
 body[data-skin='pastel-rpg'] .menu-card:active {
@@ -263,6 +261,7 @@ body[data-skin='pastel-rpg'] .menu-card:active {
 body[data-skin='pastel-rpg'] .tabbar button.on {
   border: 1.5px solid transparent;
   background: var(--cta-bg);
+  background-image: none;
   color: var(--cta-ink);
   box-shadow: none;
 }
@@ -279,6 +278,7 @@ body[data-skin='pastel-rpg'] .confirm-dialog-btn {
 }
 body[data-skin='pastel-rpg'] .confirm-dialog-btn.ok {
   background: var(--cta-bg);
+  background-image: none;
   color: var(--cta-ink);
   border-color: var(--cta-bg);
   box-shadow: none;
