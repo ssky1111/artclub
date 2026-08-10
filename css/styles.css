@@ -1,7 +1,7 @@
 /* Croqui — 配色とサイズ */
 
 /*
- * 既定はライト。ほぼ白の地に、ふちの無い薄いグレーのカードを置く。
+ * 既定はライト。やわらかい地に白いカードを置く。
  * 押してほしいものは「黒いピル」で示し、色は小さい要素にだけ差す。
  * 色数を増やすとお題の写真の色と喧嘩するので、面はグレースケールに寄せてある。
  *
@@ -9,9 +9,9 @@
  * オフラインでも同じ見た目で立ち上がってほしいから。
  */
 :root, body[data-theme='light'] {
-  --bg: #f7f7f5;
-  --surface: #ededea;
-  --surface-2: #e3e3df;
+  --bg: #f4f4f1;
+  --surface: #ffffff;
+  --surface-2: #efefeb;
   --line: transparent;
   --line-strong: transparent;
   --text: #111111;
@@ -19,8 +19,8 @@
   --muted: #8b8b85;
   --accent: #111111;          /* 押してほしいもの＝黒 */
   --accent-ink: #ffffff;
-  --accent-soft: #e3e3df;
-  --accent-dim: #c9c9c3;
+  --accent-soft: #efefeb;
+  --accent-dim: #d4d4ce;
   --cta-bg: #111111;
   --cta-ink: #ffffff;
   --brand: #ff6fa5;           /* ピンク。塗り */
