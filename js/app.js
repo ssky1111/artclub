@@ -2633,8 +2633,8 @@ function applyRoute(route = routeFromLocation()) {
     if (workId) {
       fetchArtwork(workId).then((work) => {
         if (work) openAtelierWork(work);
-        else toast(t('atelier.emptyPublic'));
-      }).catch(() => toast(t('gal.uploadFail')));
+        else toast(t('gal.workNotFound'));
+      }).catch(() => toast(t('gal.workNotFound')));
     }
     return;
   }
