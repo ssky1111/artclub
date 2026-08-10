@@ -89,7 +89,6 @@ const DICT = {
   'atelier.tabPublic':    { ja: 'みんなのアトリエ',       en: 'Everyone' },
   'atelier.tabMine':      { ja: '自分のアトリエ',         en: 'Mine' },
   'atelier.tabPrompt':    { ja: 'お題別',                 en: 'By prompt' },
-  'atelier.promptDesc':   { ja: 'お題写真のとなりに、いいねが多い絵が並びます', en: 'Prompt on the left, top-liked drawings beside it' },
   'atelier.emptyPublic':  { ja: 'まだ公開スケッチがありません', en: 'No public posts yet' },
   'atelier.emptyMine':    { ja: 'まだ自分のスケッチがありません', en: 'You have no posts yet' },
   'atelier.loginMine':    { ja: 'ログインすると自分のアトリエが見られます', en: 'Log in to see your atelier' },
