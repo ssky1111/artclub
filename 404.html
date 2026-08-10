@@ -15,8 +15,14 @@
   (function () {
     var ROUTES = ['admin'];
     var path = location.pathname.replace(/\/+$/, '');
-    var last = path.split('/').pop();
-    var base = path.slice(0, path.length - last.length) || '/';
+    var parts = path.split('/').filter(Boolean);
+    var base = '/';
+    // /work/{id} は Worker が本番で受ける。Pages 単体のときはハッシュへ落とす
+    if (parts[0] === 'work' && parts[1]) {
+      location.replace(base + '#work/' + encodeURIComponent(parts[1]));
+      return;
+    }
+    var last = parts[parts.length - 1] || '';
     var hash = ROUTES.indexOf(last) >= 0 ? '#' + last : '';
     location.replace(base + hash);
   })();

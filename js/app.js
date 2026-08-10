@@ -45,7 +45,10 @@ import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
 import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, userAvatar, hasUsername, setUsername, getUsername } from './auth.js';
-import { uploadArtwork, uploadShareImage, fetchArtworks, deleteArtwork } from './gallery.js';
+import {
+  uploadArtwork, uploadShareImage, fetchArtworks, deleteArtwork,
+  toggleLike, workPageUrl, upsertProfile,
+} from './gallery.js';
 
 /*
  * index.html の data-build と揃えておく番号。
@@ -56,7 +59,7 @@ import { uploadArtwork, uploadShareImage, fetchArtworks, deleteArtwork } from '.
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '37';
+const BUILD = '38';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1401,12 +1404,29 @@ function saveResult(result) {
   });
 }
 
+let pendingSessionMeta = null;
+
+function sessionModeFrom(entry) {
+  if (!entry) return 'Croquis';
+  if (entry.menuId === 'daily') return 'Daily';
+  if (entry.menuId?.startsWith('part-')) return 'Part';
+  if (entry.menuId === 'gestureMode' || (entry.byDrill?.gesture && !entry.byDrill?.croquis)) {
+    return 'Gesture';
+  }
+  if (entry.menuId === 'croquisMode' || entry.byDrill?.croquis) return 'Croquis';
+  return entry.menuTitle || 'Practice';
+}
+
 async function finishSession(result) {
   const entry = saveResult(result);
   if (settings.sfx) sfx.fanfare();
 
   pendingDrawings = result.drawings || [];
   galleryPromptIds = pendingDrawings.map((d) => d.photoId).filter(Boolean);
+  pendingSessionMeta = {
+    sessionId: entry?.id || null,
+    mode: sessionModeFrom(entry),
+  };
   $('#gallery-card').hidden = true;
   $('#review-note').value = '';
 
@@ -1438,6 +1458,9 @@ async function finishSession(result) {
     renderDrawingStrip();
     showScreen('review');
   }
+
+  // 同じお題の作品を自動表示（アップロードもここで）
+  loadSamePromptGallery();
 }
 
 /** 描いた範囲だけに切り出した Blob を各ショットに載せる。 */
@@ -1560,6 +1583,32 @@ function updatePublishNote(isPublic) {
   $('#publish-note').textContent = isPublic ? '' : t('gal.private');
 }
 
+async function uploadPendingArtworks() {
+  const user = getUser();
+  if (!user || !pendingDrawings.length) return;
+  const isPublic = $('#publish-toggle')?.checked !== false;
+  const sessionId = pendingSessionMeta?.sessionId || null;
+  const mode = pendingSessionMeta?.mode || null;
+  if (getUsername()) {
+    upsertProfile(getUsername()).catch(() => {});
+  }
+  for (const shot of pendingDrawings) {
+    if (shot.uploaded || !shot.photoId) continue;
+    try {
+      shot.uploading = true;
+      const work = await uploadArtwork(shot.croppedBlob || shot.blob, shot.photoId, {
+        isPublic,
+        sessionId,
+        mode,
+      });
+      shot.uploaded = true;
+      shot.artworkId = work?.id || null;
+    } catch {
+      /* 個別失敗は一覧表示を止めない */
+    }
+  }
+}
+
 function wireReview() {
   $('#publish-toggle').addEventListener('change', (e) => {
     updatePublishNote(e.target.checked);
@@ -1580,16 +1629,22 @@ function wireReview() {
     const btn = $('#share-x');
     const seconds = getHistory().at(-1)?.seconds || 0;
     const text = t('rev.shareText', { n: pendingDrawings.length, d: fmtDur(seconds) });
-    if (sheetBlob && getUser()) {
-      btn.disabled = true;
-      try {
+    btn.disabled = true;
+    try {
+      await uploadPendingArtworks();
+      const workId = pendingDrawings.find((s) => s.artworkId)?.artworkId;
+      if (workId) {
+        shareToX(`${text}\n${workPageUrl(workId)}`);
+      } else if (sheetBlob && getUser()) {
         const url = await uploadShareImage(sheetBlob);
         shareToX(`${text}\n${url}`);
-      } catch { shareToX(text); }
-      btn.disabled = false;
-    } else {
+      } else {
+        shareToX(text);
+      }
+    } catch {
       shareToX(text);
     }
+    btn.disabled = false;
   });
 
   $('#review-save').addEventListener('click', async () => {
@@ -1600,13 +1655,18 @@ function wireReview() {
       grade(btn.dataset.cardId, ok);          // ここで次に出る日が決まる
       if (!ok) missed.push(btn.textContent);
     }
+    // まだ上げていなければ、ここでクラウドにも残す
+    await uploadPendingArtworks();
     const entry = updateLastSession({
       rating: null,
       note: $('#review-note').value.trim() || null,
       hasDrawing: pendingDrawings.length > 0,
       drawingCount: pendingDrawings.length || null,
       shots: pendingDrawings.map((shot, i) => ({
-        index: i, photoId: shot.photoId || null, seconds: shot.seconds || null,
+        index: i,
+        photoId: shot.photoId || null,
+        seconds: shot.seconds || null,
+        artworkId: shot.artworkId || null,
       })),
       missed: missed.length ? missed : null,
     });
@@ -1616,6 +1676,7 @@ function wireReview() {
       } catch { toast(t('toast.saveFail')); }
     }
     pendingDrawings = [];
+    pendingSessionMeta = null;
     sheetBlob = null;
     renderHome();
     showScreen('home');
@@ -1631,82 +1692,135 @@ function wireReview() {
 
 let galleryPromptIds = [];
 
-function wireGallery() {
+async function loadSamePromptGallery() {
   const card = $('#gallery-card');
   const grid = $('#gallery-grid');
   const empty = $('#gallery-empty');
   const loading = $('#gallery-loading');
   const countEl = $('#gallery-count');
-  const lb = $('#gallery-lightbox');
-  let currentArtwork = null;
+  if (!card || !galleryPromptIds.length) {
+    if (card) card.hidden = true;
+    return;
+  }
 
-  $('#gallery-btn').addEventListener('click', async () => {
-    if (!galleryPromptIds.length) return;
+  card.hidden = false;
+  grid.innerHTML = '';
+  empty.hidden = true;
+  loading.hidden = false;
+  countEl.textContent = '';
 
-    card.hidden = false;
-    grid.innerHTML = '';
-    empty.hidden = true;
-    loading.hidden = false;
-    countEl.textContent = '';
-    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  await uploadPendingArtworks();
 
-    const user = getUser();
-    const userId = user?.id;
+  const uniqueIds = [...new Set(galleryPromptIds.filter(Boolean))];
+  let allWorks = [];
+  for (const pid of uniqueIds) {
+    const works = await fetchArtworks(pid, { limit: 10 }).catch(() => []);
+    allWorks.push(...works);
+  }
+  // 同じ作品が複数 prompt にまたがることは稀だが念のため
+  const seen = new Set();
+  allWorks = allWorks.filter((w) => {
+    if (seen.has(w.id)) return false;
+    seen.add(w.id);
+    return true;
+  });
+  allWorks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  allWorks = allWorks.slice(0, 10);
 
-    if (pendingDrawings.length && userId) {
-      const isPublic = $('#publish-toggle').checked;
-      for (const shot of pendingDrawings) {
-        if (!shot.uploaded && shot.photoId) {
-          try {
-            shot.uploading = true;
-            await uploadArtwork(shot.blob, shot.photoId, { isPublic });
-            shot.uploaded = true;
-          } catch { /* continue */ }
-        }
-      }
-    }
+  loading.hidden = true;
+  if (!allWorks.length) {
+    empty.hidden = false;
+    return;
+  }
 
-    const uniqueIds = [...new Set(galleryPromptIds.filter(Boolean))];
-    let allWorks = [];
-    for (const pid of uniqueIds) {
-      const works = await fetchArtworks(pid).catch(() => []);
-      allWorks.push(...works);
-    }
-    allWorks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  countEl.textContent = t('gal.count', { n: allWorks.length });
+  const userId = getUser()?.id;
+  for (const work of allWorks) {
+    grid.append(renderGalleryCard(work, userId));
+  }
+}
 
-    loading.hidden = true;
+function renderGalleryCard(work, userId) {
+  const item = el('div', `gallery-item${work.user_id === userId ? ' is-mine' : ''}`);
+  const thumb = el('button', 'gallery-item-thumb');
+  const img = el('img');
+  img.src = work.image_url;
+  img.loading = 'lazy';
+  img.alt = work.username || '';
+  thumb.append(img);
+  thumb.addEventListener('click', () => openGalleryLightbox(work, userId));
 
-    if (!allWorks.length) {
-      empty.hidden = false;
-      return;
-    }
+  const meta = el('div', 'gallery-item-meta');
+  meta.append(el('span', 'gallery-username', work.username || 'anonymous'));
 
-    countEl.textContent = t('gal.count', { n: allWorks.length });
-
-    for (const work of allWorks) {
-      const item = el('button', `gallery-item${work.user_id === userId ? ' is-mine' : ''}`);
-      const img = el('img');
-      img.src = work.image_url;
-      img.loading = 'lazy';
-      item.append(img);
-      if (work.user_id === userId) {
-        item.append(el('span', 'gallery-mine-badge', getLang() === 'ja' ? '自分' : 'You'));
-      }
-      item.addEventListener('click', () => openGalleryLightbox(work, userId));
-      grid.append(item);
+  const likeBtn = el('button', `gallery-like-btn${work.liked_by_me ? ' on' : ''}`);
+  likeBtn.type = 'button';
+  likeBtn.innerHTML = `<span class="gallery-heart">♥</span><span>${work.like_count || 0}</span>`;
+  likeBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (!getUser()) return toast(t('gal.loginToLike'));
+    try {
+      const nowLiked = await toggleLike(work.id, !!work.liked_by_me);
+      work.liked_by_me = nowLiked;
+      work.like_count = Math.max(0, (work.like_count || 0) + (nowLiked ? 1 : -1));
+      likeBtn.classList.toggle('on', nowLiked);
+      likeBtn.innerHTML = `<span class="gallery-heart">♥</span><span>${work.like_count}</span>`;
+    } catch {
+      toast(t('gal.uploadFail'));
     }
   });
+  meta.append(likeBtn);
 
-  function openGalleryLightbox(work, userId) {
-    currentArtwork = work;
-    $('#gallery-lb-img').src = work.image_url;
-    const delBtn = $('#gallery-lb-delete');
-    delBtn.hidden = work.user_id !== userId;
-    lb.hidden = false;
+  item.append(thumb, meta);
+  return item;
+}
+
+let currentArtwork = null;
+
+function openGalleryLightbox(work, userId) {
+  currentArtwork = work;
+  $('#gallery-lb-img').src = work.image_url;
+  $('#gallery-lb-user').textContent = work.username || 'anonymous';
+  const delBtn = $('#gallery-lb-delete');
+  delBtn.hidden = work.user_id !== userId;
+  const likeBtn = $('#gallery-lb-like');
+  const likeCount = $('#gallery-lb-like-count');
+  likeBtn.hidden = false;
+  likeBtn.classList.toggle('on', !!work.liked_by_me);
+  likeCount.textContent = String(work.like_count || 0);
+  const share = $('#gallery-lb-share');
+  if (work.id) {
+    share.hidden = false;
+    share.href = workPageUrl(work.id);
+  } else {
+    share.hidden = true;
   }
+  $('#gallery-lightbox').hidden = false;
+}
+
+function wireGallery() {
+  const lb = $('#gallery-lightbox');
 
   $('#gallery-lb-close').addEventListener('click', () => { lb.hidden = true; });
   lb.addEventListener('click', (e) => { if (e.target === lb) lb.hidden = true; });
+
+  $('#gallery-lb-like').addEventListener('click', async () => {
+    if (!currentArtwork) return;
+    if (!getUser()) return toast(t('gal.loginToLike'));
+    try {
+      const nowLiked = await toggleLike(currentArtwork.id, !!currentArtwork.liked_by_me);
+      currentArtwork.liked_by_me = nowLiked;
+      currentArtwork.like_count = Math.max(
+        0,
+        (currentArtwork.like_count || 0) + (nowLiked ? 1 : -1),
+      );
+      $('#gallery-lb-like').classList.toggle('on', nowLiked);
+      $('#gallery-lb-like-count').textContent = String(currentArtwork.like_count);
+      loadSamePromptGallery();
+    } catch {
+      toast(t('gal.uploadFail'));
+    }
+  });
 
   $('#gallery-lb-delete').addEventListener('click', async () => {
     if (!currentArtwork) return;
@@ -1714,7 +1828,7 @@ function wireGallery() {
     try {
       await deleteArtwork(currentArtwork.id, currentArtwork.storage_path);
       lb.hidden = true;
-      $('#gallery-btn').click();
+      loadSamePromptGallery();
     } catch { toast(t('gal.uploadFail')); }
   });
 }

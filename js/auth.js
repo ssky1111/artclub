@@ -184,6 +184,10 @@ export function getUsername() {
 
 export function setUsername(name) {
   try { localStorage.setItem(USERNAME_KEY, name); } catch {}
+  // 他ユーザーの作品カードに出す名前。失敗してもローカルは残す
+  import('./gallery.js')
+    .then((m) => m.upsertProfile(name))
+    .catch(() => {});
   notify();
 }
 

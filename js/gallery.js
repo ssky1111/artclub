@@ -1,46 +1,25 @@
 /**
- * gallery.js — みんなの作品ギャラリー
+ * gallery.js — みんなの作品ギャラリー / 個別作品
  *
- * 描き終わった後、同じお題を描いた他のユーザーの作品を閲覧できる。
- * 作品は Supabase Storage (artworks バケット) に画像を、
- * Supabase Database (artworks テーブル) にメタデータを保存する。
+ * 画像: Supabase Storage (artworks バケット)
+ * メタ: Supabase Database (artworks / artwork_likes / profiles)
  *
- * RLS: 誰でも閲覧可能、自分の作品だけ投稿・削除可能。
- *
- * テーブル定義（Supabase SQL Editor で実行）:
- *
- *   create table public.artworks (
- *     id uuid primary key default gen_random_uuid(),
- *     user_id uuid not null references auth.users(id) on delete cascade,
- *     prompt_id text not null,
- *     image_url text not null,
- *     storage_path text not null,
- *     created_at timestamptz not null default now()
- *   );
- *   create index idx_artworks_prompt on public.artworks(prompt_id, created_at desc);
- *   create index idx_artworks_user on public.artworks(user_id);
- *
- *   alter table public.artworks enable row level security;
- *   create policy "anyone can view" on public.artworks for select using (true);
- *   create policy "auth users insert own" on public.artworks for insert
- *     with check (auth.uid() = user_id);
- *   create policy "owner can delete" on public.artworks for delete
- *     using (auth.uid() = user_id);
- *
- * Storage バケット "artworks" は public read, auth write で作成。
+ * スキーマは supabase/artworks.sql を参照。
  */
 
 import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
-import { getSession, getUser } from './auth.js';
+import { getSession, getUser, getUsername } from './auth.js';
 
 const BUCKET = 'artworks';
+const SITE_ORIGIN = 'https://artclub.space';
 
-function authHeaders() {
+function authHeaders(extra = {}) {
   const session = getSession();
   const token = session?.access_token || SUPABASE_KEY;
   return {
     apikey: SUPABASE_KEY,
     Authorization: `Bearer ${token}`,
+    ...extra,
   };
 }
 
@@ -48,7 +27,11 @@ function publicUrl(path) {
   return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
 }
 
-function shrinkForUpload(blob, maxSide = 1000, quality = 0.80) {
+export function workPageUrl(id) {
+  return `${SITE_ORIGIN}/work/${id}`;
+}
+
+function shrinkForUpload(blob, maxSide = 1200, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(blob);
@@ -70,9 +53,53 @@ function shrinkForUpload(blob, maxSide = 1000, quality = 0.80) {
   });
 }
 
-export async function uploadArtwork(drawingBlob, promptId, { isPublic = true } = {}) {
+function normalizeArtwork(row) {
+  if (!row) return null;
+  const likes = Array.isArray(row.artwork_likes) ? row.artwork_likes : [];
+  const likeCount = likes[0]?.count != null
+    ? Number(likes[0].count)
+    : (row.like_count != null ? Number(row.like_count) : 0);
+  return {
+    ...row,
+    visibility: row.visibility || (row.is_public === false ? 'private' : 'public'),
+    like_count: likeCount,
+    liked_by_me: !!row.liked_by_me,
+  };
+}
+
+/** プロフィールのユーザーネームを Auth ユーザーに同期する。 */
+export async function upsertProfile(username) {
+  const user = getUser();
+  if (!user || !username) return null;
+  const body = {
+    id: user.id,
+    username: String(username).trim().slice(0, 32),
+    updated_at: new Date().toISOString(),
+  };
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+    method: 'POST',
+    headers: authHeaders({
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates,return=representation',
+    }),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) return null;
+  const rows = await res.json().catch(() => []);
+  return rows[0] || null;
+}
+
+/**
+ * 作品を保存する。user_id は常にログイン中の Auth ユーザー。
+ */
+export async function uploadArtwork(drawingBlob, promptId, {
+  isPublic = true,
+  sessionId = null,
+  mode = null,
+} = {}) {
   const user = getUser();
   if (!user) throw new Error('not logged in');
+  if (!promptId) throw new Error('prompt_id required');
 
   const compressed = await shrinkForUpload(drawingBlob);
   const ts = Date.now();
@@ -93,8 +120,19 @@ export async function uploadArtwork(drawingBlob, promptId, { isPublic = true } =
   }
 
   const imageUrl = publicUrl(path);
-
-  const row = {
+  const visibility = isPublic ? 'public' : 'private';
+  const fullRow = {
+    user_id: user.id,
+    prompt_id: promptId,
+    image_url: imageUrl,
+    storage_path: path,
+    is_public: isPublic,
+    visibility,
+    session_id: sessionId,
+    mode,
+    username: getUsername() || user.email?.split('@')[0] || null,
+  };
+  const legacyRow = {
     user_id: user.id,
     prompt_id: promptId,
     image_url: imageUrl,
@@ -102,65 +140,149 @@ export async function uploadArtwork(drawingBlob, promptId, { isPublic = true } =
     is_public: isPublic,
   };
 
-  const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/artworks`, {
+  let dbRes = await fetch(`${SUPABASE_URL}/rest/v1/artworks`, {
     method: 'POST',
-    headers: {
-      ...authHeaders(),
+    headers: authHeaders({
       'Content-Type': 'application/json',
       Prefer: 'return=representation',
-    },
-    body: JSON.stringify(row),
+    }),
+    body: JSON.stringify(fullRow),
   });
+  // マイグレーション前の古い列構成でも動くようにする
+  if (!dbRes.ok) {
+    dbRes = await fetch(`${SUPABASE_URL}/rest/v1/artworks`, {
+      method: 'POST',
+      headers: authHeaders({
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+      }),
+      body: JSON.stringify(legacyRow),
+    });
+  }
   if (!dbRes.ok) {
     const text = await dbRes.text();
     throw new Error(`db insert failed: ${dbRes.status} ${text}`);
   }
 
   const [inserted] = await dbRes.json();
-  return inserted;
+  return normalizeArtwork(inserted);
 }
 
-export async function fetchArtworks(promptId, { limit = 50 } = {}) {
+async function attachLikeState(works) {
   const user = getUser();
-  const userId = user?.id;
-  const filter = userId
-    ? `or=(is_public.eq.true,user_id.eq.${userId})`
-    : 'is_public=eq.true';
-  const params = new URLSearchParams({
+  if (!works.length) return works;
+  const ids = works.map((w) => w.id).filter(Boolean);
+  if (!ids.length) return works;
+
+  let liked = new Set();
+  if (user) {
+    const params = new URLSearchParams({
+      select: 'artwork_id',
+      user_id: `eq.${user.id}`,
+      artwork_id: `in.(${ids.join(',')})`,
+    });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/artwork_likes?${params}`, {
+      headers: authHeaders({ Accept: 'application/json' }),
+    });
+    if (res.ok) {
+      const rows = await res.json();
+      liked = new Set(rows.map((r) => r.artwork_id));
+    }
+  }
+
+  return works.map((w) => ({
+    ...w,
+    liked_by_me: liked.has(w.id),
+  }));
+}
+
+/** 同じお題の作品。新しい順。公開＋自分の非公開。 */
+export async function fetchArtworks(promptId, { limit = 10 } = {}) {
+  if (!promptId) return [];
+  const base = {
     prompt_id: `eq.${promptId}`,
     order: 'created_at.desc',
     limit: String(limit),
+  };
+  let params = new URLSearchParams({ ...base, select: '*,artwork_likes(count)' });
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
+    headers: authHeaders({ Accept: 'application/json' }),
   });
-
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}&${filter}`, {
-    headers: {
-      ...authHeaders(),
-      Accept: 'application/json',
-    },
-  });
+  // likes テーブル未作成時は素の一覧に落とす
+  if (!res.ok) {
+    params = new URLSearchParams({ ...base, select: '*' });
+    res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
+      headers: authHeaders({ Accept: 'application/json' }),
+    });
+  }
   if (!res.ok) return [];
-  return await res.json();
+  const rows = (await res.json()).map(normalizeArtwork);
+  return attachLikeState(rows);
+}
+
+export async function fetchArtwork(id) {
+  if (!id) return null;
+  const params = new URLSearchParams({
+    select: '*,artwork_likes(count)',
+    id: `eq.${id}`,
+    limit: '1',
+  });
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
+    headers: authHeaders({ Accept: 'application/json' }),
+  });
+  if (!res.ok) return null;
+  const rows = await res.json();
+  const [work] = await attachLikeState(rows.map(normalizeArtwork));
+  return work || null;
+}
+
+export async function toggleLike(artworkId, liked) {
+  const user = getUser();
+  if (!user) throw new Error('not logged in');
+
+  if (liked) {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/artwork_likes?artwork_id=eq.${artworkId}&user_id=eq.${user.id}`,
+      { method: 'DELETE', headers: authHeaders() },
+    );
+    if (!res.ok) throw new Error(`unlike failed: ${res.status}`);
+    return false;
+  }
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/artwork_likes`, {
+    method: 'POST',
+    headers: authHeaders({
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    }),
+    body: JSON.stringify({ artwork_id: artworkId, user_id: user.id }),
+  });
+  if (!res.ok) throw new Error(`like failed: ${res.status}`);
+  return true;
 }
 
 export async function uploadShareImage(blob) {
   const user = getUser();
   if (!user) throw new Error('not logged in');
+  const compressed = await shrinkForUpload(blob);
   const ts = Date.now();
   const path = `${user.id}/share-${ts}.webp`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
     method: 'POST',
     headers: { ...authHeaders(), 'Content-Type': 'image/webp', 'x-upsert': 'true' },
-    body: blob,
+    body: compressed,
   });
   if (!res.ok) throw new Error(`upload failed: ${res.status}`);
   return publicUrl(path);
 }
 
 export async function deleteArtwork(id, storagePath) {
-  await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${storagePath}`, {
-    method: 'DELETE',
-    headers: authHeaders(),
-  }).catch(() => {});
+  if (storagePath) {
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${storagePath}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    }).catch(() => {});
+  }
 
   await fetch(`${SUPABASE_URL}/rest/v1/artworks?id=eq.${id}`, {
     method: 'DELETE',
