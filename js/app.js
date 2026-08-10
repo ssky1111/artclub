@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '168';
+const BUILD = '169';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
