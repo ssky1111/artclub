@@ -17,7 +17,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="46">
+<body data-build="47">
 
 <!-- 明暗ポスタライズ用のSVGフィルタ（ノタン練習で使う） -->
 <svg class="filter-defs" aria-hidden="true" focusable="false">
@@ -116,6 +116,7 @@
   <div class="stage">
     <div id="stage-inner" class="stage-inner">
       <img id="ref-image" class="ref-image" alt="お題の写真">
+      <button type="button" id="stage-swap" class="ref-swap" data-icon="repeat" data-i18n-title="sess.swap" title="写真を入れ替え"></button>
       <div id="grid-overlay" class="grid-overlay" hidden></div>
       <div id="memory-cover" class="memory-cover" hidden>
         <div class="memory-cover-inner">
@@ -150,7 +151,7 @@
         <button id="tool-flip" class="tool-btn" data-icon="flip" title="左右反転 (F)"></button>
         <button id="pause-btn" class="round-btn" data-icon="pause" title="一時停止 (Space)"></button>
         <button id="time-left" class="time-left" title="残り時間">30</button>
-        <button id="swap-btn" class="tool-btn" data-icon="repeat" title="別の写真"></button>
+        <button id="swap-btn" class="tool-btn" data-icon="repeat" data-i18n-title="sess.swap" title="写真を入れ替え"></button>
         <button id="skip-btn" class="tool-btn" data-icon="next" title="次へ (→)"></button>
       </div>
     </div>
@@ -177,14 +178,18 @@
       <div class="pad-body">
         <div class="pad-ref">
           <img id="pad-ref-img" alt="お題の写真">
+          <button type="button" id="pad-ref-swap" class="ref-swap" data-icon="repeat" data-i18n-title="sess.swap" title="写真を入れ替え"></button>
         </div>
 
         <div class="pad-canvas">
           <canvas id="pad" class="pad"></canvas>
 
-          <button id="ref-mini" class="ref-mini" title="お題を大きく見る">
-            <img id="ref-mini-img" alt="お題">
-          </button>
+          <div class="ref-mini-wrap">
+            <button id="ref-mini" class="ref-mini" title="お題を大きく見る">
+              <img id="ref-mini-img" alt="お題">
+            </button>
+            <button type="button" id="ref-mini-swap" class="ref-swap on-mini" data-icon="repeat" data-i18n-title="sess.swap" title="写真を入れ替え"></button>
+          </div>
 
           <div id="pad-hint" class="pad-hint" hidden>
             <button id="hint-toggle" class="hint-toggle">
@@ -210,7 +215,7 @@
         </label>
         <button class="pad-btn" data-pad="undo" data-i18n-title="sess.undo" data-icon="undo"></button>
         <button class="pad-btn" data-pad="clear" data-i18n-title="sess.clear" data-icon="trash"></button>
-        <button id="pad-swap" class="pad-btn" title="写真を入れ替え" data-icon="flip"></button>
+        <button id="pad-swap" class="pad-btn" data-i18n-title="sess.swap" title="写真を入れ替え" data-icon="repeat"></button>
         <button id="pad-skip" class="pad-btn" data-i18n-title="sess.skipDrill" data-icon="next"></button>
         <button id="pad-next" class="pad-next" data-icon="check" data-i18n-label="sess.saveNext"></button>
       </div>
