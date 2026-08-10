@@ -3,13 +3,27 @@
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
+/** 練習終了後やシート閉じたあとに、縦スクロールが戻らないことがあるので明示的に復帰させる */
+export function restorePageScroll() {
+  if (document.body.dataset.screen !== 'session') {
+    document.body.classList.remove('in-session');
+  }
+  document.body.style.overflow = '';
+  document.body.style.position = '';
+  document.body.style.height = '';
+  document.body.style.width = '';
+  document.documentElement.style.overflow = '';
+  document.documentElement.style.height = '';
+}
+
 export function showScreen(name) {
   $$('.screen').forEach((el) => el.classList.remove('is-active'));
   const screen = document.getElementById(`screen-${name}`);
   if (screen) screen.classList.add('is-active');
-  window.scrollTo(0, 0);
-  document.body.classList.toggle('in-session', name === 'session');
   document.body.dataset.screen = name;          // 下のタブを出す画面を CSS 側で決める
+  document.body.classList.toggle('in-session', name === 'session');
+  if (name !== 'session') restorePageScroll();
+  window.scrollTo(0, 0);
   document.querySelectorAll('.tabbar button')
     .forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
 }
@@ -65,6 +79,7 @@ export function confirmDialog(message, { okLabel, cancelLabel } = {}) {
       okBtn.removeEventListener('click', onOk);
       cancelBtn.removeEventListener('click', onCancel);
       wrap.removeEventListener('click', onBackdrop);
+      restorePageScroll();
       resolve(result);
     }
     function onOk() { done(true); }
@@ -117,6 +132,7 @@ export function weekReviewDialog(notes = []) {
       wrap.hidden = true;
       okBtn.removeEventListener('click', onOk);
       wrap.removeEventListener('click', onBackdrop);
+      restorePageScroll();
       resolve();
     }
     function onOk() { done(); }

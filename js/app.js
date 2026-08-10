@@ -38,7 +38,7 @@ import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } fro
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
-import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog } from './ui.js';
+import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, restorePageScroll } from './ui.js';
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
@@ -58,7 +58,7 @@ import { submitFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '125';
+const BUILD = '126';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -3129,6 +3129,7 @@ function wireAuth() {
 
   $('#auth-close').addEventListener('click', () => {
     sheet.hidden = true;
+    restorePageScroll();
   });
 
   $('#login-x').addEventListener('click', () => loginWithProvider('twitter'));
@@ -3146,6 +3147,7 @@ function wireAuth() {
     applyTheme();
     renderSheet();
     sheet.hidden = true;
+    restorePageScroll();
     updateAuthUI(null);
   });
 
@@ -3171,6 +3173,7 @@ function wireAuth() {
         updateAuthUI(getUser());
         if (!name && !hasUsername()) {
           sheet.hidden = true;
+          restorePageScroll();
           showUsernameSheet(() => {
             applyRoute(routeFromLocation());
             if (pendingStart) {
@@ -3182,6 +3185,7 @@ function wireAuth() {
           return;
         }
         sheet.hidden = true;
+        restorePageScroll();
         // /log や /atelier/mine に直リンクできていたら、ログイン後に中身を出す
         applyRoute(routeFromLocation());
         if (pendingStart) {
@@ -3232,7 +3236,12 @@ function wireFeedback() {
     sheet.hidden = false;
     message.focus();
   };
-  const close = () => { sheet.hidden = true; };
+  const close = () => {
+    sheet.hidden = true;
+    message.blur();
+    contact?.blur();
+    restorePageScroll();
+  };
 
   tab.addEventListener('click', open);
   $('#feedback-close')?.addEventListener('click', close);
@@ -3298,6 +3307,11 @@ function init() {
 
   migrateHashRouteToPath();
   applyRoute(routeFromLocation());
+  restorePageScroll();
+
+  window.addEventListener('pageshow', () => {
+    restorePageScroll();
+  });
 
   document.addEventListener('pointerdown', () => { if (settings.sfx) sfx.unlock(); }, { once: true });
 

@@ -324,10 +324,27 @@ html, body {
   font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: auto;
 }
 
 body.in-session { overflow: hidden; }
+body:not(.in-session) {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 練習画面を去ったあとも fixed のステージが触れないようにする */
+#screen-session:not(.is-active) .stage,
+#screen-session:not(.is-active) .pad-wrap {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.sheet[hidden],
+.confirm-dialog[hidden],
+.lightbox[hidden] {
+  pointer-events: none !important;
+}
 
 .filter-defs { position: absolute; width: 0; height: 0; }
 
