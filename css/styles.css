@@ -838,6 +838,19 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
   display: flex; align-items: center; justify-content: center;
   background: var(--good); color: #fff; font-size: 12px; font-weight: 700;
 }
+.pending-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 700; color: var(--muted);
+}
+.pending-badge .pending-check {
+  width: 20px; height: 20px; border-radius: 50%; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1.5px solid color-mix(in srgb, var(--muted) 40%, transparent);
+  font-size: 11px; font-weight: 700;
+  opacity: .85;
+}
 .primary-card .menu-title.big { color: var(--text); }
 .primary-card .menu-title.big { font-size: 32px; font-weight: 900; line-height: 1.2; font-family: var(--font-display); letter-spacing: .04em; }
 .primary-card .menu-sub { color: var(--text-soft); font-size: 14px; margin: 6px 0 0; }
@@ -845,26 +858,6 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
 /* 今日の DAILY がまだのとき */
 .primary-card.daily-pending {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 40%, transparent);
-}
-.primary-card.daily-pending .menu-kicker {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.primary-card.daily-pending .menu-kicker::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--brand);
-  flex: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 28%, transparent);
-}
-.pill.daily-pending-pill {
-  background: color-mix(in srgb, var(--brand) 16%, var(--surface));
-  color: var(--brand-ink);
-  border-color: color-mix(in srgb, var(--brand) 35%, transparent);
-  font-weight: 700;
 }
 
 .menu-card.slim {

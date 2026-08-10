@@ -58,7 +58,7 @@ import { submitFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '127';
+const BUILD = '128';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -190,14 +190,16 @@ function renderDaily(history) {
     );
     headRow.append(done);
   } else if (pendingDaily) {
-    headRow.append(el('span', 'pill daily-pending-pill', t('home.todayYet')));
+    const pending = el('div', 'pending-badge');
+    pending.append(
+      el('span', 'pending-check', '\u2713'),
+      el('span', 'pending-text', t('home.roundPending')),
+    );
+    headRow.append(pending);
   }
   hero.append(headRow);
 
   hero.append(el('div', 'menu-title big', tr(daily, 'title')));
-  if (pendingDaily) {
-    hero.append(el('p', 'menu-sub', t('home.dailyPendingSub')));
-  }
 
   const cta = el('button', 'btn primary big', t('home.startPlain'));
   cta.addEventListener('click', () => {
