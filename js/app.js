@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '38';
+const BUILD = '39';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -308,8 +308,9 @@ function wirePartSheet() {
   $('#part-sheet').addEventListener('click', (e) => {
     if (e.target.id === 'part-sheet') $('#part-sheet').hidden = true;
   });
-  $('#part-start').addEventListener('click', () => {
+  $('#part-start').addEventListener('click', async () => {
     $('#part-sheet').hidden = true;
+    await weekReviewDialog(recentReviewNotes(7));
     startSession(buildPartMenu(currentPart), { tags: currentPart.tags, part: currentPart });
   });
 
