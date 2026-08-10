@@ -38,7 +38,7 @@ import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } fro
 import { composeSheet, cropToInkVertical, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
-import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, restorePageScroll, setScreenShownHook } from './ui.js';
+import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, freePeriodDialog, restorePageScroll, setScreenShownHook } from './ui.js';
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
@@ -60,7 +60,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '190';
+const BUILD = '191';
 const SITE_PASS_SESSION = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 
@@ -1427,10 +1427,21 @@ function requireLogin(onSuccess) {
   $('#auth-sheet').hidden = false;
 }
 
+/** デイリー無料枠（2回）を超えたら、模写以外は「無料開放中」案内を出す */
+const DAILY_FREE_LIMIT = 2;
+
+function shouldShowFreePeriodNotice(menu) {
+  if (!menu || menu.id === 'copyMode') return false;
+  return roundsToday('daily') >= DAILY_FREE_LIMIT;
+}
+
 async function startSession(menu, { tags = null, part = null } = {}) {
   if (!getUser()) {
     requireLogin(() => startSession(menu, { tags, part }));
     return;
+  }
+  if (shouldShowFreePeriodNotice(menu)) {
+    await freePeriodDialog();
   }
   lastStart = () => startSession(menu, { tags, part });
   settings = getSettings();

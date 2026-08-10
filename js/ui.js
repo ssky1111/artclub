@@ -171,3 +171,37 @@ export function weekReviewDialog(notes = []) {
     okBtn.focus();
   });
 }
+
+/**
+ * 本来有料メニューの無料開放中案内。
+ * OK で閉じて続行する。
+ */
+export function freePeriodDialog() {
+  const { t } = window.__i18n ?? {};
+  const wrap = $('#free-period-dialog');
+  const title = $('#free-period-title');
+  const body = $('#free-period-body');
+  const okBtn = $('#free-period-ok');
+  if (!wrap || !okBtn) return Promise.resolve();
+
+  if (title) title.textContent = t ? t('home.freePeriodTitle') : '無料開放中';
+  if (body) body.textContent = t ? t('home.freePeriodBody') : '本来は有料のメニューです。いまは無料で開放しています。';
+  okBtn.textContent = t ? t('home.freePeriodCta') : 'はじめる';
+  wrap.hidden = false;
+
+  return new Promise((resolve) => {
+    function done() {
+      wrap.hidden = true;
+      okBtn.removeEventListener('click', onOk);
+      wrap.removeEventListener('click', onBackdrop);
+      restorePageScroll();
+      resolve();
+    }
+    function onOk() { done(); }
+    function onBackdrop(e) { if (e.target === wrap) done(); }
+
+    okBtn.addEventListener('click', onOk);
+    wrap.addEventListener('click', onBackdrop);
+    okBtn.focus();
+  });
+}

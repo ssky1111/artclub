@@ -1523,6 +1523,16 @@ html[data-site-unlocked] .site-gate-dialog,
 .week-review-inner .confirm-dialog-actions { justify-content: stretch; }
 .week-review-inner .confirm-dialog-btn.ok { width: 100%; padding: 12px 20px; }
 
+.free-period-inner { max-width: 340px; text-align: center; }
+.free-period-inner .confirm-dialog-msg {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.free-period-inner .confirm-dialog-actions { justify-content: stretch; }
+.free-period-inner .confirm-dialog-btn.ok { width: 100%; padding: 12px 20px; }
+
 @media (min-width: 720px) {
   .hud-cue p { font-size: 14px; }
 }
