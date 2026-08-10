@@ -1292,9 +1292,7 @@ html:lang(ja) .atelier-tabs button { font-family: var(--font-ja); }
 /* ---------- タイムライン（きろく） ---------- */
 
 .tl-card { padding-left: 0; padding-right: 0; }
-.tl-card .section-head,
-.tl-card .tl-desc { padding-left: var(--pad); padding-right: var(--pad); }
-.tl-desc { margin: -4px 0 8px; }
+.tl-card .section-head { padding-left: var(--pad); padding-right: var(--pad); }
 .tl-feed { display: flex; flex-direction: column; }
 .tl-post {
   display: block;

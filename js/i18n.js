@@ -314,8 +314,6 @@ const DICT = {
   'log.calNote':         { ja: '描いた絵は、その日のマスに貼られます。',
                            en: 'Your drawings appear on the day you made them.' },
   'log.notes':           { ja: 'これまでのきろく',       en: 'Your records so far' },
-  'log.notesDesc':       { ja: '練習ごとに、まとめ画像と振り返りの言葉が新しい順に並びます。画像を押すと詳細が開きます。',
-                           en: 'Each session’s contact sheet and reflection note, newest first. Tap an image to open it.' },
   'log.noNotes':         { ja: 'まだきろくがありません。練習して振り返りを書くとここに並びます。',
                            en: 'Nothing here yet. Practice and add a reflection to see it here.' },
   'log.loginNotes':      { ja: 'ログインすると、クラウドに保存したスケッチもきろくに表示されます',
