@@ -99,7 +99,7 @@ const DICT = {
   'atelier.you':          { ja: '自分',                   en: 'You' },
   'atelier.copyable':     { ja: '模写OK',                 en: 'Copyable' },
   'atelier.copySoon':     { ja: '模写モードはもうすぐ用意します', en: 'Copy mode is coming soon' },
-  'atelier.copyAction':   { ja: '模写する',               en: 'Copy this' },
+  'atelier.copyAction':   { ja: 'このスケッチを模写',     en: 'Copy this sketch' },
   'atelier.privateBadge': { ja: '非公開',                 en: 'Private' },
   'atelier.noPromptPhoto':{ ja: 'お題写真なし',           en: 'No prompt photo' },
   'copy.title':           { ja: '模写するスケッチを選ぶ',     en: 'Choose a drawing to copy' },
