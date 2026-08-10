@@ -16,7 +16,7 @@ const DICT = {
   /* ---------- 共通 ---------- */
   'app.name':            { ja: 'ARTCLUB',           en: 'ARTCLUB' },
   'app.beta':            { ja: 'テスト公開中',        en: 'beta' },
-  'app.tagline':         { ja: '毎日3分の絵の練習',  en: 'Three minutes of drawing, every day' },
+  'app.tagline':         { ja: '毎日のドローイング練習', en: 'Daily drawing practice' },
   'common.close':        { ja: '閉じる',             en: 'Close' },
   'common.back':         { ja: 'もどる',             en: 'Back' },
   'common.cancel':       { ja: 'やめる',             en: 'Cancel' },
