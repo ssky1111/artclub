@@ -57,7 +57,9 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '178';
+const BUILD = '179';
+const SITE_PASS_SESSION = 'artclub.sitePass';
+const SITE_PASS = 'njsj0203';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -3434,6 +3436,55 @@ async function bootstrapApp() {
   }
 }
 
+function isSiteUnlocked() {
+  try { return sessionStorage.getItem(SITE_PASS_SESSION) === '1'; } catch { return false; }
+}
+
+function markSiteUnlocked() {
+  try { sessionStorage.setItem(SITE_PASS_SESSION, '1'); } catch { /* */ }
+  document.documentElement.dataset.siteUnlocked = '1';
+}
+
+function wireSiteGate(onUnlock) {
+  const gate = $('#site-gate');
+  const input = $('#site-pass');
+  const btn = $('#site-pass-btn');
+  const msg = $('#site-pass-msg');
+  if (!gate) {
+    onUnlock();
+    return;
+  }
+  if (isSiteUnlocked()) {
+    onUnlock();
+    return;
+  }
+
+  function tryUnlock() {
+    if (!input.value) {
+      msg.textContent = t('siteGate.ph');
+      return;
+    }
+    if (input.value !== SITE_PASS) {
+      msg.textContent = t('siteGate.wrong');
+      return;
+    }
+    markSiteUnlocked();
+    msg.textContent = '';
+    onUnlock();
+    restorePageScroll();
+  }
+
+  btn.addEventListener('click', tryUnlock);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
+  input.focus();
+}
+
+function startApp() {
+  migrateHashRouteToPath();
+  bootstrapApp();
+  restorePageScroll();
+}
+
 function init() {
   applyTheme();
   // GitHub Pages の 404 経由で来たパスを復元
@@ -3469,9 +3520,7 @@ function init() {
     if (name === 'home') renderHome();
   });
 
-  migrateHashRouteToPath();
-  bootstrapApp();
-  restorePageScroll();
+  wireSiteGate(startApp);
 
   window.addEventListener('pageshow', (e) => {
     if (e.persisted && getUser()) {

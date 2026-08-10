@@ -24,9 +24,30 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+JP:wght@400;700&family=Special+Gothic+Expanded+One&display=swap">
 <link rel="stylesheet" href="./css/styles.css">
+<script>
+(function () {
+  try {
+    if (sessionStorage.getItem('artclub.sitePass') === '1') {
+      document.documentElement.dataset.siteUnlocked = '1';
+    }
+  } catch { /* private mode */ }
+})();
+</script>
 </head>
 
-<body data-build="178" data-theme="light">
+<body data-build="179" data-theme="light">
+
+<div id="site-gate" class="site-gate">
+  <div class="site-gate-inner card">
+    <a href="/" class="brand brand-link site-gate-brand" aria-label="ARTCLUB">
+      <span class="brand-text">ARTCLUB</span>
+    </a>
+    <p class="muted small" data-i18n="siteGate.note">テスト公開中です。パスワードを入力してください。</p>
+    <input type="password" id="site-pass" class="input" autocomplete="current-password" data-i18n-ph="siteGate.ph" placeholder="パスワード">
+    <button id="site-pass-btn" class="btn primary big" data-i18n="siteGate.enter">入室</button>
+    <p id="site-pass-msg" class="muted small site-gate-msg" aria-live="polite"></p>
+  </div>
+</div>
 
 <svg class="filter-defs" aria-hidden="true" focusable="false">
   <defs>

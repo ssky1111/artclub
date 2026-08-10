@@ -69,6 +69,13 @@ const DICT = {
   'auth.changeUsername':   { ja: 'ユーザーネームを変更',  en: 'Change username' },
   'auth.saved':            { ja: '保存しました',          en: 'Saved' },
 
+  /* ---------- サイト入室 ---------- */
+  'siteGate.note':        { ja: 'テスト公開中です。パスワードを入力してください。',
+                            en: 'This site is in beta. Enter the password.' },
+  'siteGate.ph':          { ja: 'パスワード',           en: 'Password' },
+  'siteGate.enter':       { ja: '入室',                 en: 'Enter' },
+  'siteGate.wrong':       { ja: 'パスワードが違います', en: 'Wrong password' },
+
   /* ---------- ギャラリー ---------- */
   'gal.showAll':          { ja: 'みんなのスケッチを見る',     en: 'See what others drew' },
   'gal.title':            { ja: 'みんなが描いたスケッチ', en: 'Sketches from everyone' },
