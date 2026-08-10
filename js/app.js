@@ -16,7 +16,7 @@ import { LESSONS, PD_BOOKS, lessonById } from './anatomy.js';
 import { createPhotoQueue } from './images.js';
 import { searchPlatesMulti, createPlateQueue } from './commons.js';
 import {
-  ensureLessonCards, cardsForLesson, dueCards, weakestLesson,
+  ensureLessonCards, dueCards, weakestLesson,
   reminderFor, injectWeakStep, buildReviewMenu,
 } from './review.js';
 import { createSessionRunner } from './session.js';
