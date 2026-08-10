@@ -660,6 +660,12 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
   background: var(--surface-2);
   color: var(--muted);
 }
+.strip-bulk-hint {
+  margin: -2px 0 0;
+  padding: 0 4px;
+  font-size: 11px;
+  line-height: 1.4;
+}
 .strip-item {
   padding: 6px; overflow: hidden; cursor: pointer;
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: #fff;
