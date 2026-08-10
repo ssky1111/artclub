@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '151';
+const BUILD = '152';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -1639,6 +1639,7 @@ async function uploadPendingArtworks({ quiet = false } = {}) {
 }
 
 async function finishLeavingReview() {
+  persistAllowCopyPreference();
   updateLastSession({
     rating: null,
     note: $('#review-note').value.trim() || null,
@@ -1664,9 +1665,10 @@ async function finishSession(result) {
   if (settings.sfx) sfx.fanfare();
 
   pendingDrawings = result.drawings || [];
+  const copyDefault = defaultAllowCopyOn();
   pendingDrawings.forEach((shot) => {
     if (shot.excludeFromGallery == null) shot.excludeFromGallery = false;
-    if (shot.allowCopy == null) shot.allowCopy = false;
+    if (shot.allowCopy == null) shot.allowCopy = copyDefault;
   });
   galleryPromptIds = pendingDrawings.map((d) => d.photoId).filter(Boolean);
   pendingSessionMeta = {
@@ -1688,7 +1690,8 @@ async function finishSession(result) {
     const bulkPub = $('#bulk-publish');
     const bulkCopy = $('#bulk-copy');
     if (bulkPub) bulkPub.checked = true;
-    if (bulkCopy) bulkCopy.checked = false;
+    if (bulkCopy) bulkCopy.checked = copyDefault;
+    syncBulkToggles();
   }
 
   $('#sheet-preview').hidden = true;
@@ -1726,6 +1729,21 @@ async function finishSession(result) {
  */
 function publishEnabled() {
   return !!getUser() && $('#publish-toggle')?.checked !== false;
+}
+
+/** 公開スケッチの「模写OK」初期値。prefs の defaultAllowCopy（未設定は true） */
+function defaultAllowCopyOn() {
+  return getSettings().defaultAllowCopy !== false;
+}
+
+/** 公開する人向け：今回の模写OK設定を次回の初期値として保存 */
+function persistAllowCopyPreference() {
+  if (!getUser() || !pendingDrawings.length || !publishEnabled()) return;
+  const publicShots = pendingDrawings.filter((s) => !s.excludeFromGallery);
+  if (!publicShots.length) return;
+  saveSettings({
+    defaultAllowCopy: publicShots.every((s) => !!s.allowCopy),
+  });
 }
 
 function excludeLabel(excluded) {
@@ -1768,6 +1786,7 @@ function setAllAllowCopy(on) {
     shot.allowCopy = !!on;
   });
   renderDrawingStrip();
+  persistAllowCopyPreference();
 }
 
 function setShotExcluded(index, excluded) {
@@ -1840,6 +1859,7 @@ function renderDrawingStrip() {
         shot.allowCopy = !!copyInput.checked;
         copyLabel.classList.toggle('is-off', !copyInput.checked);
         syncBulkToggles();
+        persistAllowCopyPreference();
       });
       const copyTrack = el('span', 'toggle-track');
       copyLabel.append(copyText, copyInput, copyTrack);
