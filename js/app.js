@@ -38,7 +38,7 @@ import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } fro
 import { composeSheet, downloadBlob, downloadEach, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
-import { $, $$, el, hintList, showScreen, toast, confirmDialog, weekReviewDialog, restorePageScroll, setScreenShownHook } from './ui.js';
+import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, restorePageScroll, setScreenShownHook } from './ui.js';
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '187';
+const BUILD = '188';
 const SITE_PASS_SESSION = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 
