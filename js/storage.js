@@ -41,7 +41,15 @@ function write(key, value) {
 }
 
 export function getSettings() {
-  return { ...DEFAULT_SETTINGS, ...read(SETTINGS_KEY, {}) };
+  const raw = read(SETTINGS_KEY, {});
+  const merged = { ...DEFAULT_SETTINGS, ...raw };
+  // v49: 既定をパステルRPGへ。一度だけ寄せる（その後はユーザー選択を尊重）
+  if (!raw.skinDefaultV2) {
+    const next = { ...merged, skin: 'pastel-rpg', skinDefaultV2: 1 };
+    write(SETTINGS_KEY, next);
+    return next;
+  }
+  return merged;
 }
 
 export function saveSettings(patch) {
