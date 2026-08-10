@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '45';
+const BUILD = '46';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2060,6 +2060,7 @@ function renderSettings() {
     $('#profile-username').value = getUsername();
   }
   $('#opt-theme').value = settings.theme;
+  $('#opt-skin').value = settings.skin || 'default';
   $('#opt-sound').checked = settings.sound;
   $('#opt-sfx').checked = settings.sfx;
   $('#opt-autoflip').checked = settings.autoFlip;
@@ -2104,6 +2105,10 @@ function wireSettings() {
     settings = saveSettings({ theme: e.target.value });
     applyTheme();
   });
+  $('#opt-skin').addEventListener('change', (e) => {
+    settings = saveSettings({ skin: e.target.value });
+    applyTheme();
+  });
   $('#opt-alpha').addEventListener('input', (e) => {
     settings = saveSettings({ penAlpha: Number(e.target.value) / 100 });
   });
@@ -2129,12 +2134,31 @@ function wireNav() {
   $('#lang-btn').addEventListener('click', () => switchLang(getLang() === 'ja' ? 'en' : 'ja'));
 }
 
-const THEME_COLORS = { light: '#f7f7f5', dark: '#000000', paper: '#f5f4ee' };
+const THEME_COLORS = {
+  light: '#f7f7f5',
+  dark: '#000000',
+  paper: '#f5f4ee',
+};
+const SKIN_THEME_COLORS = {
+  'pastel-rpg': {
+    light: '#f6f0f8',
+    dark: '#2a2438',
+    paper: '#f8f2e8',
+  },
+};
 
 function applyTheme() {
-  document.body.dataset.theme = settings.theme;
+  const theme = settings.theme || 'light';
+  const skin = settings.skin || 'default';
+  document.body.dataset.theme = theme;
+  if (skin && skin !== 'default') document.body.dataset.skin = skin;
+  else delete document.body.dataset.skin;
+
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = THEME_COLORS[settings.theme] || THEME_COLORS.light;
+  if (meta) {
+    const bySkin = SKIN_THEME_COLORS[skin]?.[theme];
+    meta.content = bySkin || THEME_COLORS[theme] || THEME_COLORS.light;
+  }
 }
 
 function wireCalendar() {

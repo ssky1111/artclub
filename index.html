@@ -17,7 +17,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="45">
+<body data-build="46">
 
 <!-- 明暗ポスタライズ用のSVGフィルタ（ノタン練習で使う） -->
 <svg class="filter-defs" aria-hidden="true" focusable="false">
@@ -700,6 +700,12 @@
       <option value="light" data-i18n="set.themeLight">ライト（デフォルト）</option>
       <option value="dark" data-i18n="set.themeDark">ダーク（夜向け）</option>
       <option value="paper" data-i18n="set.themePaper">ペーパー</option>
+    </select>
+
+    <label class="label" for="opt-skin" data-i18n="set.skin">スキン</label>
+    <select id="opt-skin" class="input">
+      <option value="default" data-i18n="set.skinDefault">デフォルト</option>
+      <option value="pastel-rpg" data-i18n="set.skinPastelRpg">パステルRPG</option>
     </select>
 
     <label class="label" for="opt-alpha" data-i18n="set.penAlpha">線の透明度</label>

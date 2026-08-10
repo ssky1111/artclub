@@ -12,6 +12,7 @@ const DEFAULT_SETTINGS = {
   categories: ['pose', 'dance', 'sitting', 'hands'],   // 人物を描きたい人が大半なので
   weakParts: [],             // 苦手だと申告した部位（レッスンID）
   theme: 'light',            // 'light' | 'dark' | 'paper'
+  skin: 'default',           // 'default' | 'pastel-rpg'
   sound: true,
   sfx: true,
   autoFlip: false,
