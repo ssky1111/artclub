@@ -36,6 +36,8 @@ const DEFAULT_SETTINGS = {
   hintOpen: true,
   skinDefaultV2: 1,
   skinDefaultV3: 1,
+  /** 公開時の「全て模写OK」初期値（ログイン後は prefs に保存） */
+  defaultAllowCopy: true,
 };
 
 let settingsCache = { ...DEFAULT_SETTINGS };
