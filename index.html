@@ -19,7 +19,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="71" data-theme="light" data-skin="pastel-rpg">
+<body data-build="72" data-theme="light" data-skin="pastel-rpg">
 <script>
 /* 設定があれば先に当てる。無ければ上の data-skin でパステルのまま */
 (function () {
@@ -751,15 +751,16 @@
 
 <!-- ============ アトリエ ============ -->
 <main id="screen-atelier" class="screen">
-  <header class="topbar">
-    <h1 class="brand plain" data-i18n="atelier.title">アトリエ</h1>
+  <header class="topbar atelier-topbar">
+    <span class="atelier-topbar-spacer" aria-hidden="true"></span>
+    <h1 class="atelier-brand">ATELIER</h1>
     <button class="icon-btn" data-nav="settings" data-icon="settings"></button>
   </header>
 
   <div class="atelier-tabs" role="tablist">
-    <button type="button" class="chip on" data-atelier-tab="public" data-i18n="atelier.tabPublic">みんなのアトリエ</button>
-    <button type="button" class="chip" data-atelier-tab="mine" data-i18n="atelier.tabMine">自分のアトリエ</button>
-    <button type="button" class="chip" data-atelier-tab="prompt" data-i18n="atelier.tabPrompt">お題別</button>
+    <button type="button" class="on" data-atelier-tab="public" data-i18n="atelier.tabPublic">みんなのアトリエ</button>
+    <button type="button" data-atelier-tab="mine" data-i18n="atelier.tabMine">自分のアトリエ</button>
+    <button type="button" data-atelier-tab="prompt" data-i18n="atelier.tabPrompt">お題別</button>
   </div>
 
   <section id="atelier-public" class="atelier-panel">
