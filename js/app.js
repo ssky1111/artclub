@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '167';
+const BUILD = '168';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -2341,7 +2341,8 @@ function croquisShotIndices(steps) {
   let i = 0;
   for (const step of steps || []) {
     for (let c = 0; c < (step.count || 0); c++) {
-      if (step.drill === 'croquis') indices.push(i);
+      // DAILY 3枚目など drill=croquis でも source=part は部位練習
+      if (step.drill === 'croquis' && step.source !== 'part') indices.push(i);
       i++;
     }
   }
