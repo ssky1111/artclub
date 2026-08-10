@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="./css/styles.css">
 </head>
 
-<body data-build="158" data-theme="light">
+<body data-build="159" data-theme="light">
 
 <svg class="filter-defs" aria-hidden="true" focusable="false">
   <defs>
@@ -336,11 +336,14 @@
   </div>
 
   <section id="work-ctr" class="work-ctr">
-    <p class="work-ctr-lead" data-i18n="work.ctrLead">ドローイング練習してみよう</p>
-    <div class="card primary-card work-ctr-card">
-      <div class="menu-kicker" data-i18n="home.todayLabel">今日の練習</div>
-      <div class="menu-title big">DAILY</div>
-      <button id="work-ctr-start" class="btn primary big" type="button" data-i18n="home.startPlain">はじめる</button>
+    <div class="work-ctr-panel">
+      <p class="work-ctr-lead" data-i18n="work.ctrLead">はじめてでもOK。今日のドローイング練習</p>
+      <div class="work-ctr-head">
+        <span class="work-ctr-kicker" data-i18n="home.todayLabel">今日の練習</span>
+        <span class="work-ctr-title">DAILY</span>
+      </div>
+      <ul id="work-ctr-steps" class="work-ctr-steps" aria-label="今日の練習内容"></ul>
+      <button id="work-ctr-start" class="btn primary big work-ctr-start" type="button" data-i18n="home.startPlain">はじめる</button>
     </div>
   </section>
 </main>
