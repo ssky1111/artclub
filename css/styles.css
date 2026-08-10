@@ -2081,9 +2081,6 @@ body[data-theme='dark'] .google-btn {
 .copy-pick.on {
   border-color: var(--text);
 }
-.copy-pick.is-mine:not(.on) {
-  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
-}
 .copy-pick img {
   width: 100%;
   aspect-ratio: 1;
