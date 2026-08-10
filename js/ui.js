@@ -80,27 +80,35 @@ export function confirmDialog(message, { okLabel, cancelLabel } = {}) {
 
 /**
  * DAILY 開始前の振り返りモーダル。
- * notes: [{ date, note }] — 無ければすぐ resolve。
+ * notes が空でも「まだありません」を出してから進む。
  */
-export function weekReviewDialog(notes) {
-  if (!notes?.length) return Promise.resolve();
-
+export function weekReviewDialog(notes = []) {
   const { t } = window.__i18n ?? {};
   const wrap = $('#week-review-dialog');
   const list = $('#week-review-list');
+  const empty = $('#week-review-empty');
+  const lead = $('#week-review-lead');
   const okBtn = $('#week-review-ok');
   const title = $('#week-review-title');
+  const hasNotes = notes.length > 0;
 
   title.textContent = '直近1週間分の振り返りワード';
   list.innerHTML = '';
-  for (const item of notes) {
-    const li = document.createElement('li');
-    const date = document.createElement('span');
-    date.className = 'week-review-date';
-    date.textContent = item.date;
-    li.append(date, document.createTextNode(item.note));
-    list.append(li);
+  list.hidden = !hasNotes;
+  empty.hidden = hasNotes;
+  lead.hidden = !hasNotes;
+
+  if (hasNotes) {
+    for (const item of notes) {
+      const li = document.createElement('li');
+      const date = document.createElement('span');
+      date.className = 'week-review-date';
+      date.textContent = item.date;
+      li.append(date, document.createTextNode(item.note));
+      list.append(li);
+    }
   }
+
   okBtn.textContent = t ? t('home.startPlain') : 'はじめる';
   wrap.hidden = false;
 

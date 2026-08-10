@@ -56,7 +56,7 @@ import { uploadArtwork, uploadShareImage, fetchArtworks, deleteArtwork } from '.
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '30';
+const BUILD = '31';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -321,10 +321,9 @@ function wirePartSheet() {
   });
 }
 
-/** DAILY 開始。直近1週間の振り返りワードがあれば先にモーダルで出す。 */
+/** DAILY 開始。直近1週間の振り返り（無ければ案内）を先にモーダルで出す。 */
 async function startDaily(daily, part) {
-  const notes = recentReviewNotes(7);
-  if (notes.length) await weekReviewDialog(notes);
+  await weekReviewDialog(recentReviewNotes(7));
   startSession(daily, { part });
 }
 
