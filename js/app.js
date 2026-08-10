@@ -887,12 +887,13 @@ function wireAdmin() {
     if (!files.length) return;
     const tags = sbUploadWithTags ? [...sbUploadTags] : [];
     const status = $('#sb-status');
-    status.textContent = `${files.length} 枚をアップロード中…`;
+    status.textContent = `${files.length} 枚を WebP 変換してアップロード中…`;
     try {
       const { shrinkImage } = await import('./db.js');
       const photos = [];
       for (const file of files) {
         if (!file.type.startsWith('image/')) continue;
+        // 長辺1000px・WebP。Storage / manifest とも .webp で揃える
         const blob = await shrinkImage(file);
         photos.push({
           id: `p${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
@@ -903,11 +904,11 @@ function wireAdmin() {
         });
       }
       await pushToSupabase(photos, (i, n) => {
-        status.textContent = `アップロード中… ${i}/${n}`;
+        status.textContent = `WebPアップロード中… ${i}/${n}`;
       });
       e.target.value = '';
       const tagMsg = tags.length ? `（${tags.join('・')}）` : '';
-      status.textContent = `${photos.length} 枚をアップロードしました${tagMsg}`;
+      status.textContent = `${photos.length} 枚を WebP でアップロードしました${tagMsg}`;
       await renderSupabaseGrid();
     } catch (err) {
       status.textContent = `エラー: ${err.message}`;
