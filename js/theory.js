@@ -421,11 +421,14 @@ export function timeLabel(seconds) {
 
 /** 設定シートから作る、1ドリルだけのメニュー。 */
 export function buildCustomMenu({ drill, seconds, count }) {
+  const source = drill === 'gesture' ? 'gesture'
+    : drill === 'croquis' ? 'croquis'
+    : 'photo';
   return {
     id: 'custom',
     title: DRILLS[drill]?.name || '練習',
     subtitle: `${timeLabel(seconds)} × ${count}枚`,
-    steps: [{ drill, count, seconds }],
+    steps: [{ drill, count, seconds, source }],
     custom: true,
     en: { title: DRILLS[drill]?.en?.name || 'Practice', subtitle: `${count} × ${timeLabel(seconds)}` },
   };
