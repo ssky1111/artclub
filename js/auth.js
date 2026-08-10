@@ -184,16 +184,22 @@ export async function initAuth() {
   if (stored?.access_token) {
     session = stored;
     if (secondsLeft() < 300) {
-      await refreshSession();
+      const ok = await refreshSession();
+      if (!ok && session?.access_token && !user) {
+        try {
+          user = await fetchUser(session.access_token);
+          scheduleRefresh();
+        } catch { /* refresh / fetch どちらも失敗 */ }
+      }
     } else {
       try {
         user = await fetchUser(session.access_token);
         scheduleRefresh();
-        notify();
       } catch {
         await refreshSession();
       }
     }
+    if (user) notify();
   }
   return user;
 }
