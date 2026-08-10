@@ -17,7 +17,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="31">
+<body data-build="32">
 
 <!-- 明暗ポスタライズ用のSVGフィルタ（ノタン練習で使う） -->
 <svg class="filter-defs" aria-hidden="true" focusable="false">
@@ -241,15 +241,6 @@
 <!-- ============ ふりかえり ============ -->
 <main id="screen-review" class="screen">
   <header class="topbar"><h1 class="brand" data-i18n="rev.title">おつかれさま</h1></header>
-  <section class="card">
-    <div id="review-summary" class="review-summary"></div>
-  </section>
-
-  <section class="card" id="review-checks-card" hidden>
-    <div class="section-head"><h2 data-i18n="rev.selfCheck">セルフチェック</h2></div>
-    <p class="muted small" data-i18n="rev.selfCheckNote"></p>
-    <ul id="review-checks" class="check-list"></ul>
-  </section>
 
   <section class="card" id="sheet-card">
     <div id="sheet-preview" class="sheet-preview" hidden>
@@ -265,14 +256,15 @@
     </div>
   </section>
 
+  <section class="card" id="review-checks-card" hidden>
+    <div class="section-head"><h2 data-i18n="rev.selfCheck">セルフチェック</h2></div>
+    <p class="muted small" data-i18n="rev.selfCheckNote"></p>
+    <ul id="review-checks" class="check-list"></ul>
+  </section>
+
   <section class="card">
     <div class="label" data-i18n="rev.howWas">今日はどうだった？</div>
     <p class="muted small" data-i18n="rev.reflectNote"></p>
-    <div id="rating-row" class="rating-row">
-      <button class="rate-btn" data-rate="1" data-i18n="rev.rate1">むずかしかった</button>
-      <button class="rate-btn" data-rate="2" data-i18n="rev.rate2">まあまあ</button>
-      <button class="rate-btn" data-rate="3" data-i18n="rev.rate3">つかめた</button>
-    </div>
     <textarea id="review-note" class="note" rows="3" data-i18n-ph="rev.notePh"></textarea>
   </section>
 
