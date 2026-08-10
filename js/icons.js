@@ -13,6 +13,7 @@
 
 const STROKE = 'fill="none" stroke="currentColor" stroke-width="1.8" ' +
                'stroke-linecap="round" stroke-linejoin="round"';
+const FILL = 'fill="currentColor" stroke="none"';
 
 const PATHS = {
   /* 操作 */
@@ -49,16 +50,22 @@ const PATHS = {
   target:   '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>',
   bone:     '<path d="M7 17l10-10"/><circle cx="5.5" cy="18.5" r="2.2"/><circle cx="8" cy="16" r="2.2"/><circle cx="18.5" cy="5.5" r="2.2"/><circle cx="16" cy="8" r="2.2"/>',
   repeat:   '<path d="M4 9h13a3 3 0 013 3v1"/><path d="M8 5L4 9l4 4"/><path d="M20 15H7a3 3 0 01-3-3v-1"/><path d="M16 19l4-4-4-4"/>',
-  // 写真枠＋差し替え矢印。「やり直し」のループ矢印だけだと意味が伝わりにくい
-  photoSwap: '<rect x="2.5" y="4.5" width="14" height="12" rx="2"/><circle cx="7" cy="8.5" r="1.1"/><path d="M4.5 14.2l3-3.2 2.2 2.1 2.4-2.6 3.4 3.7"/><path d="M18 10.2a3.8 3.8 0 10-.4 2.6"/><path d="M16.2 7.6L18.6 9l-2.5.9"/>',
+  // react-icons MdOutlineChangeCircle（写真差し替え＝チェンジ）
+  photoSwap: {
+    filled: true,
+    path: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm4.17-5.24-1.1-1.1c.71-1.33.53-3.01-.59-4.13A3.482 3.482 0 0 0 12 8.5c-.03 0-.06.01-.09.01L13 9.6l-1.06 1.06-2.83-2.83L11.94 5 13 6.06l-.96.96c1.27.01 2.53.48 3.5 1.44 1.7 1.71 1.91 4.36.63 6.3zm-1.28 1.41L12.06 19 11 17.94l.95-.95a4.97 4.97 0 0 1-3.48-1.46 5.006 5.006 0 0 1-.64-6.29l1.1 1.1c-.71 1.33-.53 3.01.59 4.13.7.7 1.63 1.04 2.56 1.01L11 14.4l1.06-1.06 2.83 2.83z"/>',
+  },
 };
 
 /** SVG 文字列を返す。CSS の color がそのまま線の色になる。 */
 export function icon(name, size = 24) {
-  const path = PATHS[name];
-  if (!path) return '';
+  const entry = PATHS[name];
+  if (!entry) return '';
+  const filled = typeof entry === 'object' && entry.filled;
+  const path = typeof entry === 'object' ? entry.path : entry;
+  const attrs = filled ? FILL : STROKE;
   return `<svg class="icon" viewBox="0 0 24 24" width="${size}" height="${size}" ` +
-         `aria-hidden="true" ${STROKE}>${path}</svg>`;
+         `aria-hidden="true" ${attrs}>${path}</svg>`;
 }
 
 /** el() で作った要素にアイコンを入れる用。 */

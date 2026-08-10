@@ -805,9 +805,11 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
  * 手順は右上に置いて、写真の邪魔になったら畳めるようにしてある。
  */
 .pad-wrap {
-  position: absolute; inset: 0; z-index: 2;
+  position: absolute; inset: 0; z-index: 10;
   display: flex; flex-direction: column; background: #fffdf8;
 }
+/* 描くモード中は下のステージ側入れ替えが前面に浮いてしまうので消す */
+.stage.with-pad #stage-swap { display: none; }
 .pad-body { flex: 1; display: flex; min-height: 0; }
 .pad-ref { display: none; position: relative; }
 .pad-canvas { position: relative; flex: 1; min-width: 0; display: flex; }
