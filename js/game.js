@@ -15,9 +15,7 @@
  * には手を出さない。1人で描く練習に競争を持ち込むと、下手な日にやめる理由になるため。
  */
 
-import { getHistory, dailyTotals, dateKey, addDays, getCards } from './storage.js';
-
-const GAME_KEY = 'croqui.game.v1';
+import { getHistory, dailyTotals, dateKey, addDays, getCards, getGameState, saveGameState } from './storage.js';
 
 /* ==================== XP ==================== */
 
@@ -134,25 +132,15 @@ export function bestGraceStreak(history = getHistory()) {
  * 残したのは、やったことの言い換えでしかないレベルと連続日数だけ。
  */
 
-function readGame() {
-  try { return JSON.parse(localStorage.getItem(GAME_KEY) || '{}') || {}; } catch { return {}; }
-}
-
-function writeGame(value) {
-  try { localStorage.setItem(GAME_KEY, JSON.stringify(value)); } catch { /* 容量切れは無視 */ }
-}
-
-
-
 /** レベルアップの検知も同じやり方（前回見せたレベルを覚えておくだけ）。 */
 export function takeLevelUp(xp = totalXp()) {
-  const game = readGame();
+  const game = getGameState();
   const level = levelFromXp(xp);
-  if (game.seenLevel == null) { writeGame({ ...game, seenLevel: level }); return null; }
-  if (level > game.seenLevel) { writeGame({ ...game, seenLevel: level }); return level; }
+  if (game.seenLevel == null) { saveGameState({ seenLevel: level }); return null; }
+  if (level > game.seenLevel) { saveGameState({ seenLevel: level }); return level; }
   return null;
 }
 
 export function resetGame() {
-  localStorage.removeItem(GAME_KEY);
+  saveGameState({ seenLevel: null });
 }

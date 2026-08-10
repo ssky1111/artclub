@@ -9,7 +9,8 @@
  * 置いてある（theory.js / anatomy.js）。それを拾うのが tr()。
  */
 
-const LANG_KEY = 'drawpamine.lang';
+import { getUser } from './auth.js';
+import { upsertUserPrefs } from './usercloud.js';
 
 const DICT = {
   /* ---------- 共通 ---------- */
@@ -379,21 +380,27 @@ const DICT = {
                            en: 'Could not store the drawings (the session is still recorded)' },
 };
 
-let lang = read();
-
-function read() {
-  try {
-    const saved = localStorage.getItem(LANG_KEY);
-    if (saved === 'ja' || saved === 'en') return saved;
-  } catch { /* プライベートモードなど */ }
+function detectLang() {
   return (navigator.language || '').toLowerCase().startsWith('ja') ? 'ja' : 'en';
 }
+
+let lang = detectLang();
 
 export function getLang() { return lang; }
 
 export function setLang(next) {
   lang = next === 'en' ? 'en' : 'ja';
-  try { localStorage.setItem(LANG_KEY, lang); } catch { /* 保存できなくても続ける */ }
+  document.documentElement.lang = lang;
+  if (getUser()) {
+    upsertUserPrefs({ lang }).catch((err) => console.error('[lang sync]', err));
+  }
+  return lang;
+}
+
+/** クラウド／移行データから言語を当てる（prefs 書き戻しはしない） */
+export function applyLang(next) {
+  if (next !== 'ja' && next !== 'en') return lang;
+  lang = next;
   document.documentElement.lang = lang;
   return lang;
 }

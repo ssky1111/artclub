@@ -1,79 +1,131 @@
 /**
- * storage.js — 設定と練習履歴。全部この端末のlocalStorageに入る。サーバーは無い。
+ * storage.js — 設定・練習履歴・復習カード・ゲーム状態。
+ *
+ * 端末には残さない。メモリ上で持ち、ログイン中は Supabase に書き通す。
+ * （認証トークンなど技術必須の保存は auth.js 側）
  */
 
-const SETTINGS_KEY = 'croqui.settings.v1';
-const HISTORY_KEY = 'croqui.history.v1';
-const CARDS_KEY = 'croqui.cards.v1';
+import { getUser } from './auth.js';
+import {
+  fetchUserPrefs,
+  upsertUserPrefs,
+  fetchPracticeSessions,
+  upsertPracticeSession,
+  upsertPracticeSessions,
+} from './usercloud.js';
+
+const LEGACY_SETTINGS = 'croqui.settings.v1';
+const LEGACY_HISTORY = 'croqui.history.v1';
+const LEGACY_CARDS = 'croqui.cards.v1';
+const LEGACY_GAME = 'croqui.game.v1';
+const LEGACY_LANG = 'drawpamine.lang';
 
 const DEFAULT_SETTINGS = {
   source: 'picsum',          // 'unsplash' | 'picsum' | 'local'
   unsplashKey: '',
-  categories: ['pose', 'dance', 'sitting', 'hands'],   // 人物を描きたい人が大半なので
-  weakParts: [],             // 苦手だと申告した部位（レッスンID）
-  theme: 'light',            // 'light' | 'dark' | 'paper'
-  skin: 'default',           // 'default' | 'pastel-rpg'（既定はシンプル）
+  categories: ['pose', 'dance', 'sitting', 'hands'],
+  weakParts: [],
+  theme: 'light',
+  skin: 'default',
   sound: true,
   sfx: true,
   autoFlip: false,
   keepAwake: true,
   orientation: 'any',
-  penAlpha: 0.9,              // キャンバスの線の濃さ（0.05〜1）。既定は90%
-  hintOpen: true,            // 描いている最中の手順ヒントを開いておくか
+  penAlpha: 0.9,
+  hintOpen: true,
+  skinDefaultV2: 1,
+  skinDefaultV3: 1,
 };
 
-function read(key, fallback) {
+let settingsCache = { ...DEFAULT_SETTINGS };
+let historyCache = [];
+let cardsCache = {};
+let gameCache = {};
+let hydratePromise = null;
+let prefsTimer = 0;
+let pendingPrefs = null;
+
+function readLegacy(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
+    if (!raw) return fallback;
+    return JSON.parse(raw);
   } catch {
     return fallback;
   }
 }
 
-function write(key, value) {
+function clearLegacyKeys() {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
-    return true;
-  } catch {
-    return false;
+    localStorage.removeItem(LEGACY_SETTINGS);
+    localStorage.removeItem(LEGACY_HISTORY);
+    localStorage.removeItem(LEGACY_CARDS);
+    localStorage.removeItem(LEGACY_GAME);
+    localStorage.removeItem(LEGACY_LANG);
+    localStorage.removeItem('artclub.username');
+  } catch { /* */ }
+}
+
+/** 旧端末データを一度だけメモリへ取り込み（クラウド未整備時の救済）。 */
+function absorbLegacyLocal() {
+  const rawSettings = readLegacy(LEGACY_SETTINGS, null);
+  if (rawSettings && typeof rawSettings === 'object') {
+    settingsCache = { ...DEFAULT_SETTINGS, ...rawSettings, skinDefaultV2: 1, skinDefaultV3: 1 };
   }
+  const hist = readLegacy(LEGACY_HISTORY, null);
+  if (Array.isArray(hist) && hist.length) historyCache = hist.slice(-1000);
+  const cards = readLegacy(LEGACY_CARDS, null);
+  if (cards && typeof cards === 'object') cardsCache = cards;
+  const game = readLegacy(LEGACY_GAME, null);
+  if (game && typeof game === 'object') gameCache = game;
+  try {
+    const lang = localStorage.getItem(LEGACY_LANG);
+    if (lang === 'ja' || lang === 'en') return lang;
+  } catch { /* */ }
+  return null;
+}
+
+function flushPrefs() {
+  prefsTimer = 0;
+  const patch = pendingPrefs;
+  pendingPrefs = null;
+  if (!patch || !getUser()) return;
+  upsertUserPrefs(patch).catch((err) => console.error('[prefs sync]', err));
+}
+
+function schedulePrefsSync(patch) {
+  pendingPrefs = { ...(pendingPrefs || {}), ...patch };
+  if (!getUser()) return;
+  clearTimeout(prefsTimer);
+  prefsTimer = setTimeout(flushPrefs, 350);
+}
+
+function syncSession(entry) {
+  if (!entry?.id || !getUser()) return;
+  upsertPracticeSession(entry).catch((err) => console.error('[session sync]', err));
 }
 
 export function getSettings() {
-  const raw = read(SETTINGS_KEY, {});
-  const merged = { ...DEFAULT_SETTINGS, ...raw };
-  // 一度だけ既定スキンを寄せる。v2=パステル、v3=シンプルへ戻す。
-  if (!raw.skinDefaultV2) {
-    const next = { ...merged, skin: 'default', skinDefaultV2: 1, skinDefaultV3: 1 };
-    write(SETTINGS_KEY, next);
-    return next;
-  }
-  if (!raw.skinDefaultV3) {
-    const next = { ...merged, skin: 'default', skinDefaultV3: 1 };
-    write(SETTINGS_KEY, next);
-    return next;
-  }
-  return merged;
+  return { ...DEFAULT_SETTINGS, ...settingsCache };
 }
 
 export function saveSettings(patch) {
   const next = { ...getSettings(), ...patch };
-  write(SETTINGS_KEY, next);
+  settingsCache = next;
+  schedulePrefsSync({ settings: next });
   return next;
 }
 
-/** 履歴は新しい順ではなく、追加順（古い→新しい）で持つ。 */
 export function getHistory() {
-  const list = read(HISTORY_KEY, []);
-  return Array.isArray(list) ? list : [];
+  return Array.isArray(historyCache) ? historyCache : [];
 }
 
 export function addSession(entry) {
   const list = getHistory();
   list.push(entry);
-  // 端末の容量を圧迫しないよう、直近1000件だけ残す
-  write(HISTORY_KEY, list.slice(-1000));
+  historyCache = list.slice(-1000);
+  syncSession(entry);
   return entry;
 }
 
@@ -81,29 +133,117 @@ export function updateLastSession(patch) {
   const list = getHistory();
   if (!list.length) return null;
   list[list.length - 1] = { ...list[list.length - 1], ...patch };
-  write(HISTORY_KEY, list);
+  historyCache = list;
+  syncSession(list[list.length - 1]);
   return list[list.length - 1];
 }
 
-/* ---------- 復習カード ---------- */
-
 export function getCards() {
-  const cards = read(CARDS_KEY, {});
-  return cards && typeof cards === 'object' ? cards : {};
+  return cardsCache && typeof cardsCache === 'object' ? { ...cardsCache } : {};
 }
 
 export function saveCards(cards) {
-  write(CARDS_KEY, cards);
-  return cards;
+  cardsCache = cards && typeof cards === 'object' ? cards : {};
+  schedulePrefsSync({ cards: cardsCache });
+  return cardsCache;
+}
+
+export function getGameState() {
+  return gameCache && typeof gameCache === 'object' ? { ...gameCache } : {};
+}
+
+export function saveGameState(patch) {
+  gameCache = { ...getGameState(), ...patch };
+  schedulePrefsSync({ game: gameCache });
+  return gameCache;
 }
 
 export function clearAll() {
-  localStorage.removeItem(SETTINGS_KEY);
-  localStorage.removeItem(HISTORY_KEY);
-  localStorage.removeItem(CARDS_KEY);
+  settingsCache = { ...DEFAULT_SETTINGS };
+  historyCache = [];
+  cardsCache = {};
+  gameCache = {};
+  pendingPrefs = null;
+  clearTimeout(prefsTimer);
 }
 
-/* ---------- 日付ユーティリティ ---------- */
+/** ログアウト時：別アカウントのデータを画面に残さない */
+export function resetUserCaches() {
+  clearAll();
+}
+
+/**
+ * ログイン後にクラウドから復元。旧 localStorage があれば一度だけ吸い上げて上げる。
+ * @returns {{ lang: string|null }}
+ */
+export async function hydrateUserData() {
+  if (hydratePromise) return hydratePromise;
+  hydratePromise = (async () => {
+    const legacyLang = absorbLegacyLocal();
+    const hadLegacy = !!(
+      readLegacy(LEGACY_HISTORY, null)?.length
+      || readLegacy(LEGACY_SETTINGS, null)
+      || readLegacy(LEGACY_CARDS, null)
+      || readLegacy(LEGACY_GAME, null)
+      || legacyLang
+    );
+
+    if (!getUser()) {
+      if (hadLegacy) clearLegacyKeys();
+      return { lang: legacyLang };
+    }
+
+    const [prefs, sessions] = await Promise.all([
+      fetchUserPrefs().catch(() => null),
+      fetchPracticeSessions().catch(() => []),
+    ]);
+
+    if (prefs?.settings && typeof prefs.settings === 'object') {
+      settingsCache = { ...DEFAULT_SETTINGS, ...prefs.settings };
+    }
+    if (prefs?.cards && typeof prefs.cards === 'object') {
+      cardsCache = prefs.cards;
+    }
+    if (prefs?.game && typeof prefs.game === 'object') {
+      gameCache = prefs.game;
+    }
+
+    if (Array.isArray(sessions) && sessions.length) {
+      const byId = new Map(historyCache.map((e) => [e.id, e]));
+      for (const s of sessions) {
+        if (!s?.id) continue;
+        const prev = byId.get(s.id);
+        byId.set(s.id, prev ? { ...prev, ...s } : s);
+      }
+      historyCache = [...byId.values()]
+        .sort((a, b) => (a.ts || 0) - (b.ts || 0))
+        .slice(-1000);
+    }
+
+    // 端末にだけあった分をクラウドへ
+    if (hadLegacy || historyCache.length) {
+      try {
+        await upsertUserPrefs({
+          settings: getSettings(),
+          cards: getCards(),
+          game: getGameState(),
+          ...(legacyLang || prefs?.lang ? { lang: prefs?.lang || legacyLang } : {}),
+        });
+      } catch (err) {
+        console.error('[prefs migrate]', err);
+      }
+      try {
+        await upsertPracticeSessions(historyCache);
+      } catch (err) {
+        console.error('[sessions migrate]', err);
+      }
+    }
+
+    clearLegacyKeys();
+    return { lang: prefs?.lang || legacyLang || null };
+  })().finally(() => { hydratePromise = null; });
+  return hydratePromise;
+}
 
 export function dateKey(d = new Date()) {
   const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
@@ -116,10 +256,6 @@ export function addDays(dateStr, delta) {
   return dateKey(d);
 }
 
-/**
- * 直近1週間（きょう含む）に書いたふりかえりノート。
- * 新しい順。中身が空のものは除く。
- */
 export function recentReviewNotes(days = 7, history = getHistory()) {
   const today = dateKey();
   const from = addDays(today, -(days - 1));
@@ -134,9 +270,6 @@ export function recentReviewNotes(days = 7, history = getHistory()) {
     .reverse();
 }
 
-/* ---------- 集計 ---------- */
-
-/** 日付 -> その日の練習秒数 */
 export function dailyTotals(history = getHistory()) {
   const map = new Map();
   for (const s of history) {
@@ -145,7 +278,6 @@ export function dailyTotals(history = getHistory()) {
   return map;
 }
 
-/** 日付 -> その日に描いた枚数 */
 export function drawingsByDay(history = getHistory()) {
   const map = new Map();
   for (const s of history) {
@@ -154,18 +286,15 @@ export function drawingsByDay(history = getHistory()) {
   return map;
 }
 
-/** 通算で描いた枚数。レベルの横に出す。 */
 export function totalDrawings(history = getHistory()) {
   return history.reduce((sum, s) => sum + (s.drawingCount || 0), 0);
 }
 
-/** 今日そのメニューを何周したか。デイリーの「完了 / 1周」に使う。 */
 export function roundsToday(menuId = 'daily', history = getHistory()) {
   const today = dateKey();
   return history.filter((s) => s.date === today && s.menuId === menuId).length;
 }
 
-/** 今日（まだ未練習なら昨日）から遡って連続日数を数える。 */
 export function currentStreak(history = getHistory()) {
   const days = dailyTotals(history);
   const today = dateKey();
