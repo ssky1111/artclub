@@ -124,17 +124,37 @@ export function photoUrl(photo) {
   return photo.blob ? URL.createObjectURL(photo.blob) : photo.url;
 }
 
+/** img にセット。本体 URL が死んでいたら fallbackUrl（WebP 対）を試す。 */
+export function setPhotoSrc(img, photoOrUrl) {
+  if (!img) return;
+  if (typeof photoOrUrl === 'string') {
+    img.src = photoOrUrl;
+    return;
+  }
+  const primary = photoOrUrl?.blob ? URL.createObjectURL(photoOrUrl.blob) : photoOrUrl?.url;
+  const fallback = photoOrUrl?.fallbackUrl || null;
+  if (!primary) return;
+  img.onerror = null;
+  if (fallback && fallback !== primary) {
+    img.onerror = () => {
+      img.onerror = null;
+      img.src = fallback;
+    };
+  }
+  img.src = primary;
+}
+
 /**
  * セッション用のキュー。images.js のキューと同じ形で使える。
  * 同じ写真が続けて出ないよう、ひと回りしてから戻ってくるようにしている。
  */
-export function createWeightedQueue(weights, onNotice = () => {}) {
+export function createWeightedQueue(weights, onNotice = () => {}, { photos = null } = {}) {
   let pools = [];
   let loading = null;
   const urls = [];
 
   async function load() {
-    const all = await everyPhoto();
+    const all = photos || await everyPhoto();
     pools = weights.map(({ tags, weight }) => {
       const matched = all.filter((p) => tags.every((t) => p.tags.includes(t)));
       matched.sort(() => Math.random() - 0.5);
@@ -178,6 +198,7 @@ export function createWeightedQueue(weights, onNotice = () => {}) {
       if (photo.blob) urls.push(url);
       return {
         url,
+        fallbackUrl: photo.fallbackUrl || null,
         photoId: photo.id,
         credit: photo.credit || {
           name: photo.name || (photo.bundled ? '同梱の写真' : '自分の写真'),
@@ -190,14 +211,20 @@ export function createWeightedQueue(weights, onNotice = () => {}) {
   };
 }
 
-export function createLibraryQueue(tags, onNotice = () => {}, noticeText = null) {
+export function createLibraryQueue(tags, onNotice = () => {}, noticeText = null, { photos = null } = {}) {
   let pool = [];
   let cursor = 0;
   let loading = null;
   const urls = [];
 
   async function load() {
-    pool = await photosWithTags(tags);
+    if (photos) {
+      pool = tags?.length
+        ? photos.filter((p) => tags.every((t) => p.tags.includes(t)))
+        : [...photos];
+    } else {
+      pool = await photosWithTags(tags);
+    }
     if (!pool.length) {
       onNotice(noticeText || 'その条件の写真がありません。写真の管理から追加してください');
     }
@@ -220,6 +247,7 @@ export function createLibraryQueue(tags, onNotice = () => {}, noticeText = null)
       if (photo.blob) urls.push(url);
       return {
         url,
+        fallbackUrl: photo.fallbackUrl || null,
         photoId: photo.id,             // 同じ写真の前回と比べるために持ち回る
         credit: photo.credit || {
           name: photo.name || (photo.bundled ? '同梱の写真' : '自分の写真'),

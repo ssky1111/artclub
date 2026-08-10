@@ -227,9 +227,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     }
 
     dom.stageMessage.hidden = true;
-    dom.img.src = photo.url;
-    dom.refMiniImg.src = photo.url;
-    dom.padRefImg.src = photo.url;      // 広い画面では左半分にそのまま出す
+    setRefSrc(photo);
     dom.padDrill.textContent = stepTitle(item, drill);
     dom.padProgress.textContent = `${item.indexInStep} / ${item.countInStep}`;
     dom.padSteps.innerHTML = (tr(drill, 'steps') || [])
@@ -242,6 +240,22 @@ export function createSessionRunner({ onFinish, onQuit }) {
 
     timer.start(item.seconds);
     setPauseIcon();
+  }
+
+  function setRefSrc(photo) {
+    const apply = (url) => {
+      dom.img.src = url;
+      dom.refMiniImg.src = url;
+      dom.padRefImg.src = url;      // 広い画面では左半分にそのまま出す
+    };
+    apply(photo.url);
+    if (photo.fallbackUrl && photo.fallbackUrl !== photo.url) {
+      const onErr = () => {
+        dom.img.removeEventListener('error', onErr);
+        apply(photo.fallbackUrl);
+      };
+      dom.img.addEventListener('error', onErr, { once: true });
+    }
   }
 
   function renderAttribution(photo) {
@@ -480,9 +494,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     const item = state.current;
     const photo = await queueFor(item).next().catch(() => null);
     if (!photo) return;
-    dom.img.src = photo.url;
-    dom.refMiniImg.src = photo.url;
-    dom.padRefImg.src = photo.url;
+    setRefSrc(photo);
     state.currentPhotoId = photo.photoId || null;
     renderAttribution(photo);
   }
