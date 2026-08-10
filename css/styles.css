@@ -1816,6 +1816,13 @@ body[data-theme='dark'] .google-btn {
   align-items: center;
   gap: 8px;
 }
+.work-topbar-start {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  flex-shrink: 0;
+}
 .work-topbar #work-back {
   background: transparent;
   border-radius: 0;
