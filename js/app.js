@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '153';
+const BUILD = '154';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -2980,7 +2980,12 @@ function migrateHashRouteToPath() {
 function navigateTo(route, { replace = false } = {}) {
   const next = String(route || 'home').replace(/^#/, '').replace(/^\/+|\/+$/g, '') || 'home';
   const url = pathForRoute(next);
-  if (currentRouteKey() === next && !location.hash) return;
+  const sameRoute = currentRouteKey() === next && !location.hash;
+  if (sameRoute) {
+    // 振り返りなど URL を変えず showScreen だけした画面から戻るときも反映する
+    applyRoute(routeFromLocation());
+    return;
+  }
   if (replace) history.replaceState(null, '', url);
   else history.pushState(null, '', url);
   applyRoute(routeFromLocation());
