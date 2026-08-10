@@ -1446,10 +1446,23 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
   font-family: var(--font-display);
   font-size: 24px; font-weight: 600; letter-spacing: .03em;
 }
+.brand-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  line-height: 1.05;
+}
 .beta {
-  font-size: 10px; font-weight: 700; letter-spacing: .04em;
-  color: var(--brand-ink); background: color-mix(in srgb, var(--brand) 22%, transparent);
-  border-radius: 999px; padding: 2px 8px; font-family: system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .02em;
+  color: var(--muted);
+  background: none;
+  border-radius: 0;
+  padding: 0;
+  font-family: inherit;
+  line-height: 1.2;
 }
 .lang-btn {
   font: inherit; font-size: 12px; font-weight: 800; letter-spacing: .06em; cursor: pointer;

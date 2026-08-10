@@ -27,7 +27,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="91" data-theme="light" data-skin="pastel-rpg">
+<body data-build="92" data-theme="light" data-skin="pastel-rpg">
 <script>
 /* 設定があれば先に当てる。無ければ上の data-skin でパステルのまま */
 (function () {
@@ -66,8 +66,10 @@
 <main id="screen-home" class="screen is-active">
   <header class="topbar">
     <a href="#home" class="brand brand-link" aria-label="ARTCLUB">
-      <span class="brand-text">ARTCLUB</span>
-      <span class="beta" data-i18n="app.beta">β版</span>
+      <span class="brand-stack">
+        <span class="brand-text">ARTCLUB</span>
+        <span class="beta" data-i18n="app.beta">テスト公開中</span>
+      </span>
     </a>
     <div class="topbar-actions">
       <button id="auth-btn" class="auth-btn" title="ログイン" data-i18n-title="auth.login">
