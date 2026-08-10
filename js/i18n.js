@@ -51,7 +51,9 @@ const DICT = {
 
   /* ---------- ギャラリー ---------- */
   'gal.showAll':          { ja: 'みんなの作品を見る',     en: 'See what others drew' },
-  'gal.title':            { ja: 'みんなが描いた同じお題', en: 'Same prompt, other sketches' },
+  'gal.title':            { ja: 'みんなが描いたスケッチ', en: 'Sketches from everyone' },
+  'gal.desc':             { ja: '他のみんなが描いた同じお題のスケッチです。良いところを参考に見てみましょう',
+                           en: 'These are sketches others drew for the same prompt. Look for what you can learn from them.' },
   'gal.empty':            { ja: 'まだ誰も描いていません。最初の1人になろう！',
                            en: 'No one has drawn this yet. Be the first!' },
   'gal.upload':           { ja: '作品を投稿する',         en: 'Share your drawing' },
@@ -64,8 +66,10 @@ const DICT = {
   'gal.close':            { ja: '閉じる',                en: 'Close' },
   'gal.count':            { ja: '{n}人が描きました',      en: '{n} people drew this' },
   'gal.loading':          { ja: '読み込み中…',           en: 'Loading…' },
-  'gal.public':           { ja: 'みんなが描いた同じお題に表示する', en: 'Show in the same-prompt gallery' },
+  'gal.public':           { ja: 'みんなが描いたスケッチに投稿する', en: 'Post to shared sketches' },
   'gal.private':          { ja: '一覧には出さず、自分だけに保存', en: 'Save privately (hidden from the gallery)' },
+  'gal.exclude':          { ja: '投稿から外す',           en: 'Exclude from post' },
+  'gal.include':          { ja: '投稿に含める',           en: 'Include in post' },
   'gal.loginToLike':      { ja: 'いいねするにはログインしてね', en: 'Log in to like' },
   'gal.shareWork':        { ja: 'この作品をシェア',       en: 'Share this work' },
 
