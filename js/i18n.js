@@ -56,6 +56,7 @@ const DICT = {
   'auth.withX':           { ja: 'X（Twitter）でログイン', en: 'Log in with X (Twitter)' },
   'auth.withGoogle':      { ja: 'Google でログイン',      en: 'Log in with Google' },
   'auth.loggedIn':        { ja: 'ログイン中',            en: 'Logged in' },
+  'auth.account':         { ja: 'アカウント',            en: 'Account' },
   'auth.privacyNote':     { ja: '勝手に投稿したり情報を取得したりしません。ログインのためだけに使います。',
                             en: 'We will not post or access your data. Login is used for authentication only.' },
   'legal.title':          { ja: '規約',                   en: 'Legal' },
