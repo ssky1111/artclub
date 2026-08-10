@@ -25,7 +25,7 @@ function authHeaders(accessToken) {
 }
 
 function save(data) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...data, saved_at: Date.now() })); } catch {}
 }
 
 function load() {
@@ -122,12 +122,18 @@ export async function initAuth() {
   const stored = load();
   if (stored?.access_token) {
     session = stored;
-    try {
-      user = await fetchUser(session.access_token);
-      scheduleRefresh(session.expires_in);
-      notify();
-    } catch {
+    const elapsed = stored.saved_at ? (Date.now() - stored.saved_at) / 1000 : Infinity;
+    const remaining = (stored.expires_in || 3600) - elapsed;
+    if (remaining < 120) {
       await refreshSession();
+    } else {
+      try {
+        user = await fetchUser(session.access_token);
+        scheduleRefresh(remaining);
+        notify();
+      } catch {
+        await refreshSession();
+      }
     }
   }
   return user;
@@ -158,6 +164,15 @@ export async function logout() {
 
 export function getUser() { return user; }
 export function getSession() { return session; }
+
+export async function ensureFreshSession() {
+  if (!session?.refresh_token) return session;
+  const stored = load();
+  const elapsed = stored?.saved_at ? (Date.now() - stored.saved_at) / 1000 : Infinity;
+  const remaining = (stored?.expires_in || 3600) - elapsed;
+  if (remaining < 120) await refreshSession();
+  return session;
+}
 
 export function onAuthChange(fn) {
   listeners.push(fn);

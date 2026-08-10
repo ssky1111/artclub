@@ -8,7 +8,7 @@
  */
 
 import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
-import { getSession, getUser, getUsername } from './auth.js';
+import { getSession, getUser, getUsername, ensureFreshSession } from './auth.js';
 
 const BUCKET = 'artworks';
 const SITE_ORIGIN = 'https://artclub.space';
@@ -99,6 +99,7 @@ export async function uploadArtwork(drawingBlob, promptId, {
   mode = null,
   allowCopy = false,
 } = {}) {
+  await ensureFreshSession();
   const user = getUser();
   if (!user) throw new Error('not logged in');
   if (!promptId) throw new Error('prompt_id required');
