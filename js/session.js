@@ -173,14 +173,10 @@ export function createSessionRunner({ onFinish, onQuit }) {
   }
 
   async function showBridge(item, isFirst) {
-    if (isFirst) {
-      prefetch(item);
-      requestWakeLock();
-      return runItem(item);
-    }
     const drill = DRILLS[item.drillId];
-    timer.stop();
-    dom.bridgeLabel.textContent = t('sess.next');
+    if (!isFirst) timer.stop();
+    if (isFirst) requestWakeLock();
+    dom.bridgeLabel.textContent = isFirst ? t('sess.first') : t('sess.next');
     dom.bridgeTitle.textContent = stepTitle(item, drill);
     dom.bridgeTheory.textContent = tr(drill, 'theory');
 
