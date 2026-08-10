@@ -1,5 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" fill="#f7f7f5"/>
-  <path d="M154 430 C471 338, 51 184, 369 82"
-        fill="none" stroke="#f79299" stroke-width="46" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges">
+  <!-- pixel-art paintbrush favicon -->
+  <rect x="10" y="1" width="1" height="1" fill="rgb(240,106,173)"/>
+  <rect x="9" y="2" width="1" height="1" fill="rgb(240,106,173)"/>
+  <rect x="10" y="2" width="1" height="1" fill="rgb(255,186,214)"/>
+  <rect x="11" y="2" width="1" height="1" fill="rgb(240,106,173)"/>
+  <rect x="8" y="3" width="1" height="1" fill="rgb(240,106,173)"/>
+  <rect x="9" y="3" width="1" height="1" fill="rgb(240,106,173)"/>
+  <rect x="10" y="3" width="1" height="1" fill="rgb(240,106,173)"/>
+  <rect x="11" y="3" width="1" height="1" fill="rgb(240,106,173)"/>
+  <rect x="12" y="3" width="1" height="1" fill="rgb(196,70,130)"/>
+  <rect x="7" y="4" width="1" height="1" fill="rgb(240,106,173)"/>
+  <rect x="8" y="4" width="1" height="1" fill="rgb(240,106,173)"/>
+  <rect x="9" y="4" width="1" height="1" fill="rgb(240,106,173)"/>
+  <rect x="10" y="4" width="1" height="1" fill="rgb(240,106,173)"/>
+  <rect x="11" y="4" width="1" height="1" fill="rgb(196,70,130)"/>
+  <rect x="6" y="5" width="1" height="1" fill="rgb(240,106,173)"/>
+  <rect x="7" y="5" width="1" height="1" fill="rgb(240,106,173)"/>
+  <rect x="9" y="5" width="1" height="1" fill="rgb(180,186,198)"/>
+  <rect x="10" y="5" width="1" height="1" fill="rgb(180,186,198)"/>
+  <rect x="7" y="6" width="1" height="1" fill="rgb(180,186,198)"/>
+  <rect x="8" y="6" width="1" height="1" fill="rgb(180,186,198)"/>
+  <rect x="9" y="6" width="1" height="1" fill="rgb(140,146,160)"/>
+  <rect x="6" y="7" width="1" height="1" fill="rgb(180,186,198)"/>
+  <rect x="7" y="7" width="1" height="1" fill="rgb(196,140,88)"/>
+  <rect x="8" y="7" width="1" height="1" fill="rgb(230,186,130)"/>
+  <rect x="5" y="8" width="1" height="1" fill="rgb(196,140,88)"/>
+  <rect x="6" y="8" width="1" height="1" fill="rgb(230,186,130)"/>
+  <rect x="7" y="8" width="1" height="1" fill="rgb(150,100,58)"/>
+  <rect x="4" y="9" width="1" height="1" fill="rgb(196,140,88)"/>
+  <rect x="5" y="9" width="1" height="1" fill="rgb(230,186,130)"/>
+  <rect x="6" y="9" width="1" height="1" fill="rgb(150,100,58)"/>
+  <rect x="3" y="10" width="1" height="1" fill="rgb(196,140,88)"/>
+  <rect x="4" y="10" width="1" height="1" fill="rgb(230,186,130)"/>
+  <rect x="5" y="10" width="1" height="1" fill="rgb(150,100,58)"/>
+  <rect x="2" y="11" width="1" height="1" fill="rgb(196,140,88)"/>
+  <rect x="3" y="11" width="1" height="1" fill="rgb(230,186,130)"/>
+  <rect x="4" y="11" width="1" height="1" fill="rgb(150,100,58)"/>
+  <rect x="1" y="12" width="1" height="1" fill="rgb(196,140,88)"/>
+  <rect x="2" y="12" width="1" height="1" fill="rgb(150,100,58)"/>
+  <rect x="3" y="12" width="1" height="1" fill="rgb(90,60,40)"/>
+  <rect x="1" y="13" width="1" height="1" fill="rgb(150,100,58)"/>
+  <rect x="2" y="13" width="1" height="1" fill="rgb(90,60,40)"/>
 </svg>
