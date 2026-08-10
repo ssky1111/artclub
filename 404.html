@@ -4,16 +4,23 @@
 <meta charset="utf-8">
 <title>ARTCLUB</title>
 <!--
-  GitHub Pages は静的配信なので /admin のようなパスは 404 になる。
-  そのとき、この 404 ページが index.html#admin に流し直す。
-  こうしておくと、アドレスバーに /admin と打つだけで管理画面に入れる。
+  GitHub Pages は静的配信なので /atelier のようなパスは 404 になる。
+  そのとき、この 404 ページが index.html のハッシュへ流し直す。
+  アドレスバーに /home や /atelier/mine と打っても同じ画面に入れる。
 
   何でもかんでも飛ばすと、ただの打ち間違いまで画面が開いてしまうので、
   受け付けるのは下の ROUTES に書いたものだけ。それ以外はトップに戻す。
 -->
 <script>
   (function () {
-    var ROUTES = ['admin'];
+    var ROUTES = {
+      admin: 'admin',
+      home: 'home',
+      log: 'log',
+      settings: 'settings',
+      library: 'library',
+      atelier: 'atelier'
+    };
     var path = location.pathname.replace(/\/+$/, '');
     var parts = path.split('/').filter(Boolean);
     var base = '/';
@@ -22,8 +29,22 @@
       location.replace(base + '#work/' + encodeURIComponent(parts[1]));
       return;
     }
+    // /atelier /atelier/mine /atelier/prompt
+    if (parts[0] === 'atelier') {
+      var sub = parts[1];
+      if (!sub) {
+        location.replace(base + '#atelier');
+        return;
+      }
+      if (sub === 'mine' || sub === 'prompt') {
+        location.replace(base + '#atelier/' + sub);
+        return;
+      }
+      location.replace(base);
+      return;
+    }
     var last = parts[parts.length - 1] || '';
-    var hash = ROUTES.indexOf(last) >= 0 ? '#' + last : '';
+    var hash = ROUTES[last] ? '#' + ROUTES[last] : '';
     location.replace(base + hash);
   })();
 </script>
