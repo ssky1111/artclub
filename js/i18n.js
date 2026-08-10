@@ -77,6 +77,7 @@ const DICT = {
   'gal.copyAll':          { ja: '全て模写OK',             en: 'Allow copy on all' },
   'gal.loginToLike':      { ja: 'いいねするにはログインしてね', en: 'Log in to like' },
   'gal.shareWork':        { ja: 'この作品をシェア',       en: 'Share this work' },
+  'gal.workNotFound':     { ja: '作品が見つかりません',   en: 'Artwork not found' },
 
   /* ---------- アトリエ ---------- */
   'atelier.title':        { ja: 'アトリエ',               en: 'Atelier' },

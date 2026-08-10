@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f7f7f5">
 <title>ARTCLUB — 毎日3分の絵の練習</title>
+<script>
+/* /work/xxx のように深いパスで開くと ./css が壊れるので、サイト根を base にする */
+(function () {
+  var b = document.createElement('base');
+  b.href = location.pathname.indexOf('/artclub') === 0 ? '/artclub/' : '/';
+  document.head.insertBefore(b, document.head.firstChild);
+})();
+</script>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
 <link rel="icon" href="./icons/favicon-32.png" type="image/png" sizes="32x32">

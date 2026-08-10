@@ -45,6 +45,16 @@ alter table public.artworks
 alter table public.artworks
   add column if not exists allow_copy boolean default false;
 
+-- 短い共有用ID（URL用）。既存行は uuid から仮埋め。
+alter table public.artworks
+  add column if not exists short_id text;
+
+update public.artworks
+set short_id = substr(replace(id::text, '-', ''), 1, 8)
+where short_id is null;
+
+create unique index if not exists idx_artworks_short_id on public.artworks(short_id);
+
 -- visibility が空なら is_public から埋める
 update public.artworks
 set visibility = case when coalesce(is_public, true) then 'public' else 'private' end
