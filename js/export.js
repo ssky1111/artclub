@@ -13,6 +13,63 @@ export function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
+/** iPhone / iPad（写真アプリに保存したい端末） */
+export function isAppleTouchDevice() {
+  const ua = navigator.userAgent || '';
+  if (/iPhone|iPad|iPod/i.test(ua)) return true;
+  // iPadOS は Mac 扱いになることがある
+  return navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1;
+}
+
+async function blobToJpeg(blob, quality = 0.92) {
+  if (!blob) return null;
+  if ((blob.type || '') === 'image/jpeg') return blob;
+  const img = await loadImage(blob);
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  canvas.getContext('2d').drawImage(img, 0, 0);
+  return new Promise((resolve) => {
+    canvas.toBlob((b) => resolve(b || blob), 'image/jpeg', quality);
+  });
+}
+
+/**
+ * 画像を端末に保存する。
+ * iPhone などでは共有シート経由で「写真に追加」できるようにする。
+ * 非対応環境は通常のダウンロードに落とす。
+ */
+export async function saveImageBlob(blob, filename = 'artclub.jpg') {
+  if (!blob) return 'empty';
+
+  let out = blob;
+  let name = filename || 'artclub.jpg';
+  const apple = isAppleTouchDevice();
+
+  // 写真アプリ向けに JPEG へ寄せる（WebP だと保存できない端末がある）
+  if (apple && !/^image\/(jpeg|png)$/i.test(blob.type || '')) {
+    out = await blobToJpeg(blob);
+    name = String(name).replace(/\.[a-z0-9]+$/i, '.jpg');
+    if (!/\.jpe?g$/i.test(name)) name = `${name}.jpg`;
+  }
+
+  const type = out.type || 'image/jpeg';
+  const file = new File([out], name, { type });
+
+  if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file] });
+      return 'shared';
+    } catch (err) {
+      if (err?.name === 'AbortError') return 'aborted';
+      // 共有失敗時はダウンロードへ
+    }
+  }
+
+  downloadBlob(out, name);
+  return 'downloaded';
+}
+
 function loadImage(blob) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(blob);

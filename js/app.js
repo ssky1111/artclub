@@ -35,7 +35,7 @@ import {
   saveHiddenTags, invalidateTagConfig, convertToWebp, repairManifestExtensions,
 } from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
-import { composeSheet, cropToInkVertical, downloadBlob, downloadEach, shareToX } from './export.js';
+import { composeSheet, cropToInkVertical, downloadBlob, downloadEach, saveImageBlob, isAppleTouchDevice, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
 import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, freePeriodDialog, restorePageScroll, setScreenShownHook } from './ui.js';
@@ -60,7 +60,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '198';
+const BUILD = '199';
 const SITE_PASS_KEY = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 /** サイトパスワード解除の有効期限（約1週間） */
@@ -2322,6 +2322,15 @@ function fillWorkPage(work, userId = getUser()?.id) {
   const delBtn = $('#work-delete');
   if (delBtn) delBtn.hidden = work.user_id !== userId;
 
+  const dlBtn = $('#work-download');
+  if (dlBtn) {
+    const mine = work.user_id === userId;
+    dlBtn.hidden = !mine;
+    if (mine) {
+      dlBtn.textContent = isAppleTouchDevice() ? t('gal.savePhoto') : t('common.download');
+    }
+  }
+
   const copyBtn = $('#work-copy');
   const canCopy = !!work.allow_copy && work.user_id !== userId;
   if (copyBtn) copyBtn.hidden = !canCopy;
@@ -2415,6 +2424,28 @@ function wireGallery() {
       goBackFromWork();
       if (document.body.dataset.screen === 'atelier') renderAtelier();
     } catch { toast(t('gal.uploadFail')); }
+  });
+
+  $('#work-download')?.addEventListener('click', async () => {
+    if (!currentArtwork?.image_url) return;
+    const btn = $('#work-download');
+    if (btn) btn.disabled = true;
+    try {
+      const res = await fetch(currentArtwork.image_url);
+      if (!res.ok) throw new Error(`fetch ${res.status}`);
+      const blob = await res.blob();
+      const base = `artclub-${currentArtwork.short_id || currentArtwork.id || dateKey()}`;
+      const ext = (blob.type || '').includes('png') ? 'png'
+        : (blob.type || '').includes('webp') ? 'webp'
+          : 'jpg';
+      const result = await saveImageBlob(blob, `${base}.${ext}`);
+      if (result === 'downloaded') toast(t('gal.downloaded'));
+      else if (result === 'shared' && isAppleTouchDevice()) toast(t('gal.savedPhotoHint'));
+    } catch {
+      toast(t('gal.downloadFail'));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   });
 
   $('#work-copy')?.addEventListener('click', () => {
