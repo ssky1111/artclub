@@ -1553,6 +1553,7 @@ function openDrawing(index) {
   if (!shot) return;
   drawingIndex = index;
   $('#draw-img').src = URL.createObjectURL(shot.blob);
+  $('#draw-remove').hidden = false;
   syncDrawExcludeButton();
   $('#draw-lightbox').hidden = false;
 }
