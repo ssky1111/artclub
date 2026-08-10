@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '46';
+const BUILD = '47';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {

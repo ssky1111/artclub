@@ -53,6 +53,9 @@ export function createSessionRunner({ onFinish, onQuit }) {
     padOpacityNum: $('#pad-opacity-num'),
     padSwap: $('#pad-swap'),
     swapBtn: $('#swap-btn'),
+    stageSwap: $('#stage-swap'),
+    padRefSwap: $('#pad-ref-swap'),
+    refMiniSwap: $('#ref-mini-swap'),
     bridgeDesc: $('#bridge-desc'),
   };
 
@@ -505,8 +508,12 @@ export function createSessionRunner({ onFinish, onQuit }) {
     state.currentPhotoId = photo.photoId || null;
     renderAttribution(photo);
   }
-  dom.padSwap?.addEventListener('click', swapPhoto);
-  dom.swapBtn?.addEventListener('click', swapPhoto);
+  for (const btn of [dom.padSwap, dom.swapBtn, dom.stageSwap, dom.padRefSwap, dom.refMiniSwap]) {
+    btn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      swapPhoto();
+    });
+  }
 
   $('#bridge-start').addEventListener('click', () => {
     if (!state?.awaitingBridge) return;

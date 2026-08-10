@@ -132,6 +132,7 @@ const DICT = {
   'sess.opacity':        { ja: '線の濃さ',             en: 'Opacity' },
   'sess.memory':         { ja: '記憶で描く時間',       en: 'Draw from memory' },
   'sess.peek':           { ja: '3秒だけ見る',          en: 'Peek 3s' },
+  'sess.swap':           { ja: '写真を入れ替え',       en: 'Swap photo' },
   'sess.sheetsBy':       { ja: '{n}枚 × {t}',          en: '{n} × {t}' },
 
   /* ---------- ふりかえり ---------- */
