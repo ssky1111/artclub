@@ -8,7 +8,7 @@
  */
 
 import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
-import { getSession, getUser, getUsername, ensureFreshSession } from './auth.js';
+import { getSession, getUser, getUsername, userName, ensureFreshSession } from './auth.js';
 import { brandForOgp } from './export.js';
 
 const BUCKET = 'artworks';
@@ -82,6 +82,17 @@ function normalizeArtwork(row) {
     kind: row.kind || 'drawing',
     og_image_url: row.og_image_url || null,
   };
+}
+
+/** 表示名。DB の username が空でも、自分の作品ならプロフィールから補う。 */
+export function artworkDisplayName(work, { mineLabel = 'Me' } = {}) {
+  if (!work) return '';
+  if (work.username) return work.username;
+  const me = getUser();
+  if (me?.id && work.user_id === me.id) {
+    return getUsername() || userName(me) || mineLabel;
+  }
+  return 'anonymous';
 }
 
 /** プロフィールのユーザーネームを Auth ユーザーに同期する。 */
@@ -214,6 +225,7 @@ export async function uploadArtwork(drawingBlob, promptId, {
     image_url: imageUrl,
     storage_path: path,
     is_public: isPublic,
+    username: fullRow.username,
   };
 
   let dbRes = await fetch(`${SUPABASE_URL}/rest/v1/artworks`, {
