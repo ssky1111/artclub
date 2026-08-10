@@ -1,13 +1,9 @@
 /**
- * library.js — 自分でアップロードしたお題の写真。
+ * library.js — お題の写真。
  *
- * 検索APIから引いてくる写真は、狙ったものが出てこない（人物を頼んでも布や風景が出る）。
- * 自分で集めた写真にタグを付けて、そこから出題するほうが確実に早い。
- *
- * 写真は端末の IndexedDB に入る。外には出ない。
+ * 同梱写真＋Supabase 上の写真だけ。端末 IndexedDB への個人ライブラリは廃止。
  */
 
-import { putPhoto, getPhoto, listPhotos, deletePhoto, shrinkImage } from './db.js';
 import { loadManifest, manifestPhotoUrl } from './repo.js';
 import { supabasePhotos, loadCustomTags, loadHiddenTags } from './supabase.js';
 
@@ -38,49 +34,24 @@ export function allTagsWithCustom() {
   return all.filter((t) => !hiddenTags.includes(t));
 }
 
-let cache = null;
-
-export async function allPhotos({ fresh = false } = {}) {
-  if (!cache || fresh) cache = (await listPhotos()) || [];
-  return [...cache].sort((a, b) => b.addedAt - a.addedAt);
+/** 端末ローカルのお題は持たない（互換のため空配列）。 */
+export async function allPhotos() {
+  return [];
 }
 
-export function invalidate() { cache = null; }
+export function invalidate() { /* no local photo cache */ }
 
-/** ファイルを取り込む。縮小してから入れる。 */
-export async function addFiles(files, tags = []) {
-  const added = [];
-  for (const file of files) {
-    if (!file.type.startsWith('image/')) continue;
-    try {
-      const blob = await shrinkImage(file);
-      const photo = {
-        id: `p${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
-        blob,
-        tags: [...tags],
-        name: file.name,
-        addedAt: Date.now(),
-      };
-      await putPhoto(photo);
-      added.push(photo);
-    } catch { /* 読めない画像は飛ばす */ }
-  }
-  invalidate();
-  return added;
+/** 端末への取り込みは廃止。UI から呼ばれた場合は何もしない。 */
+export async function addFiles() {
+  return [];
 }
 
-export async function setTags(id, tags) {
-  const photo = await getPhoto(id);
-  if (!photo) return null;
-  photo.tags = tags;
-  await putPhoto(photo);
-  invalidate();
-  return photo;
+export async function setTags() {
+  return null;
 }
 
-export async function removePhoto(id) {
-  await deletePhoto(id);
-  invalidate();
+export async function removePhoto() {
+  /* no-op */
 }
 
 /**
@@ -102,14 +73,13 @@ export async function bundledPhotos() {
   }));
 }
 
-/** 端末の写真＋同梱の写真＋Supabaseの写真。お題を出すときはこちらを使う。 */
-export async function everyPhoto({ fresh = false } = {}) {
-  const [mine, bundled, sb] = await Promise.all([
-    allPhotos({ fresh }),
+/** 同梱の写真＋Supabaseの写真。お題を出すときはこちらを使う。 */
+export async function everyPhoto() {
+  const [bundled, sb] = await Promise.all([
     bundledPhotos(),
     supabasePhotos().catch(() => []),
   ]);
-  return [...mine, ...bundled, ...sb];
+  return [...bundled, ...sb];
 }
 
 /** タグでしぼる。タグを1つも選んでいなければ全部。 */
@@ -119,7 +89,7 @@ export async function photosWithTags(tags = []) {
   return photos.filter((p) => tags.every((t) => p.tags.includes(t)));
 }
 
-/** 表示用のURL。端末の写真は Blob から作り、同梱の写真はそのままのパス。 */
+/** 表示用のURL。 */
 export function photoUrl(photo) {
   return photo.blob ? URL.createObjectURL(photo.blob) : photo.url;
 }
@@ -248,7 +218,7 @@ export function createLibraryQueue(tags, onNotice = () => {}, noticeText = null,
       return {
         url,
         fallbackUrl: photo.fallbackUrl || null,
-        photoId: photo.id,             // 同じ写真の前回と比べるために持ち回る
+        photoId: photo.id,
         credit: photo.credit || {
           name: photo.name || (photo.bundled ? '同梱の写真' : '自分の写真'),
           link: null,

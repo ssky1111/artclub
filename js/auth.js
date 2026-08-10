@@ -9,11 +9,11 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
 
 const STORAGE_KEY = 'artclub.auth';
-const USERNAME_KEY = 'artclub.username';
 const REDIRECT_URL = 'https://artclub.space';
 
 let session = null;
 let user = null;
+let usernameMem = '';
 let refreshTimer = 0;
 const listeners = [];
 
@@ -40,13 +40,12 @@ function clear() {
 }
 
 function clearUsernameCache() {
-  try { localStorage.removeItem(USERNAME_KEY); } catch {}
+  usernameMem = '';
 }
 
 function cacheUsername(name) {
   const trimmed = String(name || '').trim().slice(0, 32);
-  if (!trimmed) return '';
-  try { localStorage.setItem(USERNAME_KEY, trimmed); } catch {}
+  usernameMem = trimmed;
   return trimmed;
 }
 
@@ -248,11 +247,11 @@ export function userAvatar() {
 }
 
 export function getUsername() {
-  try { return localStorage.getItem(USERNAME_KEY) || ''; } catch { return ''; }
+  return usernameMem || '';
 }
 
 /**
- * DB の profiles からユーザーネームを読み、端末キャッシュへ戻す。
+ * DB の profiles からユーザーネームを読む。
  * 新しい端末でも再入力を求めないための入口。
  */
 export async function hydrateUsername() {
@@ -265,13 +264,13 @@ export async function hydrateUsername() {
       notify();
       return profile.username;
     }
-  } catch { /* オフライン等はローカルのまま */ }
+  } catch { /* オフライン等 */ }
   return getUsername();
 }
 
 export function setUsername(name) {
   cacheUsername(name);
-  // 他ユーザーのスケッチカードに出す名前。失敗してもローカルは残す
+  // 他ユーザーのスケッチカードに出す名前
   import('./gallery.js')
     .then((m) => m.upsertProfile(name))
     .catch(() => {});

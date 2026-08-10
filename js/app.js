@@ -10,7 +10,7 @@ import {
 import {
   getSettings, saveSettings, getHistory, addSession, updateLastSession,
   dateKey, addDays, dailyTotals, drawingsByDay, totalDrawings, roundsToday, stats,
-  recentReviewNotes,
+  recentReviewNotes, hydrateUserData, resetUserCaches,
 } from './storage.js';
 import { LESSONS, PD_BOOKS, lessonById } from './anatomy.js';
 import { createPhotoQueue } from './images.js';
@@ -20,15 +20,13 @@ import {
   reminderFor, injectWeakStep, buildReviewMenu,
 } from './review.js';
 import { createSessionRunner } from './session.js';
-import { putDrawing, getDrawing } from './db.js';
 import {
-  TAG_GROUPS, ALL_TAGS, allPhotos, everyPhoto, bundledPhotos, photoUrl, setPhotoSrc,
-  addFiles, setTags, removePhoto, createLibraryQueue, createWeightedQueue,
+  TAG_GROUPS, ALL_TAGS, everyPhoto, bundledPhotos, photoUrl, setPhotoSrc,
+  createLibraryQueue, createWeightedQueue,
   refreshCustomTags, getCustomTags, getHiddenTags, allTagsWithCustom,
 } from './library.js';
 import {
-  loadManifest, getRepoConfig, saveRepoConfig, pushPhotos, testRepo,
-  manifestJson, fileNameFor, manifestPhotoUrl,
+  getRepoConfig, saveRepoConfig, testRepo,
 } from './repo.js';
 import {
   loadManifest as sbLoadManifest, pushToSupabase, testConnection as sbTest,
@@ -42,7 +40,7 @@ import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
 import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog } from './ui.js';
 import { icon, paintIcons } from './icons.js';
-import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
+import { t, tr, getLang, setLang, applyLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
 import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, userAvatar, hasUsername, setUsername, getUsername, hydrateUsername } from './auth.js';
 import {
@@ -59,7 +57,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '112';
+const BUILD = '113';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -553,7 +551,7 @@ async function openLibrary() {
 }
 
 async function renderLibrary() {
-  const photos = await everyPhoto({ fresh: true });
+  const photos = await everyPhoto();
   $('#lib-empty').hidden = photos.length > 0;
 
   const filter = $('#lib-filter');
@@ -591,7 +589,7 @@ function fillPhotoGrid(grid, photos, onPick) {
   }
 }
 
-/** 写真1枚。タグを付け替えられて、これまでの記録も見られる。 */
+/** 写真1枚。タグは同梱／クラウド側のものを表示するだけ。 */
 function openPhoto(photo) {
   $('#photo-big').src = photoUrl(photo);
 
@@ -602,16 +600,7 @@ function openPhoto(photo) {
     const row = el('div', 'chips');
     for (const tag of group.tags) {
       const chip = el('button', `chip${photo.tags.includes(tag) ? ' on' : ''}`, tag);
-      // 同梱の写真のタグはリポジトリ側の manifest が持っているので、ここでは触らせない
-      if (photo.bundled) chip.disabled = true;
-      else chip.addEventListener('click', async () => {
-        const next = new Set(photo.tags);
-        next.has(tag) ? next.delete(tag) : next.add(tag);
-        photo.tags = [...next];
-        await setTags(photo.id, photo.tags);
-        openPhoto(photo);
-        renderLibrary();
-      });
+      chip.disabled = true;
       row.append(chip);
     }
     tags.append(row);
@@ -620,13 +609,7 @@ function openPhoto(photo) {
   renderPhotoHistory(photo.id);
 
   const del = $('#photo-delete');
-  del.hidden = !!photo.bundled;
-  del.onclick = async () => {
-    if (!(await confirmDialog(t('lib.deleteConfirm')))) return;
-    await removePhoto(photo.id);
-    $('#photo-sheet').hidden = true;
-    renderLibrary();
-  };
+  del.hidden = true;
   $('#photo-sheet').hidden = false;
 }
 
@@ -647,9 +630,12 @@ function renderPhotoHistory(photoId) {
   attempts.forEach(({ entry, shot }, i) => {
     const box = el('div', `attempt${i === attempts.length - 1 ? ' latest' : ''}`);
     const img = el('img');
-    getDrawing(`${entry.id}#${shot.index}`)
-      .then((blob) => { if (blob) img.src = URL.createObjectURL(blob); })
-      .catch(() => {});
+    const artId = shot.artworkId || shot.shortId;
+    if (artId) {
+      fetchArtwork(artId)
+        .then((work) => { if (work?.image_url) img.src = work.image_url; })
+        .catch(() => {});
+    }
     box.append(img, el('div', 'attempt-meta',
       `${entry.date}・${shot.seconds ? fmtDur(shot.seconds) : '—'}`));
     wrap.append(box);
@@ -657,16 +643,8 @@ function renderPhotoHistory(photoId) {
 }
 
 function wireLibrary() {
-  $('#lib-add').addEventListener('click', () => $('#lib-input').click());
-  $('#lib-input').addEventListener('change', async (e) => {
-    const files = [...(e.target.files || [])];
-    if (!files.length) return;
-    toast(t('lib.importing', { n: files.length }));
-    const added = await addFiles(files, libFilter);
-    e.target.value = '';
-    await renderLibrary();
-    toast(t('lib.imported', { n: added.length }));
-  });
+  const addBtn = $('#lib-add');
+  if (addBtn) addBtn.hidden = true;
   $('#photo-close').addEventListener('click', () => { $('#photo-sheet').hidden = true; });
   $('#photo-sheet').addEventListener('click', (e) => {
     if (e.target.id === 'photo-sheet') $('#photo-sheet').hidden = true;
@@ -716,24 +694,21 @@ async function openAdmin() {
 }
 
 async function renderAdmin() {
-  const [mine, bundled] = await Promise.all([allPhotos({ fresh: true }), bundledPhotos()]);
-
-  const untagged = mine.filter((p) => !p.tags.length).length;
-  $('#admin-untagged').textContent = untagged ? t('admin.needTag', { n: untagged }) : '';
-  fillPhotoGrid($('#admin-grid'), mine, openPhoto);
-  fillPhotoGrid($('#admin-bundled'), bundled, openPhoto);
+  // 端末ローカルお題は廃止。管理は Supabase 側へ。
+  $('#admin-untagged').textContent = '';
+  fillPhotoGrid($('#admin-grid'), [], openPhoto);
+  fillPhotoGrid($('#admin-bundled'), await bundledPhotos(), openPhoto);
 
   const cfg = getRepoConfig();
   $('#repo-path').value = cfg.owner && cfg.repo ? `${cfg.owner}/${cfg.repo}` : '';
   $('#repo-branch').value = cfg.branch || 'main';
   $('#repo-token').value = cfg.token || '';
-  $('#repo-push').textContent = t('admin.push', { n: mine.length });
+  $('#repo-push').textContent = t('admin.push', { n: 0 });
 
-  // 旧 JPG 参照が残っていれば、実体の WebP に manifest を直す
   try {
     const fixed = await repairManifestExtensions();
     if (fixed) toast(`${fixed}件の写真URLをWebPに直しました`);
-  } catch { /* 表示は fallbackUrl でも生きる */ }
+  } catch { /* */ }
 
   await renderSupabaseGrid();
   await renderTagManager();
@@ -983,15 +958,8 @@ function wireAdmin() {
   $('#admin-lock').addEventListener('click', () => { adminOpen = false; openAdmin(); });
   $('#admin-open')?.addEventListener('click', () => { navigateTo('admin'); });
 
-  $('#admin-add').addEventListener('click', () => $('#admin-input').click());
-  $('#admin-input').addEventListener('change', async (e) => {
-    const files = [...(e.target.files || [])];
-    if (!files.length) return;
-    toast(t('lib.importing', { n: files.length }));
-    const added = await addFiles(files, []);
-    e.target.value = '';
-    await renderAdmin();
-    toast(t('lib.imported', { n: added.length }));
+  $('#admin-add').addEventListener('click', () => {
+    toast('端末への写真追加はやめました。下の Supabase から上げてください');
   });
 
   $('#repo-test').addEventListener('click', async () => {
@@ -1006,33 +974,12 @@ function wireAdmin() {
     }
   });
 
-  $('#repo-push').addEventListener('click', async () => {
-    const cfg = readRepoForm();
-    const status = $('#repo-status');
-    const mine = await allPhotos({ fresh: true });
-    if (!mine.length) return void (status.textContent = t('lib.empty'));
-    try {
-      await pushPhotos(cfg, mine, (i, n) => { status.textContent = t('admin.pushing', { i, n }); });
-      status.textContent = t('admin.pushed', { n: mine.length });
-      await loadManifest({ fresh: true });
-      await renderAdmin();
-    } catch (err) {
-      status.textContent = t('admin.pushFail', { m: err.message });
-    }
+  $('#repo-push').addEventListener('click', () => {
+    $('#repo-status').textContent = '端末ローカル写真は廃止しました。Supabase を使ってください';
   });
 
-  // トークンを使いたくない人向け。落としたものを photos/ に置いて commit すれば同じ結果になる
-  $('#repo-export').addEventListener('click', async () => {
-    const mine = await allPhotos({ fresh: true });
-    if (!mine.length) return void toast(t('lib.empty'));
-    const entries = mine.map((p) => ({
-      file: fileNameFor(p), tags: p.tags || [], name: p.name || null, source: 'Unsplash',
-    }));
-    downloadBlob(new Blob([manifestJson(entries)], { type: 'application/json' }), 'manifest.json');
-    for (let i = 0; i < mine.length; i++) {
-      await new Promise((r) => setTimeout(r, 350));
-      downloadBlob(mine[i].blob, fileNameFor(mine[i]));
-    }
+  $('#repo-export').addEventListener('click', () => {
+    toast('端末ローカル写真は廃止しました');
   });
 
   /* ---------- Supabase ---------- */
@@ -1537,7 +1484,7 @@ function startMenuWithLesson(menu, lesson, lessonMode) {
 }
 
 function saveResult(result) {
-  const { drawings, ...rest } = result;     // 画像そのものは履歴（localStorage）に入れない
+  const { drawings, ...rest } = result;     // 画像そのものは履歴に入れない（artworks へ）
   return addSession({
     id: `s${Date.now()}`,
     date: dateKey(),
@@ -1566,43 +1513,21 @@ function formatErr(err) {
   return raw.length > 160 ? `${raw.slice(0, 160)}…` : raw;
 }
 
-async function persistPendingLocally() {
-  const entryId = pendingSessionMeta?.sessionId;
-  if (!entryId || !pendingDrawings.length) {
-    if (entryId && sheetBlob) {
-      try { await putDrawing(`${entryId}#sheet`, sheetBlob); } catch {}
-    }
-    return updateLastSession({
-      hasDrawing: pendingDrawings.length > 0,
-      drawingCount: pendingDrawings.length || null,
-      hasSheet: !!sheetBlob,
-      shots: pendingDrawings.map((shot, i) => ({
-        index: i,
-        photoId: shot.photoId || null,
-        seconds: shot.seconds || null,
-        artworkId: shot.artworkId || null,
-      })),
-    });
-  }
-  try {
-    await Promise.all([
-      ...pendingDrawings.map((shot, i) => putDrawing(`${entryId}#${i}`, shot.blob)),
-      ...(sheetBlob ? [putDrawing(`${entryId}#sheet`, sheetBlob)] : []),
-    ]);
-  } catch (err) {
-    console.error('[local save]', err);
-    toast(`${t('toast.saveFail')}\n${formatErr(err)}`, 6000);
-  }
+/** ふりかえりメタを履歴へ。画像本体は端末に残さず、アップロード後の artworkId を付ける。 */
+async function persistPendingMeta() {
   return updateLastSession({
-    hasDrawing: true,
-    drawingCount: pendingDrawings.length,
-    hasSheet: !!sheetBlob,
+    hasDrawing: pendingDrawings.length > 0,
+    drawingCount: pendingDrawings.length || null,
+    hasSheet: !!sheetBlob || !!pendingSheetMeta?.artworkId,
     shots: pendingDrawings.map((shot, i) => ({
       index: i,
       photoId: shot.photoId || null,
       seconds: shot.seconds || null,
       artworkId: shot.artworkId || null,
+      shortId: shot.shortId || null,
     })),
+    sheetArtworkId: pendingSheetMeta?.artworkId || null,
+    sheetShortId: pendingSheetMeta?.shortId || null,
   });
 }
 
@@ -1677,9 +1602,13 @@ async function uploadPendingArtworks({ quiet = false } = {}) {
         photoId: shot.photoId || null,
         seconds: shot.seconds || null,
         artworkId: shot.artworkId || null,
+        shortId: shot.shortId || null,
       })),
       sheetArtworkId: pendingSheetMeta?.artworkId || null,
       sheetShortId: pendingSheetMeta?.shortId || null,
+      hasDrawing: true,
+      drawingCount: drawings.length,
+      hasSheet: !!(pendingSheetMeta?.artworkId || sheetBlob),
     });
   }
   if (!quiet) {
@@ -1758,8 +1687,8 @@ async function finishSession(result) {
     }
   }
 
-  // ふりかえりに入った時点で端末保存＋クラウド投稿する
-  await persistPendingLocally();
+  // ふりかえりに入った時点で履歴メタを書き、ログイン中ならクラウド投稿する
+  await persistPendingMeta();
   if (getUser() && pendingDrawings.length) {
     // まとめ画ができてから投稿（まとめ画の work URL / OGP 用）
     void uploadPendingArtworks();
@@ -2342,9 +2271,21 @@ function renderLog() {
 
 let calMonth = null;   // 'YYYY-MM'
 
-/** 1枚目の絵。古い記録は連番なしのキーで入っているので、そちらも見る。 */
-async function loadDrawing(entryId) {
-  return (await getDrawing(`${entryId}#0`)) || (await getDrawing(entryId));
+/** 履歴エントリの表紙用アートワーク ID（1枚目）。 */
+function coverArtworkId(entry) {
+  if (!entry) return null;
+  const shot = (entry.shots || []).find((s) => s.artworkId || s.shortId);
+  return shot?.artworkId || shot?.shortId || null;
+}
+
+async function loadArtworkUrl(id) {
+  if (!id) return null;
+  try {
+    const work = await fetchArtwork(id);
+    return work?.image_url || null;
+  } catch {
+    return null;
+  }
 }
 
 function monthKey(dateStr) { return dateStr.slice(0, 7); }
@@ -2387,11 +2328,14 @@ function renderCalendar(history = getHistory()) {
     if (dayKey === today) cell.classList.add('today');
     cell.append(el('span', 'cal-num', String(day)));
 
-    if (entry?.hasDrawing) {
+    const coverId = coverArtworkId(entry);
+    if (coverId || entry?.hasDrawing) {
       cell.classList.add('has-drawing');
-      const img = el('img');
-      loadDrawing(entry.id).then((blob) => { if (blob) img.src = URL.createObjectURL(blob); }).catch(() => {});
-      cell.prepend(img);
+      if (coverId) {
+        const img = el('img');
+        loadArtworkUrl(coverId).then((url) => { if (url) img.src = url; }).catch(() => {});
+        cell.prepend(img);
+      }
     }
 
     cell.title = seconds ? `${dayKey}：${fmtDur(seconds)}` : dayKey;
@@ -2410,30 +2354,34 @@ async function openDaySheet(dayKey, history = getHistory()) {
 
   const shots = $('#sheet-shots');
   shots.innerHTML = '';
-  const blobs = [];
+  const items = [];
   for (const entry of entries) {
-    const count = entry.drawingCount || (entry.hasDrawing ? 1 : 0);
-    for (let i = 0; i < count; i++) {
-      const blob = await getDrawing(`${entry.id}#${i}`).catch(() => null)
-        || (i === 0 ? await getDrawing(entry.id).catch(() => null) : null);
-      if (blob) blobs.push(blob);
+    for (const shot of entry.shots || []) {
+      const id = shot.artworkId || shot.shortId;
+      if (!id) continue;
+      const url = await loadArtworkUrl(id);
+      if (url) items.push({ url, id });
     }
   }
-  shots.hidden = blobs.length === 0;
-  blobs.forEach((blob, i) => {
-    const item = el('button', 'strip-item');
+  shots.hidden = items.length === 0;
+  items.forEach((item, i) => {
+    const btn = el('button', 'strip-item');
     const img = el('img');
-    img.src = URL.createObjectURL(blob);
-    item.append(img);
-    item.addEventListener('click', () => {
-      $('#draw-img').src = URL.createObjectURL(blob);
-      drawingIndex = -1;                       // 過去の絵はここから消せない
+    img.src = item.url;
+    btn.append(img);
+    btn.addEventListener('click', () => {
+      $('#draw-img').src = item.url;
+      drawingIndex = -1;
       $('#draw-remove').hidden = true;
       if ($('#draw-exclude')) $('#draw-exclude').hidden = true;
-      $('#draw-dl').onclick = () => downloadBlob(blob, `artclub-${dayKey}-${i + 1}.jpg`);
+      $('#draw-dl').onclick = () => {
+        fetch(item.url).then((r) => r.blob()).then((blob) => {
+          downloadBlob(blob, `artclub-${dayKey}-${i + 1}.webp`);
+        }).catch(() => {});
+      };
       $('#draw-lightbox').hidden = false;
     });
-    shots.append(item);
+    shots.append(btn);
   });
 
   const body = $('#sheet-body');
@@ -2443,7 +2391,6 @@ async function openDaySheet(dayKey, history = getHistory()) {
     const head = el('div', 'note-head');
     const title = entry.menuTitle || sessionLabel(entry) || '—';
     const time = formatSessionTime(entry);
-    // DAILY は何時にやったかを出しておく（他メニューも同じ欄で時刻が分かる）
     head.append(el('span', 'note-date', time ? `${title} · ${time}` : title));
     if (entry.lessonId && !entry.menuTitle) {
       const lessonName = tr(lessonById(entry.lessonId), 'name');
@@ -2455,20 +2402,25 @@ async function openDaySheet(dayKey, history = getHistory()) {
     if (drills) block.append(el('p', 'muted small', drills));
     if (entry.note) block.append(el('p', 'note-body', entry.note));
 
-    const sheet = await getDrawing(`${entry.id}#sheet`).catch(() => null);
-    if (sheet) {
-      const wrap = el('div', 'day-sheet-summary');
-      const img = el('img', 'day-sheet-summary-img');
-      img.src = URL.createObjectURL(sheet);
-      img.alt = '';
-      const dl = el('button', 'btn primary small');
-      dl.type = 'button';
-      dl.textContent = t('common.download');
-      dl.addEventListener('click', () => {
-        downloadBlob(sheet, `artclub-${dayKey}-${entry.id}.jpg`);
-      });
-      wrap.append(img, dl);
-      block.append(wrap);
+    const sheetId = entry.sheetArtworkId || entry.sheetShortId;
+    if (sheetId) {
+      const sheetUrl = await loadArtworkUrl(sheetId);
+      if (sheetUrl) {
+        const wrap = el('div', 'day-sheet-summary');
+        const img = el('img', 'day-sheet-summary-img');
+        img.src = sheetUrl;
+        img.alt = '';
+        const dl = el('button', 'btn primary small');
+        dl.type = 'button';
+        dl.textContent = t('common.download');
+        dl.addEventListener('click', () => {
+          fetch(sheetUrl).then((r) => r.blob()).then((blob) => {
+            downloadBlob(blob, `artclub-${dayKey}-${entry.id}.webp`);
+          }).catch(() => {});
+        });
+        wrap.append(img, dl);
+        block.append(wrap);
+      }
     }
     body.append(block);
   }
@@ -3177,6 +3129,9 @@ function wireAuth() {
 
   $('#auth-logout').addEventListener('click', async () => {
     await logout();
+    resetUserCaches();
+    settings = getSettings();
+    applyTheme();
     renderSheet();
     sheet.hidden = true;
     updateAuthUI(null);
@@ -3185,38 +3140,62 @@ function wireAuth() {
   onAuthChange((u) => {
     updateAuthUI(u);
     if (!u) {
-      // ログアウト後も今のURLのまま中身だけ更新（公開アトリエなど）
+      resetUserCaches();
+      settings = getSettings();
+      applyTheme();
       applyRoute(routeFromLocation());
       return;
     }
     // 端末に名前が無くても、DB にあれば復元してからユーザーネーム入力を出すか決める
-    hydrateUsername().then((name) => {
-      updateAuthUI(getUser());
-      if (!name && !hasUsername()) {
+    Promise.all([hydrateUsername(), hydrateUserData()])
+      .then(([name, data]) => {
+        if (data?.lang) {
+          applyLang(data.lang);
+          applyI18n();
+          $('#lang-btn').textContent = getLang() === 'ja' ? 'EN' : 'JA';
+        }
+        settings = getSettings();
+        applyTheme();
+        updateAuthUI(getUser());
+        if (!name && !hasUsername()) {
+          sheet.hidden = true;
+          showUsernameSheet(() => {
+            applyRoute(routeFromLocation());
+            if (pendingStart) {
+              const fn = pendingStart;
+              pendingStart = null;
+              fn();
+            }
+          });
+          return;
+        }
         sheet.hidden = true;
-        showUsernameSheet(() => {
-          applyRoute(routeFromLocation());
-          if (pendingStart) {
-            const fn = pendingStart;
-            pendingStart = null;
-            fn();
-          }
-        });
-        return;
-      }
-      sheet.hidden = true;
-      // /log や /atelier/mine に直リンクできていたら、ログイン後に中身を出す
-      applyRoute(routeFromLocation());
-      if (pendingStart) {
-        const fn = pendingStart;
-        pendingStart = null;
-        fn();
-      }
-    });
+        // /log や /atelier/mine に直リンクできていたら、ログイン後に中身を出す
+        applyRoute(routeFromLocation());
+        if (pendingStart) {
+          const fn = pendingStart;
+          pendingStart = null;
+          fn();
+        }
+      });
   });
 
   initAuth().then(async (u) => {
-    if (u) await hydrateUsername();
+    if (u) {
+      await hydrateUsername();
+      const data = await hydrateUserData();
+      if (data?.lang) applyLang(data.lang);
+      settings = getSettings();
+      applyTheme();
+      applyI18n();
+      $('#lang-btn').textContent = getLang() === 'ja' ? 'EN' : 'JA';
+    } else {
+      // 未ログインでも旧端末データを一度メモリへ（このセッション限り）
+      const data = await hydrateUserData();
+      if (data?.lang) applyLang(data.lang);
+      settings = getSettings();
+      applyTheme();
+    }
     updateAuthUI(u);
   });
 }
