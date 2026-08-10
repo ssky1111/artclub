@@ -1296,6 +1296,12 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
 .radios { display: flex; flex-direction: column; gap: 10px; }
 .radios label, .switch { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; }
 .switch { margin: 10px 0; }
+
+/* スマホでは音を鳴らさないので、関連する設定も隠す */
+@media (pointer: coarse) and (hover: none) {
+  .switch:has(#opt-sound),
+  .switch:has(#opt-sfx) { display: none; }
+}
 .subcard { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
 
 .theory-item { padding: 10px 0; border-bottom: 1px solid var(--line); }

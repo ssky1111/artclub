@@ -168,5 +168,15 @@ export function createBeeper() {
   };
 }
 
+/** タッチ主体の端末（スマホ等）か。音はここでは鳴らさない。 */
+export function isMobileDevice() {
+  try {
+    return window.matchMedia('(pointer: coarse) and (hover: none)').matches;
+  } catch {
+    return false;
+  }
+}
+
 /** アプリ全体で1つだけ持つ。AudioContext をいくつも作らないため。 */
 export const sfx = createBeeper();
+if (isMobileDevice()) sfx.mute = true;
