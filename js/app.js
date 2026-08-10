@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '74';
+const BUILD = '75';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1558,11 +1558,16 @@ async function finishSession(result) {
   const canPublish = pendingDrawings.length > 0 && !!getUser();
   const publishRow = $('#publish-row');
   const publishNote = $('#publish-note');
-  if (publishRow) publishRow.hidden = !canPublish;
-  if (publishNote) publishNote.hidden = !canPublish;
+  // 一括トグル（全て公開／全て模写OK）に寄せたので、旧マスタ行は出さない
+  if (publishRow) publishRow.hidden = true;
+  if (publishNote) publishNote.hidden = true;
   if (canPublish) {
     $('#publish-toggle').checked = true;
     updatePublishNote(true);
+    const bulkPub = $('#bulk-publish');
+    const bulkCopy = $('#bulk-copy');
+    if (bulkPub) bulkPub.checked = true;
+    if (bulkCopy) bulkCopy.checked = false;
   }
 
   $('#sheet-preview').hidden = true;
@@ -1605,6 +1610,44 @@ function excludeLabel(excluded) {
   return excluded ? t('gal.include') : t('gal.exclude');
 }
 
+function syncBulkToggles() {
+  const bulk = $('#strip-bulk');
+  const bulkPub = $('#bulk-publish');
+  const bulkCopy = $('#bulk-copy');
+  const bulkPubRow = $('#bulk-publish-row');
+  const bulkCopyRow = $('#bulk-copy-row');
+  if (!bulk || !bulkPub || !bulkCopy) return;
+
+  const loggedIn = !!getUser() && pendingDrawings.length > 0;
+  bulk.hidden = !loggedIn;
+  if (!loggedIn) return;
+
+  const allPublic = pendingDrawings.every((s) => !s.excludeFromGallery);
+  const allCopy = pendingDrawings.length > 0 && pendingDrawings.every((s) => !!s.allowCopy);
+  bulkPub.checked = publishEnabled() && allPublic;
+  bulkCopy.checked = allCopy;
+  bulkPubRow?.classList.toggle('is-off', !bulkPub.checked);
+  bulkCopyRow?.classList.toggle('is-off', !bulkCopy.checked);
+}
+
+function setAllPublish(on) {
+  const pub = $('#publish-toggle');
+  if (pub) pub.checked = !!on;
+  updatePublishNote(!!on);
+  pendingDrawings.forEach((shot) => {
+    shot.excludeFromGallery = !on;
+  });
+  renderDrawingStrip();
+  syncDrawExcludeButton();
+}
+
+function setAllAllowCopy(on) {
+  pendingDrawings.forEach((shot) => {
+    shot.allowCopy = !!on;
+  });
+  renderDrawingStrip();
+}
+
 function setShotExcluded(index, excluded) {
   const shot = pendingDrawings[index];
   if (!shot) return;
@@ -1623,6 +1666,7 @@ function setShotExcluded(index, excluded) {
     const lbBtn = $('#draw-exclude');
     if (lbBtn && !lbBtn.hidden) lbBtn.textContent = excludeLabel(excluded);
   }
+  syncBulkToggles();
 }
 
 function renderDrawingStrip() {
@@ -1673,17 +1717,19 @@ function renderDrawingStrip() {
       copyInput.addEventListener('change', () => {
         shot.allowCopy = !!copyInput.checked;
         copyLabel.classList.toggle('is-off', !copyInput.checked);
+        syncBulkToggles();
       });
       const copyTrack = el('span', 'toggle-track');
       copyLabel.append(copyText, copyInput, copyTrack);
       controls.append(copyLabel);
-      controls.append(el('p', 'strip-copy-hint', t('gal.allowCopyHint')));
 
       wrap.append(controls);
     }
 
     strip.append(wrap);
   });
+
+  syncBulkToggles();
 }
 
 let drawingIndex = -1;
@@ -1761,6 +1807,13 @@ function wireReview() {
     updatePublishNote(e.target.checked);
     renderDrawingStrip();
     syncDrawExcludeButton();
+  });
+
+  $('#bulk-publish')?.addEventListener('change', (e) => {
+    setAllPublish(e.target.checked);
+  });
+  $('#bulk-copy')?.addEventListener('change', (e) => {
+    setAllAllowCopy(e.target.checked);
   });
 
   $('#dl-all').addEventListener('click', () => {

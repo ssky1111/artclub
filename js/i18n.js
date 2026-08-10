@@ -73,6 +73,8 @@ const DICT = {
   'gal.postThis':         { ja: '公開する',               en: 'Make public' },
   'gal.allowCopy':        { ja: '模写してOK',             en: 'OK to copy' },
   'gal.allowCopyHint':    { ja: 'ONにすると、他の人が模写モードで練習できます', en: 'When on, others can practice by copying this drawing' },
+  'gal.publishAll':       { ja: '全て公開',               en: 'Publish all' },
+  'gal.copyAll':          { ja: '全て模写OK',             en: 'Allow copy on all' },
   'gal.loginToLike':      { ja: 'いいねするにはログインしてね', en: 'Log in to like' },
   'gal.shareWork':        { ja: 'この作品をシェア',       en: 'Share this work' },
 

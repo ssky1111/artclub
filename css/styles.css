@@ -641,29 +641,54 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
 .drawing-strip-vertical {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
+}
+.strip-bulk {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.strip-bulk .toggle-row {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--brand) 14%, var(--surface-2));
+}
+.strip-bulk .toggle-row.is-off {
+  background: var(--surface-2);
+  color: var(--muted);
 }
 .strip-item {
   padding: 6px; overflow: hidden; cursor: pointer;
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: #fff;
   min-height: 88px; display: flex; align-items: center; justify-content: center;
 }
+.drawing-strip-vertical .strip-shot {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
 .drawing-strip-vertical .strip-item {
-  width: 100%;
-  min-height: 160px;
-  padding: 8px;
+  width: min(42vw, 148px);
+  flex: 0 0 auto;
+  min-height: 112px;
+  padding: 6px;
 }
 .drawing-strip-vertical .strip-item img {
-  max-height: 280px;
+  max-height: 160px;
 }
 .strip-shot-controls {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 8px;
+  flex: 1;
+  min-width: 0;
+  margin-top: 0;
 }
 .strip-shot-controls .toggle-row {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   padding: 8px 10px;
   border-radius: var(--radius-sm);

@@ -19,7 +19,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="74" data-theme="light" data-skin="pastel-rpg">
+<body data-build="75" data-theme="light" data-skin="pastel-rpg">
 <script>
 /* 設定があれば先に当てる。無ければ上の data-skin でパステルのまま */
 (function () {
@@ -265,6 +265,18 @@
         <button id="sheet-dl" class="btn primary small" data-i18n="common.download">ダウンロード</button>
         <button id="share-x" class="btn primary small" data-i18n="rev.shareX">Xでシェア</button>
       </div>
+    </div>
+    <div id="strip-bulk" class="strip-bulk" hidden>
+      <label class="toggle-row" id="bulk-publish-row">
+        <span data-i18n="gal.publishAll">全て公開</span>
+        <input type="checkbox" id="bulk-publish" checked>
+        <span class="toggle-track"></span>
+      </label>
+      <label class="toggle-row" id="bulk-copy-row">
+        <span data-i18n="gal.copyAll">全て模写OK</span>
+        <input type="checkbox" id="bulk-copy">
+        <span class="toggle-track"></span>
+      </label>
     </div>
     <div id="drawing-strip" class="drawing-strip drawing-strip-vertical" hidden></div>
     <div class="row" id="strip-actions" hidden>
