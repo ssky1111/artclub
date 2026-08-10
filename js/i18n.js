@@ -32,20 +32,6 @@ const DICT = {
   'common.sec':          { ja: '秒',                 en: 's' },
   'common.hour':         { ja: '時間',               en: 'h' },
 
-  /* ---------- フィードバック ---------- */
-  'fb.tab':              { ja: 'フィードバック',     en: 'Feedback' },
-  'fb.tabTitle':         { ja: 'フィードバックを送る', en: 'Send feedback' },
-  'fb.title':            { ja: 'フィードバック',     en: 'Feedback' },
-  'fb.note':             { ja: '気づいたこと・要望・不具合など、なんでもどうぞ。',
-                           en: 'Ideas, requests, bugs — anything helps.' },
-  'fb.message':          { ja: '内容',               en: 'Message' },
-  'fb.messagePh':        { ja: 'ここに書いてね',     en: 'Write here' },
-  'fb.send':             { ja: '送る',               en: 'Send' },
-  'fb.sending':          { ja: '送信中…',            en: 'Sending…' },
-  'fb.thanks':           { ja: 'ありがとう！届いたよ', en: 'Thanks — got it!' },
-  'fb.fail':             { ja: '送れなかった。あとでもう一度お願い', en: 'Couldn’t send. Please try again.' },
-  'fb.empty':            { ja: '内容を書いてね',     en: 'Please write something' },
-
   /* ---------- ログイン ---------- */
   'auth.login':           { ja: 'ログイン',             en: 'Log in' },
   'auth.signup':          { ja: '新規登録',             en: 'Sign up' },
