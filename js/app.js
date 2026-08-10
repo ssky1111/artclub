@@ -55,7 +55,7 @@ import { uploadArtwork, uploadShareImage, fetchArtworks, deleteArtwork } from '.
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '28';
+const BUILD = '29';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1262,44 +1262,73 @@ async function startSession(menu, { tags = null, part = null } = {}) {
 
   // お題は管理画面（Supabase）に上げた写真だけから出す。外部検索には落とさない。
   const own = await supabasePhotos().catch(() => []);
-  const matching = tags?.length
-    ? own.filter((p) => tags.every((tag) => p.tags.includes(tag)))
-    : own;
-  const useLibrary = matching.length > 0;
-  const emptyNotice = '管理画面の写真に、そのタグが付いたものがありません';
-
   const fromAdmin = { photos: own };
-  const queues = {
-    photo: createLibraryQueue(useLibrary ? (tags || []) : [], notice, emptyNotice, fromAdmin),
-  };
-  // デイリーの真ん中はその日の部位。タグの付いた写真だけから出す
-  if (part) {
-    queues.part = createLibraryQueue(part.tags, notice, emptyNotice, fromAdmin);
-  }
-  // 部位練習：足タグはまだ無いので手＋上半身だけ
-  const partPhotos = own.filter((p) =>
-    p.tags.includes('手') || p.tags.includes('上半身'));
-  if (partPhotos.length) {
-    queues.partMix = createWeightedQueue([
-      { tags: ['手'], weight: 7 },
-      { tags: ['上半身'], weight: 3 },
-    ], notice, fromAdmin);
+  const silent = () => {};   // 使わないキューの空通知は出さない
+  const needed = new Set(
+    (menu.steps || []).map((s) => s.source
+      || (s.drill === 'gesture' ? 'gesture'
+        : s.drill === 'croquis' ? 'croquis'
+        : 'photo')),
+  );
+  if (weak) needed.add(`weak:${weak.id}`);
+
+  const queues = {};
+
+  // フォールバック用。メニューが photo を直接使うときだけ空を知らせる
+  if (needed.has('photo') || !own.length) {
+    const matching = tags?.length
+      ? own.filter((p) => tags.every((tag) => p.tags.includes(tag)))
+      : own;
+    queues.photo = createLibraryQueue(
+      matching.length && tags?.length ? tags : [],
+      notice,
+      own.length ? '管理画面の写真に、そのタグが付いたものがありません' : '管理画面に写真がありません',
+      fromAdmin,
+    );
   } else {
-    queues.partMix = createLibraryQueue(['手'], notice, emptyNotice, fromAdmin);
+    queues.photo = createLibraryQueue([], silent, null, fromAdmin);
   }
-  // ジェスチャードローイング → 動きタグ（無ければ管理写真全体）
-  const gesturePhotos = own.filter((p) => p.tags.includes('動き'));
-  queues.gesture = gesturePhotos.length
-    ? createLibraryQueue(['動き'], notice, emptyNotice, fromAdmin)
-    : createLibraryQueue([], notice, emptyNotice, fromAdmin);
-  // クロッキー → 全身タグ（無ければ管理写真全体）
-  const croquisPhotos = own.filter((p) => p.tags.includes('全身'));
-  queues.croquis = croquisPhotos.length
-    ? createLibraryQueue(['全身'], notice, emptyNotice, fromAdmin)
-    : createLibraryQueue([], notice, emptyNotice, fromAdmin);
+
+  // デイリーの真ん中：その日の部位タグ。無ければ出さない（エラーにしない）
+  if (needed.has('part') && part) {
+    const tagged = own.filter((p) => part.tags.every((tag) => p.tags.includes(tag)));
+    queues.part = tagged.length
+      ? createLibraryQueue(part.tags, silent, null, fromAdmin)
+      : createLibraryQueue([], silent, null, fromAdmin);
+  }
+
+  // 部位練習：足タグはまだ無いので手＋上半身だけ
+  if (needed.has('partMix')) {
+    const partPhotos = own.filter((p) =>
+      p.tags.includes('手') || p.tags.includes('上半身'));
+    if (partPhotos.length) {
+      queues.partMix = createWeightedQueue([
+        { tags: ['手'], weight: 7 },
+        { tags: ['上半身'], weight: 3 },
+      ], silent, fromAdmin);
+    } else {
+      queues.partMix = createLibraryQueue([], notice, '手・上半身の写真がありません', fromAdmin);
+    }
+  }
+
+  // ジェスチャードローイング → 必ず『動き』タグから
+  if (needed.has('gesture')) {
+    const gesturePhotos = own.filter((p) => p.tags.includes('動き'));
+    queues.gesture = gesturePhotos.length
+      ? createLibraryQueue(['動き'], silent, null, fromAdmin)
+      : createLibraryQueue([], notice, '『動き』タグの写真がありません', fromAdmin);
+  }
+
+  // クロッキー → 全身タグ（無ければ管理写真全体。エラーにはしない）
+  if (needed.has('croquis')) {
+    const croquisPhotos = own.filter((p) => p.tags.includes('全身'));
+    queues.croquis = croquisPhotos.length
+      ? createLibraryQueue(['全身'], silent, null, fromAdmin)
+      : createLibraryQueue([], silent, null, fromAdmin);
+  }
+
   if (weak) {
-    // 復習も管理写真から。タグが無い部位は全体から出す
-    queues[`weak:${weak.id}`] = createLibraryQueue([], notice, emptyNotice, fromAdmin);
+    queues[`weak:${weak.id}`] = createLibraryQueue([], silent, null, fromAdmin);
   }
   getRunner().start({
     menu: weak ? injectWeakStep(menu, weak) : menu,

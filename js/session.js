@@ -125,7 +125,11 @@ export function createSessionRunner({ onFinish, onQuit }) {
         queue.push({
           drillId: step.drill,
           seconds: step.seconds,
-          source: step.source || 'photo',   // 'photo' = 写真 / 'plate' = 図版 / 'part' = その日の部位
+          // source 未指定ならドリル名に合わせる（ジェスチャー→動きタグ用キュー）
+          source: step.source
+            || (step.drill === 'gesture' ? 'gesture'
+              : step.drill === 'croquis' ? 'croquis'
+              : 'photo'),
           // 同じドリルでも、その回が何のためのものかは名前を変えて示す（部位練習など）
           label: step.label || null,
           labelEn: step.labelEn || null,
