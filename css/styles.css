@@ -1871,11 +1871,6 @@ body[data-skin='pastel-rpg'] .atelier-tabs button.on {
 .atelier-lead { margin: 0 0 10px; padding: 0 2px; }
 .atelier-panel { margin-bottom: 8px; }
 .atelier-prompt-list { display: flex; flex-direction: column; gap: 14px; }
-.atelier-prompt-more {
-  display: block;
-  width: 100%;
-  margin: 4px 0 8px;
-}
 .atelier-prompt-card {
   background: var(--surface);
   border: 1px solid var(--line);
