@@ -60,7 +60,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '199';
+const BUILD = '200';
 const SITE_PASS_KEY = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 /** サイトパスワード解除の有効期限（約1週間） */
@@ -3488,7 +3488,9 @@ function wireAuth() {
     restorePageScroll();
   });
 
-  $('#login-x').addEventListener('click', () => loginWithProvider('twitter'));
+  // X / Twitter (OAuth 2.0)。Dashboard の「X / Twitter (OAuth 2.0)」に対応する provider 名は `x`。
+  // 旧 `twitter`（OAuth 1.0a）は別プロバイダで、未有効だと provider is not enabled になる。
+  $('#login-x').addEventListener('click', () => loginWithProvider('x'));
   $('#login-google').addEventListener('click', () => loginWithProvider('google'));
 
   $('#auth-change-username').addEventListener('click', () => {
