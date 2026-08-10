@@ -60,7 +60,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '202';
+const BUILD = '203';
 const SITE_PASS_KEY = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 /** サイトパスワード解除の有効期限（約1週間） */
@@ -2919,11 +2919,15 @@ let atelierTab = 'public';
 let atelierWired = false;
 let atelierPhotoIndex = null;
 
+/** アトリエTL用。投稿の日付 + ローカル時刻 HH:MM（自分・他人とも同じ） */
 function formatArtworkTime(work) {
   if (!work?.created_at) return '';
   const d = new Date(work.created_at);
   if (Number.isNaN(d.getTime())) return '';
-  return `${d.getMonth() + 1}/${d.getDate()}`;
+  const date = `${d.getMonth() + 1}/${d.getDate()}`;
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${date} · ${hh}:${mm}`;
 }
 
 /** 非公開の目印。文字を置くと名前や日付とぶつかるので、鍵マークだけにする。 */
@@ -2945,7 +2949,9 @@ function renderArtworkTlPost(work, { mine = false } = {}) {
   const meta = el('header', 'tl-meta');
   meta.append(el('span', 'tl-name', name));
   meta.append(el('span', 'tl-dot', '·'));
-  meta.append(el('time', 'tl-time', formatArtworkTime(work)));
+  const posted = el('time', 'tl-time', formatArtworkTime(work));
+  if (work.created_at) posted.setAttribute('datetime', work.created_at);
+  meta.append(posted);
   if (work.mode) meta.append(el('span', 'tl-menu', work.mode));
   if (mine && work.visibility === 'private') {
     meta.append(privateBadge());
