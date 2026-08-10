@@ -56,7 +56,7 @@ import { uploadArtwork, uploadShareImage, fetchArtworks, deleteArtwork } from '.
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '33';
+const BUILD = '34';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1416,12 +1416,12 @@ async function finishSession(result) {
     updatePublishNote(true);
   }
 
-  // 余白を落としてから並べる／まとめ画像を作る
+  // 先にトリミングしてからふりかえりを出す（余白付きが一瞬映らないように）
+  $('#sheet-preview').hidden = true;
   if (pendingDrawings.length > 0) {
-    $('#sheet-preview').hidden = true;
-    showScreen('review');
     await cropPendingDrawings();
     renderDrawingStrip();
+    showScreen('review');
     const blob = await composeSheet(
       pendingDrawings.map((s) => s.croppedBlob || s.blob),
       { date: dateKey(), crop: false },
@@ -1433,7 +1433,6 @@ async function finishSession(result) {
     }
   } else {
     renderDrawingStrip();
-    $('#sheet-preview').hidden = true;
     showScreen('review');
   }
 }
