@@ -31,6 +31,9 @@
   --sun: #ffcc3d;
   --good: #4aa80c;            /* 「できた」の緑。塗りの黄緑と同系で、白地でも読める */
   --danger: #f2544b;
+  --like: #ff6b81;            /* いいね（全体統一） */
+  --like-on: #f03d5a;
+  --like-soft: color-mix(in srgb, var(--like) 18%, transparent);
   --radius: 22px;
   --radius-sm: 14px;
   --pad: 18px;
@@ -1363,15 +1366,6 @@ html:lang(ja) .atelier-tabs button { font-family: var(--font-ja); }
 .tl-actions {
   display: flex; align-items: center; gap: 8px; margin-top: 10px;
 }
-.tl-like {
-  appearance: none; border: none; background: transparent; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 6px;
-  font: inherit; font-size: 13px; font-weight: 700;
-  color: var(--muted); padding: 4px 8px 4px 2px; border-radius: 999px;
-}
-.tl-like:hover { background: color-mix(in srgb, var(--brand) 12%, transparent); }
-.tl-like.on { color: var(--brand-ink); }
-.tl-like .gallery-heart { font-size: 14px; line-height: 1; }
 .tl-empty { padding: 8px var(--pad) 4px; }
 
 /* ---------- 設定 ---------- */
@@ -1805,14 +1799,50 @@ body[data-theme='dark'] .google-btn {
   font-size: 12px; font-weight: 700; color: var(--text-soft);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.gallery-like-btn {
-  display: inline-flex; align-items: center; gap: 4px;
-  border: none; background: transparent; padding: 0;
-  font: inherit; font-size: 12px; font-weight: 700;
+
+/* ---------- いいね（全体統一） ---------- */
+
+.gallery-like-btn,
+.tl-like {
+  appearance: none;
+  display: inline-flex; align-items: center; gap: 6px;
+  border: none; background: transparent;
+  padding: 4px 8px 4px 2px;
+  font: inherit; font-size: 14px; font-weight: 700;
   color: var(--muted); cursor: pointer;
+  border-radius: 999px;
+  transition: color .15s, background .15s;
 }
-.gallery-like-btn.on { color: var(--brand-ink, #c9789a); }
-.gallery-heart { font-size: 13px; line-height: 1; }
+.gallery-like-btn:hover,
+.tl-like:hover {
+  background: var(--like-soft);
+  color: color-mix(in srgb, var(--like-on) 72%, var(--muted));
+}
+.gallery-like-btn.on,
+.tl-like.on {
+  color: var(--like-on);
+}
+.gallery-heart {
+  font-size: 15px; line-height: 1;
+  color: color-mix(in srgb, var(--like) 62%, var(--muted));
+  transition: color .15s, transform .15s;
+}
+.gallery-like-btn.on .gallery-heart,
+.tl-like.on .gallery-heart {
+  color: var(--like);
+  transform: scale(1.06);
+}
+.gallery-item-meta .gallery-like-btn { font-size: 13px; }
+.gallery-item-meta .gallery-heart { font-size: 14px; }
+.tl-like { font-size: 15px; }
+.tl-like .gallery-heart { font-size: 16px; }
+.work-page-meta .gallery-like-btn {
+  font-size: 20px;
+  gap: 8px;
+  padding: 6px 12px 6px 6px;
+}
+.work-page-meta .gallery-heart { font-size: 26px; }
+
 .lightbox-meta {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; width: min(92vw, 520px); margin-top: 10px; color: #fff;
@@ -2013,8 +2043,9 @@ body[data-theme='dark'] .google-btn {
   white-space: nowrap;
 }
 .copy-pick-likes {
-  color: var(--muted);
+  color: var(--like-on);
   flex: none;
+  font-weight: 700;
 }
 
 /* ---------- アトリエ ---------- */
@@ -2125,9 +2156,9 @@ body[data-skin='pastel-rpg'] .atelier-tabs button.on {
   position: absolute;
   left: 4px;
   bottom: 4px;
-  padding: 1px 5px;
+  padding: 2px 6px;
   border-radius: 999px;
-  background: rgba(11, 12, 15, .72);
+  background: color-mix(in srgb, var(--like-on) 86%, #1a1014);
   color: #fff;
   font-size: 9px;
   font-weight: 700;
