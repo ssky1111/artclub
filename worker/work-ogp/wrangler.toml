@@ -1,0 +1,15 @@
+name = "artclub-work-ogp"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# artclub.space を Cloudflare に置いたうえで、
+# /work/* だけこの Worker に振り分ける（残りは GitHub Pages）。
+# ダッシュボードの Routes 例: artclub.space/work/*
+
+[vars]
+SUPABASE_URL = "https://clifnylwatvtrikrfpft.supabase.co"
+# publishable / anon key（公開前提）。Dashboard の Vars で上書き可
+SUPABASE_ANON_KEY = "sb_publishable_kzKAxV0nVjU4ts-ewGHgRg_HmaQPFRj"
+SITE_ORIGIN = "https://artclub.space"
+PAGES_ORIGIN = "https://ssky1111.github.io"
+PAGES_BASE = "/artclub"

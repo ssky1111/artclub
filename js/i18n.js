@@ -51,9 +51,9 @@ const DICT = {
 
   /* ---------- ギャラリー ---------- */
   'gal.showAll':          { ja: 'みんなの作品を見る',     en: 'See what others drew' },
-  'gal.title':            { ja: 'みんなの作品',           en: "Everyone's Work" },
+  'gal.title':            { ja: 'みんなが描いた同じお題', en: 'Same prompt, other sketches' },
   'gal.empty':            { ja: 'まだ誰も描いていません。最初の1人になろう！',
-                            en: 'No one has drawn this yet. Be the first!' },
+                           en: 'No one has drawn this yet. Be the first!' },
   'gal.upload':           { ja: '作品を投稿する',         en: 'Share your drawing' },
   'gal.uploading':        { ja: '投稿中…',               en: 'Uploading…' },
   'gal.uploaded':         { ja: '投稿しました！',         en: 'Shared!' },
@@ -64,8 +64,10 @@ const DICT = {
   'gal.close':            { ja: '閉じる',                en: 'Close' },
   'gal.count':            { ja: '{n}人が描きました',      en: '{n} people drew this' },
   'gal.loading':          { ja: '読み込み中…',           en: 'Loading…' },
-  'gal.public':           { ja: 'みんなに公開する',       en: 'Share publicly' },
-  'gal.private':          { ja: '自分だけに保存',         en: 'Keep private' },
+  'gal.public':           { ja: 'みんなが描いた同じお題に表示する', en: 'Show in the same-prompt gallery' },
+  'gal.private':          { ja: '一覧には出さず、自分だけに保存', en: 'Save privately (hidden from the gallery)' },
+  'gal.loginToLike':      { ja: 'いいねするにはログインしてね', en: 'Log in to like' },
+  'gal.shareWork':        { ja: 'この作品をシェア',       en: 'Share this work' },
 
   /* ---------- タブ ---------- */
   'tab.home':            { ja: 'ホーム',   en: 'Home' },
@@ -134,8 +136,8 @@ const DICT = {
   'rev.selfCheckNote':   { ja: '描いたものを見ながら、できているものだけ押してください。',
                            en: 'Look at what you drew and tap only the ones you managed.' },
   'rev.howWas':          { ja: '今日はどうだった？',   en: 'How did it go?' },
-  'rev.reflectNote':     { ja: '意図的練習は「直後のふりかえり」で伸びます。20秒だけ。',
-                           en: 'Deliberate practice needs a review right after. Twenty seconds.' },
+  'rev.reflectNote':     { ja: '今日のスケッチを振り返って観察してみましょう。ただ描くだけでなく、次に反省点を意識して描くと成長率が上がります。',
+                           en: 'Look back at today’s sketches. Reflecting on what to improve next time compounds growth faster than just drawing.' },
   'rev.rate1':           { ja: 'むずかしかった',       en: 'Tough' },
   'rev.rate2':           { ja: 'まあまあ',             en: 'OK' },
   'rev.rate3':           { ja: 'つかめた',             en: 'Got it' },
