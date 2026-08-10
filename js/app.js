@@ -4,7 +4,7 @@
 
 import {
   buildDaily, partForDate, MODES, PARTS, ACTIVE_PARTS, DRILLS, PICKABLE_DRILLS,
-  TIME_CHOICES, COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu,
+  TIME_CHOICES, COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu, buildCopyMenu,
   levelLabel, menuDuration,
 } from './theory.js';
 import {
@@ -47,7 +47,7 @@ window.__i18n = { t };
 import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, userAvatar, hasUsername, setUsername, getUsername } from './auth.js';
 import {
   uploadArtwork, uploadShareImage, fetchArtworks, fetchArtwork, fetchPublicArtworks, fetchMyArtworks,
-  deleteArtwork, toggleLike, workPageUrl, upsertProfile,
+  fetchTopCopyableArtworks, deleteArtwork, toggleLike, workPageUrl, upsertProfile,
 } from './gallery.js';
 
 /*
@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '98';
+const BUILD = '99';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -214,10 +214,13 @@ function renderModes() {
     );
     if (mode.steps) {
       card.append(el('div', 'menu-time', fmtDur(menuDuration(mode))));
+    } else if (mode.unlimited) {
+      card.append(el('div', 'menu-time', t('copy.unlimited')));
     }
     card.addEventListener('click', () => {
       openPaywall(() => {
         if (mode.picker === 'part') return openPartSheet();
+        if (mode.picker === 'copy') return openCopySheet();
         startSession(mode);
       });
     });
@@ -349,6 +352,126 @@ function wirePartSheet() {
     const fn = paywallCallback;
     paywallCallback = null;
     if (fn) fn();
+  });
+}
+
+/* ==================== 模写モード ==================== */
+
+let copyCandidates = [];
+let selectedCopyWork = null;
+
+function createArtworkQueue(work) {
+  const photo = {
+    url: work.image_url,
+    photoId: `artwork:${work.id}`,
+    credit: {
+      kind: getLang() === 'en' ? 'Artwork' : '作品',
+      name: work.username || 'anonymous',
+      link: workPageUrl(work),
+      photoLink: workPageUrl(work),
+      source: 'ARTCLUB',
+    },
+  };
+  return {
+    async next() { return photo; },
+  };
+}
+
+function startCopySession(work) {
+  if (!work?.image_url) return;
+  if (!getUser()) {
+    requireLogin(() => startCopySession(work));
+    return;
+  }
+  const menu = buildCopyMenu(work);
+  lastStart = () => startCopySession(work);
+  settings = getSettings();
+  getRunner().start({
+    menu,
+    queues: { copy: createArtworkQueue(work) },
+    settings,
+    focus: { id: null },
+    lessonId: null,
+    lessonMode: 'copy',
+    reminder: null,
+    referenceLocked: true,
+    referenceArtworkId: work.id || null,
+  });
+}
+
+async function openCopySheet() {
+  selectedCopyWork = null;
+  const startBtn = $('#copy-start');
+  if (startBtn) startBtn.disabled = true;
+  const status = $('#copy-status');
+  const grid = $('#copy-grid');
+  if (grid) grid.innerHTML = '';
+  if (status) status.textContent = t('gal.loading');
+  $('#copy-sheet').hidden = false;
+
+  try {
+    copyCandidates = await fetchTopCopyableArtworks({ limit: 24 });
+    renderCopyGrid();
+    if (status) {
+      status.textContent = copyCandidates.length
+        ? t('copy.pickHint')
+        : t('copy.empty');
+    }
+  } catch {
+    copyCandidates = [];
+    if (status) status.textContent = t('copy.loadFail');
+  }
+}
+
+function renderCopyGrid() {
+  const grid = $('#copy-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  for (const work of copyCandidates) {
+    const btn = el('button', `copy-pick${selectedCopyWork?.id === work.id ? ' on' : ''}`);
+    btn.type = 'button';
+    const img = el('img');
+    img.src = work.image_url;
+    img.alt = work.username || '';
+    img.loading = 'lazy';
+    const meta = el('div', 'copy-pick-meta');
+    meta.append(el('span', 'copy-pick-user', work.username || 'anonymous'));
+    meta.append(el('span', 'copy-pick-likes', `♥ ${work.like_count || 0}`));
+    btn.append(img, meta);
+    btn.addEventListener('click', () => {
+      selectedCopyWork = work;
+      renderCopyGrid();
+      const startBtn = $('#copy-start');
+      if (startBtn) startBtn.disabled = false;
+      const status = $('#copy-status');
+      if (status) status.textContent = t('copy.selected', { n: work.username || 'anonymous' });
+    });
+    grid.append(btn);
+  }
+}
+
+function wireCopySheet() {
+  $('#copy-close')?.addEventListener('click', () => { $('#copy-sheet').hidden = true; });
+  $('#copy-sheet')?.addEventListener('click', (e) => {
+    if (e.target.id === 'copy-sheet') $('#copy-sheet').hidden = true;
+  });
+  $('#copy-start')?.addEventListener('click', async () => {
+    if (!selectedCopyWork) return;
+    const startBtn = $('#copy-start');
+    if (startBtn) startBtn.disabled = true;
+    try {
+      const fresh = await fetchArtwork(selectedCopyWork.short_id || selectedCopyWork.id);
+      if (!fresh || !fresh.allow_copy || fresh.visibility === 'private') {
+        toast(t('copy.unavailable'));
+        return;
+      }
+      $('#copy-sheet').hidden = true;
+      startCopySession(fresh);
+    } catch {
+      toast(t('copy.loadFail'));
+    } finally {
+      if (startBtn) startBtn.disabled = !selectedCopyWork;
+    }
   });
 }
 
@@ -2173,7 +2296,8 @@ function wireGallery() {
   });
 
   $('#work-copy')?.addEventListener('click', () => {
-    toast(t('atelier.copySoon'));
+    if (!currentArtwork) return;
+    startCopySession(currentArtwork);
   });
 
   const openAuth = () => openAuthSheet();
@@ -3051,6 +3175,7 @@ function init() {
   wireLesson();
   wireSetup();
   wirePartSheet();
+  wireCopySheet();
   wireLibrary();
   wireCalendar();
   wireSettings();

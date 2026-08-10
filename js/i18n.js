@@ -98,6 +98,15 @@ const DICT = {
   'atelier.copyAction':   { ja: '模写する',               en: 'Copy this' },
   'atelier.privateBadge': { ja: '非公開',                 en: 'Private' },
   'atelier.noPromptPhoto':{ ja: 'お題写真なし',           en: 'No prompt photo' },
+  'copy.title':           { ja: '模写する作品を選ぶ',     en: 'Choose a drawing to copy' },
+  'copy.note':            { ja: 'いいねが多い「模写OK」の作品から選びます。時間制限はありません。',
+                            en: 'Pick from highly liked copyable artworks. No time limit.' },
+  'copy.pickHint':        { ja: '作品を選んで「はじめる」を押してください', en: 'Select a drawing, then tap Start' },
+  'copy.empty':           { ja: 'いま模写できる作品がありません', en: 'No copyable artworks yet' },
+  'copy.loadFail':        { ja: '作品を読み込めませんでした', en: 'Could not load artworks' },
+  'copy.selected':        { ja: '{n} さんの作品を選択中', en: 'Selected {n}’s drawing' },
+  'copy.unavailable':     { ja: 'この作品はいま模写できません', en: 'This artwork can’t be copied right now' },
+  'copy.unlimited':       { ja: '時間無制限',             en: 'No time limit' },
 
   /* ---------- タブ ---------- */
   'tab.home':            { ja: 'ホーム',   en: 'Home' },
@@ -151,6 +160,7 @@ const DICT = {
   'sess.why':            { ja: 'なぜこれをやるの？',   en: 'Why this drill?' },
   'sess.skipDrill':      { ja: '飛ばす',                en: 'Skip' },
   'sess.left':           { ja: 'のこり',               en: 'left' },
+  'sess.elapsed':        { ja: 'けいか',               en: 'elapsed' },
   'sess.paused':         { ja: '（とめ中）',           en: '(paused)' },
   'sess.saveNext':       { ja: '保存して終わる',         en: 'Save & finish' },
   'sess.hint':           { ja: 'ヒント',               en: 'Hint' },

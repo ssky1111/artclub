@@ -1765,6 +1765,54 @@ body[data-theme='dark'] .google-btn {
   margin-bottom: 0;
 }
 
+.copy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  margin: 14px 0 18px;
+  max-height: 48vh;
+  overflow-y: auto;
+}
+.copy-pick {
+  appearance: none;
+  border: 2px solid transparent;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+.copy-pick.on {
+  border-color: var(--text);
+}
+.copy-pick img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
+  background: var(--surface-2);
+}
+.copy-pick-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 8px 8px;
+  font-size: 11px;
+}
+.copy-pick-user {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.copy-pick-likes {
+  color: var(--muted);
+  flex: none;
+}
+
 /* ---------- アトリエ ---------- */
 
 .atelier-topbar {

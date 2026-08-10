@@ -159,6 +159,28 @@ export const DRILLS = {
       cue: 'Size it so the whole figure fits. Detail only in the last thirty seconds.',
     },
   },
+  copy: {
+    id: 'copy',
+    name: '模写',
+    about:
+      '他の人が描いた作品を観察しながら模写する。時間制限はない。' +
+      '完成した線の選び方や省略の仕方を、ゆっくり見て取る。',
+    steps: [
+      '全体の比率と大きな形を見る',
+      '大きな塊から置く',
+      '線の勢いと省略を観察して描き込む',
+    ],
+    theory: '完成した絵には、作者が選んだ線と捨てた線がある。模写はその選択を追体験する。',
+    cue: '線を追う前に、全体の比率と大きな形を見る。',
+    view: {},
+    en: {
+      name: 'Copy',
+      about: 'Copy another artist’s drawing with no time limit. Study their line choices and omissions.',
+      steps: ['See overall proportions and big shapes', 'Block in the large masses', 'Observe line energy and omissions'],
+      theory: 'A finished drawing is a record of chosen and discarded lines. Copying is re-living that selection.',
+      cue: 'Before chasing lines, see the proportions and big shapes.',
+    },
+  },
   squint: {
     id: 'squint',
     name: 'シルエット（目を細める）',
@@ -372,7 +394,7 @@ export function partForDate(dateStr) {
 }
 
 /**
- * モードは3つだけ。増やすと「どれを押すか」を考える時間ができて、それが始めない理由になる。
+ * モードは少なく保つ。「どれを押すか」を考える時間が始めない理由になる。
  */
 export const MODES = [
   {
@@ -399,7 +421,38 @@ export const MODES = [
     steps: [{ drill: 'croquis', count: 2, seconds: 180, source: 'croquis' }],
     en: { title: 'Croquis', subtitle: '2 × 3 min. Put the shape down properly' },
   },
+  {
+    id: 'copyMode',
+    title: '模写',
+    subtitle: '人気の作品を選んで、時間無制限で描く',
+    picker: 'copy',
+    drillId: 'copy',
+    unlimited: true,
+    en: {
+      title: 'Copy',
+      subtitle: 'Pick a popular artwork and draw with no time limit',
+    },
+  },
 ];
+
+/** 模写モードのメニュー。選んだ作品1枚を時間無制限で描く。 */
+export function buildCopyMenu(work) {
+  const name = work?.username || 'anonymous';
+  return {
+    id: 'copyMode',
+    title: '模写',
+    subtitle: name,
+    steps: [{
+      drill: 'copy',
+      count: 1,
+      source: 'copy',
+      unlimited: true,
+      label: '模写',
+      labelEn: 'Copy',
+    }],
+    en: { title: 'Copy', subtitle: name },
+  };
+}
 
 /** 部位練習のメニュー。選んだ部位タグの写真だけを出す。 */
 export function buildPartMenu(part) {

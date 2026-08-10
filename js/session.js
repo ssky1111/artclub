@@ -68,23 +68,38 @@ export function createSessionRunner({ onFinish, onQuit }) {
   let lastBeepAt = -1;
 
   const timer = createTimer({
-    onTick(remaining, progress) {
+    onTick(value, progress, meta = {}) {
+      const isUnlimited = !!(meta.unlimited || state?.current?.unlimited);
+      if (isUnlimited) {
+        dom.timebar.style.transform = 'scaleX(0)';
+        dom.padTimebar.style.transform = 'scaleX(0)';
+        dom.timeLeft.textContent = fmtClock(value);
+        dom.padTimeNum.textContent = fmtClock(value);
+        setTimeUnit(true);
+        return;
+      }
+      setTimeUnit(false);
       dom.timebar.style.transform = `scaleX(${progress})`;
-      dom.timeLeft.textContent = fmtClock(remaining);
-      dom.padTimeNum.textContent = fmtClock(remaining);
+      dom.timeLeft.textContent = fmtClock(value);
+      dom.padTimeNum.textContent = fmtClock(value);
       dom.padTimebar.style.transform = `scaleX(${1 - progress})`;
-      const whole = Math.ceil(remaining);
+      const whole = Math.ceil(value);
       if (state?.settings.sound && whole <= 3 && whole > 0 && whole !== lastBeepAt) {
         lastBeepAt = whole;
         beeper.tick();
       }
-      maybeHideForMemory(remaining);
+      maybeHideForMemory(value);
     },
     onDone() {
       if (state?.settings.sound) beeper.done();
       advance();
     },
   });
+
+  function setTimeUnit(elapsedMode) {
+    const unit = dom.padTime?.querySelector('.pad-time-unit');
+    if (unit) unit.textContent = elapsedMode ? t('sess.elapsed') : t('sess.left');
+  }
 
   /* ---------- 表示の加工（ドリルごとに「見え方」を変える） ---------- */
 
@@ -125,11 +140,13 @@ export function createSessionRunner({ onFinish, onQuit }) {
       for (let i = 0; i < step.count; i++) {
         queue.push({
           drillId: step.drill,
-          seconds: step.seconds,
+          seconds: step.unlimited ? 0 : step.seconds,
+          unlimited: !!step.unlimited,
           // source 未指定ならドリル名に合わせる（ジェスチャー→動きタグ用キュー）
           source: step.source
             || (step.drill === 'gesture' ? 'gesture'
               : step.drill === 'croquis' ? 'croquis'
+              : step.drill === 'copy' ? 'copy'
               : 'photo'),
           // 同じドリルでも、その回が何のためのものかは名前を変えて示す（部位練習など）
           label: step.label || null,
@@ -188,8 +205,9 @@ export function createSessionRunner({ onFinish, onQuit }) {
         ? 'Capture the movement and centre of gravity. Impression over accuracy — exaggerate a little, be bold, and start with a single line.'
         : '動きと重心を捉えよう。正確性より印象を大切に、少し誇張して大胆に、一本の線からはじめよう。';
     }
-    dom.bridgeMeta.textContent =
-      `${item.countInStep}枚×${item.seconds < 60 ? item.seconds + '秒' : (item.seconds / 60) + '分'}`;
+    dom.bridgeMeta.textContent = item.unlimited
+      ? (getLang() === 'en' ? `${item.countInStep} · no time limit` : `${item.countInStep}枚 · 時間無制限`)
+      : `${item.countInStep}枚×${item.seconds < 60 ? item.seconds + '秒' : (item.seconds / 60) + '分'}`;
 
     // 復習対象のドリルのときだけ「前回の宿題」を1行出す
     const reminder = item.source.startsWith('weak:') ? state.reminder : null;
@@ -242,8 +260,21 @@ export function createSessionRunner({ onFinish, onQuit }) {
     const flipped = state.flipForced || (state.settings.autoFlip && Math.random() < 0.5);
     applyView(drill, { flipped });
 
-    timer.start(item.seconds);
+    setReferenceLocked(!!state.referenceLocked);
+    if (item.unlimited) {
+      setTimeUnit(true);
+      timer.start(0, { unlimited: true });
+    } else {
+      setTimeUnit(false);
+      timer.start(item.seconds);
+    }
     setPauseIcon();
+  }
+
+  function setReferenceLocked(locked) {
+    for (const btn of [dom.stageSwap, dom.padRefSwap, dom.refMiniSwap]) {
+      if (btn) btn.hidden = locked;
+    }
   }
 
   function setRefSrc(photo) {
@@ -282,7 +313,17 @@ export function createSessionRunner({ onFinish, onQuit }) {
   async function harvestDrawing() {
     if (!pad.hasContent) return;
     const blob = await pad.toBlob().catch(() => null);
-    if (blob) state.drawings.push({ blob, photoId: state.currentPhotoId, seconds: state.itemSeconds });
+    if (blob) {
+      const seconds = state.current?.unlimited
+        ? Math.round(timer.elapsed)
+        : state.itemSeconds;
+      state.drawings.push({
+        blob,
+        photoId: state.currentPhotoId,
+        seconds,
+        referenceArtworkId: state.referenceArtworkId || null,
+      });
+    }
     pad.clear();
     if (state.settings.sfx) sfx.check();
     toast(t('sess.saved', { n: state.drawings.length }), 1400);
@@ -293,18 +334,20 @@ export function createSessionRunner({ onFinish, onQuit }) {
     state.totalSeconds += seconds;
   }
 
+  function spentSeconds(item, { skipped = false } = {}) {
+    if (!item) return 0;
+    if (item.unlimited) return Math.max(0, timer.elapsed);
+    if (!skipped) return item.seconds;
+    return Math.max(0, item.seconds - timer.remaining);
+  }
+
   async function advance(skipped = false) {
     if (!skipped) await harvestDrawing();
     pad.resetHistory();
     const done = state.current;
     if (done) {
-      if (!skipped) {
-        const spent = done.seconds;
-        record(done, Math.round(spent));
-      } else {
-        const spent = Math.max(0, done.seconds - timer.remaining);
-        if (spent > 0) record(done, Math.round(spent));
-      }
+      const spent = spentSeconds(done, { skipped });
+      if (spent > 0) record(done, Math.round(spent));
     }
     state.cursor++;
     const item = state.plan[state.cursor];
@@ -344,7 +387,10 @@ export function createSessionRunner({ onFinish, onQuit }) {
     }
 
     closePad();
-    if (state?.current) record(state.current, Math.round(state.current.seconds - timer.remaining));
+    if (state?.current) {
+      const spent = spentSeconds(state.current, { skipped: true });
+      if (spent > 0) record(state.current, Math.round(spent));
+    }
     const partial = state && state.drawings.length > 0
       ? { menuId: state.menu.id, menuTitle: state.menu.title, seconds: state.totalSeconds,
           byDrill: state.byDrill, focusId: state.focus.id, lessonId: state.lessonId,
@@ -546,7 +592,10 @@ export function createSessionRunner({ onFinish, onQuit }) {
   });
 
   return {
-    async start({ menu, queues, settings, focus, lessonId = null, lessonMode = 'weak', reminder = null }) {
+    async start({
+      menu, queues, settings, focus, lessonId = null, lessonMode = 'weak',
+      reminder = null, referenceLocked = false, referenceArtworkId = null,
+    }) {
       state = {
         menu,
         plan: buildQueue(menu),
@@ -556,6 +605,8 @@ export function createSessionRunner({ onFinish, onQuit }) {
         lessonId,
         lessonMode,
         reminder,
+        referenceLocked: !!referenceLocked,
+        referenceArtworkId: referenceArtworkId || null,
         cursor: -1,
         byDrill: {},
         drawings: [],
@@ -573,6 +624,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
       dom.padOpacityNum.value = initVal;
       dom.padOpacity.parentElement.style.setProperty('--a', String(initAlpha));
       dom.padHint.classList.toggle('open', settings.hintOpen !== false);
+      setReferenceLocked(!!referenceLocked);
       Object.values(queues).forEach((q) => q.prime?.());
       if (settings.source === 'unsplash' && !settings.unsplashKey) {
         toast('Unsplash のキーが未設定です。設定から入れてください');

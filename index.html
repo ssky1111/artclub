@@ -27,7 +27,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="98" data-theme="light">
+<body data-build="99" data-theme="light">
 <script>
 /* 設定があれば先に当てる。無ければ／移行前はシンプル（data-skin なし） */
 (function () {
@@ -473,6 +473,18 @@
     <button id="part-start" class="btn primary big" data-i18n="home.startPlain">はじめる</button>
     <!-- 手や脚は、見ても描けない。先に中身を読めるようにしておく -->
     <button id="part-lesson" class="btn ghost small" hidden></button>
+  </div>
+</div>
+
+<!-- 模写モード：人気作品を選ぶ -->
+<div id="copy-sheet" class="sheet" hidden>
+  <div class="sheet-inner">
+    <button id="copy-close" class="icon-btn sheet-close" data-icon="close"></button>
+    <h2 data-i18n="copy.title">模写する作品を選ぶ</h2>
+    <p class="muted small" data-i18n="copy.note">いいねが多い「模写OK」の作品から選びます。時間制限はありません。</p>
+    <p id="copy-status" class="muted small"></p>
+    <div id="copy-grid" class="copy-grid"></div>
+    <button id="copy-start" class="btn primary big" disabled data-i18n="home.startPlain">はじめる</button>
   </div>
 </div>
 

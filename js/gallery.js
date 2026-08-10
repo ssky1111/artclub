@@ -335,6 +335,58 @@ export async function fetchPublicArtworks({ limit = 40 } = {}) {
   return attachLikeState(rows);
 }
 
+/**
+ * 模写モード用。模写OKの公開作品をいいね多い順で返す。
+ * PostgREST では like 集計ソートが難しいので、多めに取ってクライアントで並べ替える。
+ */
+export async function fetchTopCopyableArtworks({ limit = 30 } = {}) {
+  const take = Math.max(limit * 5, 100);
+  const base = {
+    order: 'created_at.desc',
+    limit: String(take),
+  };
+  let params = new URLSearchParams({
+    ...base,
+    allow_copy: 'eq.true',
+    select: '*,artwork_likes(count)',
+  });
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
+    headers: authHeaders({ Accept: 'application/json' }),
+  });
+  if (!res.ok) {
+    params = new URLSearchParams({
+      ...base,
+      select: '*,artwork_likes(count)',
+    });
+    res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
+      headers: authHeaders({ Accept: 'application/json' }),
+    });
+  }
+  if (!res.ok) {
+    params = new URLSearchParams({ ...base, select: '*' });
+    res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
+      headers: authHeaders({ Accept: 'application/json' }),
+    });
+  }
+  if (!res.ok) return [];
+
+  const me = getUser()?.id;
+  const rows = (await res.json())
+    .map(normalizeArtwork)
+    .filter((w) => w.visibility !== 'private' && w.is_public !== false)
+    .filter((w) => w.kind !== 'sheet')
+    .filter((w) => w.allow_copy === true)
+    .filter((w) => !me || w.user_id !== me)
+    .sort((a, b) => {
+      const likeDiff = (b.like_count || 0) - (a.like_count || 0);
+      if (likeDiff) return likeDiff;
+      return new Date(b.created_at) - new Date(a.created_at);
+    })
+    .slice(0, limit);
+
+  return attachLikeState(rows);
+}
+
 /** 自分の作品（公開・非公開どちらも）。 */
 export async function fetchMyArtworks({ limit = 60 } = {}) {
   const user = getUser();

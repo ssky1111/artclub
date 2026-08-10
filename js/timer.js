@@ -1,20 +1,33 @@
 /**
- * timer.js — カウントダウン。
+ * timer.js — カウントダウン／無制限の経過計測。
  * setInterval の誤差が積もらないよう、経過は常に performance.now() の差分から出す。
  */
 
 export function createTimer({ onTick, onDone }) {
   let durationMs = 0;
   let remainingMs = 0;
+  let elapsedMs = 0;
   let startedAt = 0;
   let raf = 0;
   let running = false;
+  let unlimited = false;
+
+  function liveElapsedMs() {
+    if (!running) return elapsedMs;
+    return elapsedMs + (performance.now() - startedAt);
+  }
 
   function loop() {
     if (!running) return;
+    if (unlimited) {
+      const elapsedSec = liveElapsedMs() / 1000;
+      onTick?.(elapsedSec, 0, { unlimited: true, elapsed: elapsedSec });
+      raf = requestAnimationFrame(loop);
+      return;
+    }
     const elapsed = performance.now() - startedAt;
     remainingMs = Math.max(0, durationMs - elapsed);
-    onTick?.(remainingMs / 1000, 1 - remainingMs / durationMs);
+    onTick?.(remainingMs / 1000, 1 - remainingMs / durationMs, { unlimited: false });
     if (remainingMs <= 0) {
       running = false;
       onDone?.();
@@ -24,39 +37,64 @@ export function createTimer({ onTick, onDone }) {
   }
 
   return {
-    start(seconds) {
+    /** @param {number} seconds カウントダウン秒。unlimited 時は無視 */
+    start(seconds, { unlimited: asUnlimited = false } = {}) {
       cancelAnimationFrame(raf);
-      durationMs = seconds * 1000;
-      remainingMs = durationMs;
+      unlimited = !!asUnlimited;
+      elapsedMs = 0;
       startedAt = performance.now();
       running = true;
+      if (unlimited) {
+        durationMs = 0;
+        remainingMs = 0;
+        loop();
+        return;
+      }
+      durationMs = Math.max(0, Number(seconds) || 0) * 1000;
+      remainingMs = durationMs;
       loop();
     },
     pause() {
       if (!running) return;
+      if (unlimited) elapsedMs = liveElapsedMs();
+      else {
+        const elapsed = performance.now() - startedAt;
+        remainingMs = Math.max(0, durationMs - elapsed);
+        durationMs = remainingMs;
+      }
       running = false;
       cancelAnimationFrame(raf);
-      durationMs = remainingMs;
     },
     resume() {
-      if (running || remainingMs <= 0) return;
+      if (running) return;
+      if (unlimited) {
+        startedAt = performance.now();
+        running = true;
+        loop();
+        return;
+      }
+      if (remainingMs <= 0) return;
       startedAt = performance.now();
       running = true;
       loop();
     },
     toggle() { running ? this.pause() : this.resume(); },
     stop() {
+      if (unlimited && running) elapsedMs = liveElapsedMs();
       running = false;
       cancelAnimationFrame(raf);
-      remainingMs = 0;
+      if (!unlimited) remainingMs = 0;
     },
     /** 残りに秒を足す（記憶ドリルの「もう一度見る」で使う） */
     extend(seconds) {
+      if (unlimited) return;
       remainingMs += seconds * 1000;
       durationMs += seconds * 1000;
     },
     get running() { return running; },
-    get remaining() { return remainingMs / 1000; },
+    get remaining() { return unlimited ? 0 : remainingMs / 1000; },
+    get elapsed() { return liveElapsedMs() / 1000; },
+    get unlimited() { return unlimited; },
   };
 }
 
