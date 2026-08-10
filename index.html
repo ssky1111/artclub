@@ -64,12 +64,14 @@
       </span>
     </a>
     <div class="topbar-actions">
+      <button id="auth-signup-btn" class="auth-btn auth-btn-secondary" type="button"
+              data-i18n="auth.signup">新規登録</button>
       <button id="auth-btn" class="auth-btn" title="ログイン" data-i18n-title="auth.login">
         <span id="auth-login-label" class="auth-login-label" data-i18n="auth.login">ログイン</span>
       </button>
       <button id="lang-btn" class="lang-btn" title="日本語 / English">EN</button>
-      <button class="icon-btn" data-nav="settings" data-icon="settings"
-              data-i18n-title="common.settings"></button>
+      <button id="header-settings-btn" class="icon-btn" data-nav="settings" data-icon="settings"
+              data-i18n-title="common.settings" hidden></button>
     </div>
   </header>
 
@@ -596,7 +598,8 @@
 <main id="screen-log" class="screen">
   <header class="topbar">
     <h1 class="brand plain" data-i18n="log.title">きろく</h1>
-    <button class="icon-btn" data-nav="settings" data-icon="settings"></button>
+    <button id="log-settings-btn" class="icon-btn" data-nav="settings" data-icon="settings"
+            data-i18n-title="common.settings"></button>
   </header>
 
   <section class="card">
@@ -821,7 +824,13 @@
     <a href="/" class="brand brand-link atelier-brand" aria-label="ARTCLUB">
       <span class="brand-text">ARTCLUB</span>
     </a>
-    <button class="icon-btn" data-nav="settings" data-icon="settings"></button>
+    <div class="topbar-actions atelier-auth-actions">
+      <button id="atelier-signup-btn" class="auth-btn auth-btn-secondary" type="button"
+              data-i18n="auth.signup">新規登録</button>
+      <button id="atelier-login-btn" class="auth-btn" type="button" data-i18n="auth.login">ログイン</button>
+      <button id="atelier-settings-btn" class="icon-btn" data-nav="settings" data-icon="settings"
+              data-i18n-title="common.settings" hidden></button>
+    </div>
   </header>
 
   <div class="atelier-tabs" role="tablist">

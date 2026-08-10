@@ -1817,11 +1817,15 @@ body[data-theme='dark'] .google-btn {
 
 .atelier-topbar {
   display: grid;
-  grid-template-columns: 40px 1fr 40px;
+  grid-template-columns: minmax(40px, auto) minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
 }
 .atelier-topbar-spacer { width: 40px; height: 40px; }
+.atelier-auth-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
 .atelier-brand {
   margin: 0;
   justify-content: center;
