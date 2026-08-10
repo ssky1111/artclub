@@ -171,8 +171,9 @@ body[data-skin='pastel-rpg'][data-theme='paper'] {
   --cta-ink: #5a1840;
   --brand: #ff9ec8;
   --brand-ink: #ff6fa5;
-  --lift: 0 4px 0 #e6d8c4, inset 0 2px 0 rgba(255, 255, 255, .7), inset 0 -2px 0 rgba(120, 80, 50, .08);
-  --lift-accent: 0 4px 0 color-mix(in srgb, var(--cta-ink) 18%, #ff9ec8), inset 0 2px 0 rgba(255, 255, 255, .5), inset 0 -2px 0 rgba(90, 30, 55, .12);
+  --lift: 0 4px 0 #e6d8c4, inset 0 2px 0 rgba(255, 255, 255, .7);
+  --lift-accent: 0 4px 0 color-mix(in srgb, var(--cta-bg) 58%, #d45f90),
+    inset 0 2px 0 rgba(255, 255, 255, .55);
 }
 
 /* パステルRPG：やわらかい水玉の地と、ウィンドウっぽいカード */
@@ -193,6 +194,13 @@ body[data-skin='pastel-rpg'] .menu-card,
 body[data-skin='pastel-rpg'] .primary-card {
   border-width: 2px;
   border-style: solid;
+}
+/* 立体ボタンの下影がカードで切れないようにする */
+body[data-skin='pastel-rpg'] .primary-card {
+  overflow: visible;
+}
+body[data-skin='pastel-rpg'] .primary-card .btn.primary {
+  margin-bottom: 4px;
 }
 
 /* RPG風の立体ボタン：上ハイライト＋下のふち＋押すと沈む */
@@ -217,12 +225,12 @@ body[data-skin='pastel-rpg'] .btn:active {
 body[data-skin='pastel-rpg'] .btn.primary,
 body[data-skin='pastel-rpg'] .btn.cta {
   color: var(--cta-ink);
-  border-color: color-mix(in srgb, var(--cta-ink) 28%, transparent);
+  border-color: color-mix(in srgb, var(--cta-bg) 55%, #d45f90);
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--cta-bg) 62%, #fff) 0%,
-    var(--cta-bg) 52%,
-    color-mix(in srgb, var(--cta-bg) 78%, var(--cta-ink)) 100%
+    color-mix(in srgb, var(--cta-bg) 55%, #fff) 0%,
+    var(--cta-bg) 55%,
+    color-mix(in srgb, var(--cta-bg) 82%, #e878a8) 100%
   );
   box-shadow: var(--lift-accent);
   text-shadow: 0 1px 0 rgba(255, 255, 255, .28);
@@ -231,8 +239,8 @@ body[data-skin='pastel-rpg'] .btn.primary:active,
 body[data-skin='pastel-rpg'] .btn.cta:active {
   transform: translateY(3px);
   box-shadow:
-    0 1px 0 color-mix(in srgb, var(--cta-ink) 22%, #ff9ec8),
-    inset 0 3px 5px rgba(80, 30, 50, .2);
+    0 1px 0 color-mix(in srgb, var(--cta-bg) 58%, #d45f90),
+    inset 0 2px 4px rgba(160, 60, 110, .18);
   text-shadow: none;
 }
 body[data-skin='pastel-rpg'] .btn.ghost {
