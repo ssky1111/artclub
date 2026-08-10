@@ -49,6 +49,8 @@ const PATHS = {
   flame:    '<path d="M13 2c.5 3 4 4.5 4 8.5A5 5 0 017 11c0-1.6.6-2.8 1.5-3.8.1 1.3.7 2.1 1.4 2.6.5-3 1.6-5.5 3.1-7.8z"/>',
   target:   '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>',
   bone:     '<path d="M7 17l10-10"/><circle cx="5.5" cy="18.5" r="2.2"/><circle cx="8" cy="16" r="2.2"/><circle cx="18.5" cy="5.5" r="2.2"/><circle cx="16" cy="8" r="2.2"/>',
+  // 非公開の目印。小さく出すので、つるは細く胴は角丸の箱にしてある
+  lock:     '<rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 018 0v3"/>',
   repeat:   '<path d="M4 9h13a3 3 0 013 3v1"/><path d="M8 5L4 9l4 4"/><path d="M20 15H7a3 3 0 01-3-3v-1"/><path d="M16 19l4-4-4-4"/>',
   // react-icons MdAutorenew（差し替え＝更新の矢印）
   photoSwap: {

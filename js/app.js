@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '85';
+const BUILD = '86';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2358,6 +2358,16 @@ function formatArtworkTime(work) {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
+/** 非公開の目印。文字を置くと名前や日付とぶつかるので、鍵マークだけにする。 */
+function privateBadge() {
+  const badge = el('span', 'atelier-badge private');
+  badge.innerHTML = icon('lock', 12);
+  badge.title = t('atelier.privateBadge');
+  badge.setAttribute('role', 'img');   // 中の svg は aria-hidden なので、名前はこちらで持つ
+  badge.setAttribute('aria-label', t('atelier.privateBadge'));
+  return badge;
+}
+
 function renderArtworkTlPost(work, { mine = false } = {}) {
   const post = el('article', 'tl-post');
   post.dataset.artworkId = work.id || '';
@@ -2371,7 +2381,7 @@ function renderArtworkTlPost(work, { mine = false } = {}) {
   meta.append(el('time', 'tl-time', formatArtworkTime(work)));
   if (work.mode) meta.append(el('span', 'tl-menu', work.mode));
   if (mine && work.visibility === 'private') {
-    meta.append(el('span', 'atelier-badge private', t('atelier.privateBadge')));
+    meta.append(privateBadge());
   }
   if (work.allow_copy) {
     meta.append(el('span', 'atelier-badge copy', t('atelier.copyable')));
