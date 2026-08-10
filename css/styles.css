@@ -504,14 +504,18 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
   right: 10px;
   bottom: 10px;
   z-index: 4;
-  width: auto;
+  width: max-content;
+  min-width: max-content;
+  max-width: none;
   height: 36px;
   padding: 0 12px 0 10px;
   border: none;
   border-radius: 999px;
   background: rgba(11, 12, 15, .72);
   color: #fff;
-  display: flex;
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -524,10 +528,19 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
   font-weight: 700;
   letter-spacing: .04em;
   white-space: nowrap;
+  writing-mode: horizontal-tb;
+  line-height: 1;
 }
 .ref-swap:hover { background: rgba(11, 12, 15, .88); }
 .ref-swap:active { transform: scale(.94); }
-.ref-swap .icon { width: 18px; height: 18px; flex-shrink: 0; }
+.ref-swap .icon { width: 18px; height: 18px; flex: 0 0 auto; display: block; }
+.ref-swap > span {
+  display: inline-block;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  writing-mode: horizontal-tb;
+  line-height: 1;
+}
 
 .grid-overlay {
   position: absolute; inset: 0; pointer-events: none;
@@ -866,6 +879,8 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
   padding: 0 8px 0 6px;
   font-size: 11px;
   gap: 4px;
+  width: max-content;
+  min-width: max-content;
 }
 .ref-swap.on-mini .icon { width: 14px; height: 14px; }
 .ref-mini-wrap:has(.ref-mini.big) .ref-swap.on-mini {
