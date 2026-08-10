@@ -1988,3 +1988,73 @@ button.tl-media img {
   display: block; width: 100%; height: auto; max-height: 360px; object-fit: contain;
   background: #fff;
 }
+
+/* ---------- プライバシー／利用規約 ---------- */
+.legal-body {
+  min-height: 100dvh;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DotGothic16', 'Hiragino Maru Gothic ProN', 'Yu Gothic UI', system-ui, sans-serif;
+}
+.legal-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px var(--pad) 0;
+}
+.legal {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px var(--pad) 48px;
+  line-height: 1.7;
+}
+.legal h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  letter-spacing: 0.02em;
+  margin: 8px 0 6px;
+}
+.legal h2 {
+  font-size: 1.05rem;
+  margin: 1.6em 0 0.5em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+}
+.legal h3 {
+  font-size: 0.95rem;
+  margin: 1.1em 0 0.35em;
+  color: var(--text-soft);
+}
+.legal p, .legal li { font-size: 0.92rem; color: var(--text-soft); }
+.legal ul { padding-left: 1.2em; margin: 0.4em 0 0.8em; }
+.legal li { margin: 0.25em 0; }
+.legal a { color: var(--brand-ink); text-decoration: none; }
+.legal a:hover { text-decoration: underline; }
+.legal-date { font-size: 0.82rem; color: var(--muted); margin: 0 0 1.2em; }
+.legal-nav {
+  margin-top: 2.4em;
+  padding-top: 1em;
+  border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  font-size: 0.88rem;
+}
+.legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 10px 0 0;
+  font-size: 0.88rem;
+}
+.legal-links a {
+  color: var(--brand-ink);
+  text-decoration: none;
+}
+.legal-links a:hover { text-decoration: underline; }
+.auth-legal-links {
+  margin-top: 12px;
+  justify-content: center;
+  font-size: 0.8rem;
+}
