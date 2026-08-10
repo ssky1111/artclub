@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '69';
+const BUILD = '70';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -840,7 +840,7 @@ function wireAdmin() {
   });
 
   $('#admin-lock').addEventListener('click', () => { adminOpen = false; openAdmin(); });
-  $('#admin-open').addEventListener('click', () => { location.hash = '#admin'; openAdmin(); });
+  $('#admin-open')?.addEventListener('click', () => { location.hash = '#admin'; openAdmin(); });
 
   $('#admin-add').addEventListener('click', () => $('#admin-input').click());
   $('#admin-input').addEventListener('change', async (e) => {
