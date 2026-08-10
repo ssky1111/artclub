@@ -1636,8 +1636,7 @@ async function uploadPendingArtworks() {
       shot.uploading = false;
     }
   }
-  if (failed && !uploaded) toast(t('gal.uploadFail'));
-  else if (failed) toast(t('gal.uploadFail'));
+  if (failed) toast(t('gal.uploadFail'));
   else if (uploaded) toast(t('gal.uploaded'));
 }
 
