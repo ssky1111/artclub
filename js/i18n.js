@@ -174,7 +174,7 @@ const DICT = {
   'home.freePeriodTitle': { ja: '無料開放中',            en: 'Free for now' },
   'home.freePeriodBody': { ja: '有料予定のメニューを無料開放中です',
                            en: 'This paid menu is free for now.' },
-  'home.freePeriodBodyDaily': { ja: '3周目以降は有料予定／無料開放中です',
+  'home.freePeriodBodyDaily': { ja: '3週目以降は有料予定／無料開放中です',
                            en: 'From the 3rd round on is planned paid / free for now.' },
   'home.freePeriodCta':  { ja: 'はじめる',               en: 'Start' },
   'home.unsplash':       { ja: 'お題の写真は Unsplash（unsplash.com）のものを使っています。',

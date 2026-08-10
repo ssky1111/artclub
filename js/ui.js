@@ -186,7 +186,7 @@ export function freePeriodDialog(variant = 'other') {
 
   const bodyKey = variant === 'daily' ? 'home.freePeriodBodyDaily' : 'home.freePeriodBody';
   const bodyFallback = variant === 'daily'
-    ? '3周目以降は有料予定／無料開放中です'
+    ? '3週目以降は有料予定／無料開放中です'
     : '有料予定のメニューを無料開放中です';
 
   if (title) title.textContent = t ? t('home.freePeriodTitle') : '無料開放中';
