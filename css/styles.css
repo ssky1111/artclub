@@ -332,7 +332,9 @@ body.in-session { overflow: hidden; }
 .filter-defs { position: absolute; width: 0; height: 0; }
 
 a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: none; }
+a:hover,
+a:focus,
+a:active { color: var(--accent); text-decoration: none; }
 
 .muted { color: var(--muted); }
 .small { font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif; }
@@ -1444,7 +1446,14 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
   color: inherit;
   cursor: pointer;
 }
-.brand-link:hover .brand-text { color: var(--brand-ink); }
+.brand-link:hover,
+.brand-link:focus,
+.brand-link:active,
+.brand-link:hover .brand-text,
+.brand-link:focus .brand-text,
+.brand-link:active .brand-text {
+  color: inherit;
+}
 .brand-text {
   font-family: var(--font-display);
   font-size: 24px; font-weight: 600; letter-spacing: .03em;

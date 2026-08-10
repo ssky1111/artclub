@@ -159,7 +159,9 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
     color: var(--text); margin: 0; text-decoration: none;
     min-width: 0;
   }
-  .brand:hover { color: var(--brand-ink); }
+  .brand:hover,
+  .brand:focus,
+  .brand:active { color: var(--text); }
   .auth {
     display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;
   }
