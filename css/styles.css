@@ -2314,27 +2314,6 @@ button.tl-media img {
   border: 1px solid var(--line);
 }
 
-.day-cover-label {
-  grid-column: 1 / -1;
-  margin: 0 0 2px;
-}
-.day-cover-pick {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-}
-.day-cover-pick.is-cover .strip-item {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
-}
-.day-cover-btn { align-self: center; }
-.day-cover-reset-wrap {
-  grid-column: 1 / -1;
-  text-align: center;
-  margin-top: 2px;
-}
-
 /* ---------- フィードバック（右端タブ + 吹き出し） ---------- */
 
 /*

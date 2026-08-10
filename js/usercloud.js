@@ -3,7 +3,7 @@
  *
  * localStorage に残すのは認証トークンと管理用シークレットだけ。
  * 練習履歴・設定・復習カード・言語・ゲーム状態はここ経由。
- * カレンダー表紙は sessions の shots から導出。手動指定は user_prefs.settings.calendarCovers。
+ * カレンダー表紙は sessions の shots から導出（croquis 自動選択）。
  */
 
 import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';

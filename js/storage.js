@@ -38,8 +38,6 @@ const DEFAULT_SETTINGS = {
   skinDefaultV3: 1,
   /** 公開時の「全て模写OK」初期値（ログイン後は prefs に保存） */
   defaultAllowCopy: true,
-  /** きろくカレンダーの手動表紙 { 'YYYY-MM-DD': artworkId } */
-  calendarCovers: {},
 };
 
 let settingsCache = { ...DEFAULT_SETTINGS };
