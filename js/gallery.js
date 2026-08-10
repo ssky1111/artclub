@@ -8,7 +8,7 @@
  */
 
 import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
-import { getSession, getUser, getUsername, userName, ensureFreshSession } from './auth.js';
+import { getSession, getUser, getUsername, ensureFreshSession } from './auth.js';
 import { brandForOgp } from './export.js';
 
 const BUCKET = 'artworks';
@@ -90,7 +90,7 @@ export function artworkDisplayName(work) {
   const me = getUser();
   const isMine = me?.id && work.user_id === me.id;
   if (isMine) {
-    return getUsername() || userName(me) || work.username || '';
+    return getUsername() || work.username || '';
   }
   return work.username || 'anonymous';
 }
@@ -213,7 +213,7 @@ export async function uploadArtwork(drawingBlob, promptId, {
     visibility,
     session_id: sessionId,
     mode,
-    username: getUsername() || user.email?.split('@')[0] || null,
+    username: getUsername() || null,
     allow_copy: !!allowCopy,
     short_id: shortId,
     kind,

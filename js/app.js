@@ -42,7 +42,7 @@ import { $, $$, el, hintList, showScreen, toast, confirmDialog, weekReviewDialog
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
-import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, hasUsername, setUsername, getUsername, hydrateUsername } from './auth.js';
+import { initAuth, loginWithProvider, logout, getUser, onAuthChange, hasUsername, setUsername, getUsername, hydrateUsername } from './auth.js';
 import {
   uploadArtwork, uploadShareImage, fetchArtworks, fetchArtwork, fetchPublicArtworks, fetchMyArtworks,
   fetchTopCopyableArtworks, deleteArtwork, updateArtwork, toggleLike, workPageUrl, upsertProfile, artworkDisplayName,
@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '176';
+const BUILD = '177';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -65,6 +65,7 @@ function refreshHomeIfVisible() {
 
 /** ログイン後のクラウド復元が終わってから画面を描く */
 function repaintAfterHydrate() {
+  updateAuthUI(getUser());
   refreshHomeIfVisible();
   const screen = document.body.dataset.screen;
   if (screen === 'log') renderLog();
@@ -3196,7 +3197,8 @@ function wireCalendar() {
 }
 
 function authAccountLabel(u) {
-  return u ? userName(u) : t('auth.login');
+  if (!u) return t('auth.login');
+  return getUsername() || t('auth.account');
 }
 
 function setAuthAccountButton(btn, labelEl, u) {
@@ -3281,7 +3283,7 @@ function wireAuth() {
       userInfo.hidden = false;
       if (loginNote) loginNote.hidden = true;
       if (privacyNote) privacyNote.hidden = true;
-      $('#auth-info-name').textContent = userName(u);
+      $('#auth-info-name').textContent = authAccountLabel(u);
     } else {
       buttons.hidden = false;
       userInfo.hidden = true;
@@ -3410,7 +3412,6 @@ function openAuthSheet() {
 async function bootstrapApp() {
   try {
     const u = await initAuth();
-    updateAuthUI(u);
     if (u) {
       window.__setAuthHandledUserId?.(u.id);
       const [name, data] = await Promise.all([hydrateUsername(), hydrateUserData()]);
@@ -3421,6 +3422,7 @@ async function bootstrapApp() {
       }
       settings = getSettings();
       applyTheme();
+      updateAuthUI(u);
       if (!name && !hasUsername()) {
         showUsernameSheet(() => {
           applyRoute(routeFromLocation());
@@ -3432,6 +3434,7 @@ async function bootstrapApp() {
       await hydrateUserData();
       settings = getSettings();
       applyTheme();
+      updateAuthUI(u);
     }
   } catch (err) {
     console.error('[bootstrap]', err);
@@ -3483,7 +3486,7 @@ function init() {
 
   window.addEventListener('pageshow', (e) => {
     if (e.persisted && getUser()) {
-      hydrateUserData()
+      Promise.all([hydrateUsername(), hydrateUserData()])
         .then(() => repaintAfterHydrate())
         .catch((err) => console.error('[pageshow hydrate]', err));
     }

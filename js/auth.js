@@ -249,9 +249,7 @@ export function onAuthChange(fn) {
 
 export function userName(u = user) {
   if (!u) return '';
-  const custom = getUsername();
-  if (custom) return custom;
-  return u.email?.split('@')[0] || '';
+  return getUsername();
 }
 
 export function getUsername() {
