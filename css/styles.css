@@ -411,6 +411,13 @@ html:lang(ja) .atelier-tabs button { font-family: var(--font-ja); }
   display: flex; align-items: center; justify-content: flex-start;
   gap: 8px; margin-bottom: 18px;
 }
+.topbar-start {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  flex-shrink: 0;
+}
 .topbar-actions { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
 .brand {
   font-size: 23px; margin: 0; letter-spacing: .03em;
@@ -565,6 +572,17 @@ html[data-site-unlocked] .site-gate-dialog,
 }
 .icon-btn:hover { background: var(--surface-2); }
 .icon-btn:active { transform: scale(.92); }
+/* 戻る／進む矢印は作品ページと同じく丸背景なし */
+.icon-btn[data-icon="back"],
+.icon-btn[data-icon="forward"] {
+  background: transparent;
+  border-radius: 0;
+  flex-shrink: 0;
+}
+.icon-btn[data-icon="back"]:hover,
+.icon-btn[data-icon="forward"]:hover {
+  background: transparent;
+}
 
 .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
 .stack { display: flex; flex-direction: column; gap: 10px; }
@@ -2066,19 +2084,6 @@ body[data-theme='dark'] .google-btn {
   align-items: center;
   gap: 8px;
 }
-.work-topbar-start {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  min-width: 0;
-  flex-shrink: 0;
-}
-.work-topbar #work-back {
-  background: transparent;
-  border-radius: 0;
-  flex-shrink: 0;
-}
-.work-topbar #work-back:hover { background: transparent; }
 .work-brand {
   margin: 0;
   min-width: 0;
