@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '174';
+const BUILD = '175';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -97,6 +97,7 @@ let pendingDrawings = [];    // その回に描いた絵（保存前）
 /** 言語で切り替わる部分は、この関数を呼べば全部描き直る。 */
 function repaint() {
   applyI18n();
+  updateAuthUI(getUser());
   paintIcons();
   renderHome();
   const screen = document.body.dataset.screen;
@@ -2165,19 +2166,14 @@ function setWorkPageState({ loading = false, missing = false } = {}) {
 function updateWorkAuthUI(u = getUser()) {
   const signup = $('#work-signup-btn');
   const login = $('#work-login-btn');
-  const account = $('#work-account-btn');
-  const label = $('#work-account-label');
-  if (!signup || !login || !account) return;
+  const label = $('#work-login-label');
+  if (!signup || !login || !label) return;
   if (u) {
     signup.hidden = true;
-    login.hidden = true;
-    account.hidden = false;
-    if (label) label.textContent = userName(u);
-    account.title = userName(u);
+    setAuthAccountButton(login, label, u);
   } else {
     signup.hidden = false;
-    login.hidden = false;
-    account.hidden = true;
+    setAuthAccountButton(login, label, null);
   }
 }
 
@@ -3199,6 +3195,17 @@ function wireCalendar() {
   });
 }
 
+function authAccountLabel(u) {
+  return u ? userName(u) : t('auth.login');
+}
+
+function setAuthAccountButton(btn, labelEl, u) {
+  if (!btn || !labelEl) return;
+  btn.hidden = false;
+  labelEl.textContent = authAccountLabel(u);
+  btn.title = authAccountLabel(u);
+}
+
 function updateAuthUI(u) {
   const label = $('#auth-login-label');
   const btn = $('#auth-btn');
@@ -3206,31 +3213,24 @@ function updateAuthUI(u) {
   const settingsBtn = $('#header-settings-btn');
   const atelierSignup = $('#atelier-signup-btn');
   const atelierLogin = $('#atelier-login-btn');
+  const atelierLabel = $('#atelier-login-label');
   const atelierSettings = $('#atelier-settings-btn');
   const logSettings = $('#log-settings-btn');
 
   if (u) {
-    if (label) label.textContent = userName(u);
-    if (btn) {
-      btn.hidden = false;
-      btn.title = userName(u);
-    }
+    setAuthAccountButton(btn, label, u);
     if (signup) signup.hidden = true;
     if (settingsBtn) settingsBtn.hidden = false;
     if (atelierSignup) atelierSignup.hidden = true;
-    if (atelierLogin) atelierLogin.hidden = true;
+    setAuthAccountButton(atelierLogin, atelierLabel, u);
     if (atelierSettings) atelierSettings.hidden = false;
     if (logSettings) logSettings.hidden = false;
   } else {
-    if (label) label.textContent = t('auth.login');
-    if (btn) {
-      btn.hidden = false;
-      btn.title = t('auth.login');
-    }
+    setAuthAccountButton(btn, label, null);
     if (signup) signup.hidden = false;
     if (settingsBtn) settingsBtn.hidden = true;
     if (atelierSignup) atelierSignup.hidden = false;
-    if (atelierLogin) atelierLogin.hidden = false;
+    setAuthAccountButton(atelierLogin, atelierLabel, null);
     if (atelierSettings) atelierSettings.hidden = true;
     if (logSettings) logSettings.hidden = true;
   }
