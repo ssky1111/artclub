@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '152';
+const BUILD = '153';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -1796,8 +1796,8 @@ function setShotExcluded(index, excluded) {
   const wrap = $(`#drawing-strip .strip-shot[data-index="${index}"]`);
   if (wrap) {
     wrap.classList.toggle('is-excluded', !!excluded);
-    const pub = wrap.querySelector('.strip-shot-controls .toggle-row input[type="checkbox"]');
-    const pubLabel = wrap.querySelector('.strip-shot-controls .toggle-row');
+    const pub = wrap.querySelector('.strip-control-group--publish input[type="checkbox"]');
+    const pubLabel = wrap.querySelector('.strip-control-group--publish .toggle-row');
     if (pub && pubLabel) {
       pub.checked = publishEnabled() && !excluded;
       pubLabel.classList.toggle('is-off', !pub.checked);
@@ -1836,6 +1836,7 @@ function renderDrawingStrip() {
     if (getUser()) {
       const controls = el('div', 'strip-shot-controls');
 
+      const pubGroup = el('div', 'strip-control-group strip-control-group--publish');
       const pubLabel = el('label', `toggle-row${(!showPublish || shot.excludeFromGallery) ? ' is-off' : ''}`);
       const pubText = el('span', null, t('gal.postThis'));
       const pubInput = el('input');
@@ -1848,8 +1849,10 @@ function renderDrawingStrip() {
       });
       const pubTrack = el('span', 'toggle-track');
       pubLabel.append(pubText, pubInput, pubTrack);
-      controls.append(pubLabel);
+      pubGroup.append(pubLabel);
+      controls.append(pubGroup);
 
+      const copyGroup = el('div', 'strip-control-group strip-control-group--copy');
       const copyLabel = el('label', `toggle-row${shot.allowCopy ? '' : ' is-off'}`);
       const copyText = el('span', null, t('gal.allowCopy'));
       const copyInput = el('input');
@@ -1863,7 +1866,8 @@ function renderDrawingStrip() {
       });
       const copyTrack = el('span', 'toggle-track');
       copyLabel.append(copyText, copyInput, copyTrack);
-      controls.append(copyLabel);
+      copyGroup.append(copyLabel);
+      controls.append(copyGroup);
 
       wrap.append(controls);
     }

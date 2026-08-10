@@ -768,7 +768,9 @@ html:lang(ja) .atelier-tabs button { font-family: var(--font-ja); }
   width: 100%;
   flex: 0 0 auto;
   min-height: 120px;
-  padding: 6px;
+  padding: 8px;
+  border: 2px solid color-mix(in srgb, var(--text) 16%, var(--line));
+  background: #fff;
 }
 .drawing-strip-vertical .strip-item img {
   max-height: 180px;
@@ -777,18 +779,28 @@ html:lang(ja) .atelier-tabs button { font-family: var(--font-ja); }
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
   flex: 1;
   min-width: 0;
   margin-top: 0;
 }
-.strip-shot-controls .toggle-row {
-  flex: 1;
+.strip-control-group {
+  display: flex;
+  align-items: center;
   min-width: 0;
-  gap: 6px;
+  flex: 1;
+}
+.strip-control-group--copy {
+  justify-content: flex-end;
+}
+.strip-shot-controls .toggle-row {
+  flex: 0 1 auto;
+  min-width: 0;
+  gap: 4px;
   font-size: 12px;
   font-weight: 600;
-  padding: 2px 0;
+  padding: 0;
   border-radius: 0;
   background: transparent;
 }
@@ -1234,8 +1246,23 @@ html:lang(ja) .atelier-tabs button { font-family: var(--font-ja); }
 .strip-shot {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
+}
+#strip-actions {
+  margin-top: 10px;
+}
+.btn.strip-dl-all {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-weight: 600;
+}
+.btn.strip-dl-all:hover { background: color-mix(in srgb, var(--text) 6%, var(--surface-2)); }
+.btn.strip-dl-all:disabled {
+  opacity: .45;
+  cursor: not-allowed;
 }
 .strip-shot.is-excluded .strip-item {
   opacity: .5;
