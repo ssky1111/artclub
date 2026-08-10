@@ -836,7 +836,7 @@ html:lang(ja) .atelier-tabs button { font-family: var(--font-ja); }
 .hero { background: var(--surface); }
 .streak-num { font-family: var(--font-display); font-weight: 900; letter-spacing: .02em; }
 .level-chip { font-family: var(--font-display); color: var(--brand); }
-.hero-top { display: flex; align-items: center; justify-content: space-between; }
+.hero-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .streak-flame { font-size: 26px; }
 .streak-num { font-size: 46px; font-stretch: expanded; }
 
@@ -1579,14 +1579,9 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 .count-pill { background: var(--surface-2); color: var(--text-soft); }
 
 .hero-stats {
-  display: flex; gap: 16px; flex-wrap: wrap; align-items: baseline;
-}
-.hero-stat-header {
-  font-size: 11px; color: var(--muted); font-weight: 600;
-  letter-spacing: .06em; width: 100%; margin-bottom: -4px;
-}
-.hero-stat {
-  display: flex; align-items: baseline; gap: 2px;
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  /* 継続ラベルと同じ高さに揃える */
+  padding-top: 1.05em;
 }
 .hero-stat-num {
   font-size: 22px; font-weight: 900; line-height: 1;
