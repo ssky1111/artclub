@@ -1525,7 +1525,7 @@ body[data-theme='dark'] .google-btn {
   font: inherit; font-size: 12px; font-weight: 700;
   color: var(--muted); cursor: pointer;
 }
-.gallery-like-btn.on { color: var(--brand-ink, #ff6fa5); }
+.gallery-like-btn.on { color: var(--brand-ink, #c9789a); }
 .gallery-heart { font-size: 13px; line-height: 1; }
 .lightbox-meta {
   display: flex; align-items: center; justify-content: space-between;
