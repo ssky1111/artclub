@@ -3,7 +3,7 @@
  */
 
 import {
-  buildDaily, partForDate, MODES, PARTS, DRILLS, PICKABLE_DRILLS,
+  buildDaily, partForDate, MODES, PARTS, ACTIVE_PARTS, DRILLS, PICKABLE_DRILLS,
   TIME_CHOICES, COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu,
   levelLabel, menuDuration,
 } from './theory.js';
@@ -268,7 +268,7 @@ function celebrate(history = getHistory()) {
 
 /* ==================== 部位練習 ==================== */
 
-let currentPart = PARTS[0];
+let currentPart = ACTIVE_PARTS[0] || PARTS[0];
 
 function openPartSheet() {
   renderPartChips();
@@ -278,7 +278,8 @@ function openPartSheet() {
 function renderPartChips() {
   const wrap = $('#part-chips');
   wrap.innerHTML = '';
-  for (const part of PARTS) {
+  // タグ未整備の部位は出さない（足などが紛れないように）
+  for (const part of ACTIVE_PARTS) {
     const chip = el('button', `chip${currentPart.id === part.id ? ' on' : ''}`,
                     getLang() === 'en' ? part.en : part.label);
     chip.addEventListener('click', () => { currentPart = part; renderPartChips(); });
@@ -1300,26 +1301,24 @@ async function startSession(menu, { tags = null, part = null } = {}) {
     queues.photo = createLibraryQueue([], silent, null, fromAdmin);
   }
 
-  // デイリーの真ん中：その日の部位タグ。無ければ出さない（エラーにしない）
+  // 部位練習 / デイリーの部位ステップ：選んだ部位タグの写真だけ（フォールバックなし）
   if (needed.has('part') && part) {
     const tagged = own.filter((p) => part.tags.every((tag) => p.tags.includes(tag)));
     queues.part = tagged.length
       ? createLibraryQueue(part.tags, silent, null, fromAdmin)
-      : createLibraryQueue([], silent, null, fromAdmin);
+      : createLibraryQueue(part.tags, notice, `『${part.label}』タグの写真がありません`, fromAdmin);
   }
 
-  // 部位練習：足タグはまだ無いので手＋上半身だけ
+  // 互換：古いメニューが partMix を参照しても手＋上半身だけ
   if (needed.has('partMix')) {
     const partPhotos = own.filter((p) =>
       p.tags.includes('手') || p.tags.includes('上半身'));
-    if (partPhotos.length) {
-      queues.partMix = createWeightedQueue([
+    queues.partMix = partPhotos.length
+      ? createWeightedQueue([
         { tags: ['手'], weight: 7 },
         { tags: ['上半身'], weight: 3 },
-      ], silent, fromAdmin);
-    } else {
-      queues.partMix = createLibraryQueue([], notice, '手・上半身の写真がありません', fromAdmin);
-    }
+      ], silent, { photos: partPhotos })
+      : createLibraryQueue(['手'], notice, '手・上半身の写真がありません', fromAdmin);
   }
 
   // ジェスチャードローイング → 必ず『動き』タグから
@@ -1936,7 +1935,7 @@ function renderSettings() {
   $('#opt-autoflip').checked = settings.autoFlip;
   $('#opt-keepawake').checked = settings.keepAwake;
   $('#opt-orientation').value = settings.orientation;
-  $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 0.4) * 100));
+  $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 0.8) * 100));
   renderLangChips();
 }
 

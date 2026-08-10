@@ -328,15 +328,19 @@ export const CATEGORIES = [
 
 /**
  * 部位練習で選べる部位。tags は写真のタグ、lessonId があれば構造レッスンに繋がる。
+ * 足・顔などはタグ未整備のため、いま出すのは手と上半身だけ。
  */
 export const PARTS = [
   { id: 'hand',   label: '手',       en: 'Hands',      tags: ['手'],   lessonId: 'hand',      query: 'hands close up gesture' },
   { id: 'upper',  label: '上半身',   en: 'Upper body', tags: ['上半身'], lessonId: null,        query: 'torso upper body pose' },
-  { id: 'lower',  label: '下半身',   en: 'Lower body', tags: ['全身'], lessonId: 'pelvisLeg', query: 'legs walking barefoot dancer' },
-  { id: 'face',   label: '顔',       en: 'Head',       tags: ['顔'],   lessonId: null,        query: 'portrait head shoulders natural light' },
-  { id: 'foot',   label: '足',       en: 'Feet',       tags: ['足'],   lessonId: 'foot',      query: 'bare feet' },
-  { id: 'full',   label: '全身',     en: 'Full body',  tags: ['全身'], lessonId: null,        query: 'full body standing pose' },
+  { id: 'lower',  label: '下半身',   en: 'Lower body', tags: ['全身'], lessonId: 'pelvisLeg', query: 'legs walking barefoot dancer', disabled: true },
+  { id: 'face',   label: '顔',       en: 'Head',       tags: ['顔'],   lessonId: null,        query: 'portrait head shoulders natural light', disabled: true },
+  { id: 'foot',   label: '足',       en: 'Feet',       tags: ['足'],   lessonId: 'foot',      query: 'bare feet', disabled: true },
+  { id: 'full',   label: '全身',     en: 'Full body',  tags: ['全身'], lessonId: null,        query: 'full body standing pose', disabled: true },
 ];
+
+/** いま出題する部位（タグ付き写真があるものだけ）。 */
+export const ACTIVE_PARTS = PARTS.filter((p) => !p.disabled);
 
 export function buildDaily(part) {
   return {
@@ -363,7 +367,8 @@ export function buildDaily(part) {
  */
 export function partForDate(dateStr) {
   const days = Math.floor(new Date(`${dateStr}T00:00:00`).getTime() / 86400000);
-  return PARTS[((days % PARTS.length) + PARTS.length) % PARTS.length];
+  const list = ACTIVE_PARTS.length ? ACTIVE_PARTS : PARTS;
+  return list[((days % list.length) + list.length) % list.length];
 }
 
 /**
@@ -381,10 +386,10 @@ export const MODES = [
   {
     id: 'partMode',
     title: '部位練習',
-    subtitle: '手・上半身・下半身など、苦手なところだけ',
+    subtitle: '手・上半身など、苦手なところだけ',
     picker: 'part',
     drillId: 'croquis',
-    en: { title: 'Body part', subtitle: 'Hands, torso, legs — just the part you struggle with' },
+    en: { title: 'Body part', subtitle: 'Hands, torso — just the part you struggle with' },
   },
   {
     id: 'croquisMode',
@@ -396,7 +401,7 @@ export const MODES = [
   },
 ];
 
-/** 部位練習のメニュー。ジェスドロで温めてからクロッキー。 */
+/** 部位練習のメニュー。選んだ部位タグの写真だけを出す。 */
 export function buildPartMenu(part) {
   return {
     id: `part-${part.id}`,
@@ -404,8 +409,8 @@ export function buildPartMenu(part) {
     subtitle: `${part.label}だけを 1分×3 → 3分×2`,
     partId: part.id,
     steps: [
-      { drill: 'gesture', count: 3, seconds: 60, source: 'partMix' },
-      { drill: 'croquis', count: 2, seconds: 180, source: 'partMix' },
+      { drill: 'gesture', count: 3, seconds: 60, source: 'part' },
+      { drill: 'croquis', count: 2, seconds: 180, source: 'part' },
     ],
     en: { title: `${part.en} practice`, subtitle: `${part.en} only — 3 × 1 min, then 2 × 3 min` },
   };
