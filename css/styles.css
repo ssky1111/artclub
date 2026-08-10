@@ -1990,12 +1990,15 @@ button.tl-media img {
 }
 
 /* ---------- プライバシー／利用規約 ---------- */
+/* 本文はドット書体にせず、普通のゴシックで読ませる */
 .legal-body {
+  --font-legal: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN',
+                'Yu Gothic UI', 'Yu Gothic', 'Segoe UI', system-ui, sans-serif;
   min-height: 100dvh;
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-ja);
+  font-family: var(--font-legal);
   overflow-x: hidden;
 }
 .legal-body *,
@@ -2016,56 +2019,71 @@ button.tl-media img {
   max-width: none;
 }
 .legal-body .brand-text {
+  font-family: var(--font-display);
   font-size: clamp(16px, 4.5vw, 20px);
   letter-spacing: 0.02em;
 }
 .legal-body .btn.small {
   flex-shrink: 0;
   white-space: nowrap;
+  font-family: var(--font-legal);
 }
 .legal {
   max-width: none;
   margin: 0;
   padding: 12px 0 0;
-  line-height: 1.75;
+  line-height: 1.85;
+  font-family: var(--font-legal);
 }
 .legal h1 {
-  font-family: var(--font-ja);
-  font-size: clamp(1.25rem, 5vw, 1.55rem);
+  font-family: var(--font-legal);
+  font-size: clamp(1.35rem, 5vw, 1.65rem);
   font-weight: 700;
-  letter-spacing: 0.04em;
-  line-height: 1.35;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
   margin: 8px 0 6px;
   overflow-wrap: anywhere;
+  color: var(--text);
 }
 .legal h2 {
-  font-family: var(--font-ja);
-  font-size: 1.02rem;
-  margin: 1.6em 0 0.5em;
-  padding-bottom: 0.25em;
+  font-family: var(--font-legal);
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 1.7em 0 0.55em;
+  padding-bottom: 0.3em;
   border-bottom: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  color: var(--text);
 }
 .legal h3 {
-  font-family: var(--font-ja);
-  font-size: 0.95rem;
-  margin: 1.1em 0 0.35em;
-  color: var(--text-soft);
+  font-family: var(--font-legal);
+  font-size: 0.98rem;
+  font-weight: 700;
+  margin: 1.15em 0 0.4em;
+  color: var(--text);
 }
 .legal p, .legal li {
-  font-size: 0.92rem;
+  font-family: var(--font-legal);
+  font-size: 0.95rem;
+  font-weight: 400;
   color: var(--text-soft);
   overflow-wrap: anywhere;
 }
-.legal ul { padding-left: 1.2em; margin: 0.4em 0 0.8em; }
-.legal li { margin: 0.25em 0; }
+.legal ul { padding-left: 1.25em; margin: 0.45em 0 0.9em; }
+.legal li { margin: 0.35em 0; }
 .legal a { color: var(--brand-ink); text-decoration: none; }
 .legal a:hover { text-decoration: underline; }
-.legal-date { font-size: 0.82rem; color: var(--muted); margin: 0 0 1.2em; }
+.legal-date {
+  font-family: var(--font-legal);
+  font-size: 0.84rem;
+  color: var(--muted);
+  margin: 0 0 1.3em;
+}
 .legal-nav {
   margin-top: 2.4em;
   padding-top: 1em;
   border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
-  font-size: 0.88rem;
+  font-size: 0.9rem;
+  font-family: var(--font-legal);
 }
 .legal-links {
   display: flex;
