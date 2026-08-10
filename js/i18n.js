@@ -121,7 +121,6 @@ const DICT = {
   'home.streakUnit':     { ja: '日',                     en: 'days' },
   'home.streakLabel':    { ja: '継続',                   en: 'streak' },
   'home.todayYet':       { ja: '今日はまだ',             en: 'Not yet today' },
-  'home.todayDone':      { ja: '今日は完了',             en: 'Done today' },
   'home.totalDrawings':  { ja: '通算 {n} 枚',            en: '{n} drawings total' },
   'home.cumulative':     { ja: '累計',                    en: 'Total' },
   'home.totalLabel':     { ja: '枚',                     en: 'drawings' },

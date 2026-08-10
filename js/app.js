@@ -56,7 +56,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '134';
+const BUILD = '135';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -96,7 +96,6 @@ function repaint() {
 
 function renderHome() {
   const history = getHistory();
-  const today = dateKey();
   const { streak } = graceStreak(history);
   const xp = levelProgress(totalXp(history));
 
@@ -104,11 +103,6 @@ function renderHome() {
   $('#level-num').textContent = `Lv.${xp.level}`;
   $('#level-name').textContent = '';
   $('#xp-fill').style.width = `${xp.ratio * 100}%`;
-
-  const doneToday = dailyTotals(history).has(today);
-  const status = $('#today-status');
-  status.textContent = doneToday ? t('home.todayDone') : t('home.todayYet');
-  status.classList.toggle('done', doneToday);
 
   const s = stats(history);
   $('#total-drawings').textContent = String(totalDrawings(history));
