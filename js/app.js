@@ -1768,6 +1768,7 @@ function setShotExcluded(index, excluded) {
   const shot = pendingDrawings[index];
   if (!shot) return;
   shot.excludeFromGallery = !!excluded;
+  if (excluded) shot.allowCopy = false;
   const wrap = $(`#drawing-strip .strip-shot[data-index="${index}"]`);
   if (wrap) {
     wrap.classList.toggle('is-excluded', !!excluded);
@@ -1777,12 +1778,19 @@ function setShotExcluded(index, excluded) {
       pub.checked = publishEnabled() && !excluded;
       pubLabel.classList.toggle('is-off', !pub.checked);
     }
+    const copy = wrap.querySelector('.strip-control-group--copy input[type="checkbox"]');
+    const copyLabel = wrap.querySelector('.strip-control-group--copy .toggle-row');
+    if (copy && copyLabel) {
+      copy.checked = !!shot.allowCopy;
+      copyLabel.classList.toggle('is-off', !copy.checked);
+    }
   }
   if (drawingIndex === index) {
     const lbBtn = $('#draw-exclude');
     if (lbBtn && !lbBtn.hidden) lbBtn.textContent = excludeLabel(excluded);
   }
   syncBulkToggles();
+  if (excluded) persistAllowCopyPreference();
 }
 
 function renderDrawingStrip() {
