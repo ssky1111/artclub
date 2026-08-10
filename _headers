@@ -1,0 +1,12 @@
+# Cloudflare Pages — 古い JS が残ってログイン等が壊れないよう、HTML/JS は都度確認
+/index.html
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/js/*
+  Cache-Control: no-cache, must-revalidate
+
+/
+  Cache-Control: no-cache, no-store, must-revalidate

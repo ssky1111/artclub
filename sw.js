@@ -3,7 +3,7 @@
  * （毎回ちがう写真が出ることに意味があるし、端末を圧迫したくないので）。
  */
 
-const CACHE = 'artclub-v200';
+const CACHE = 'artclub-v201';
 const SHELL = [
   './',
   './index.html',
@@ -55,7 +55,8 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      .then(() => caches.open(CACHE).then((cache) => cache.addAll(SHELL)))
       .then(() => self.clients.claim()),
   );
 });
@@ -79,17 +80,19 @@ self.addEventListener('fetch', (event) => {
   }
   if (url.origin !== self.location.origin) return;
 
-  /*
-   * アプリ本体はネットワーク優先・失敗したらキャッシュ。
-   * cache:'no-cache' を付けているのは、ブラウザの HTTP キャッシュを挟むと
-   * 「HTML だけ古い / JS だけ新しい」が起きて画面が壊れるため。
-   * 中身が変わっていなければ 304 が返るだけなので、通信量はほぼ増えない。
-   */
+  // HTML / JS は常に最新を取りにいく（古い twitter ログイン等が残らないように）
+  const path = url.pathname;
+  const mustFresh = path.endsWith('.html') || path.endsWith('/')
+    || path.includes('/js/') || path.endsWith('/sw.js');
+  const cacheMode = mustFresh ? 'no-store' : 'no-cache';
+
   event.respondWith(
-    fetch(request.url, { cache: 'no-cache', credentials: 'same-origin' })
+    fetch(request.url, { cache: cacheMode, credentials: 'same-origin' })
       .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((cache) => cache.put(request, copy)).catch(() => {});
+        if (!mustFresh && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then((cache) => cache.put(request, copy)).catch(() => {});
+        }
         return res;
       })
       .catch(() => caches.match(request).then((hit) => hit || caches.match('./index.html'))),

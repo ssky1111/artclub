@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+JP:wght@400;700&family=Special+Gothic+Expanded+One&display=swap">
-<link rel="stylesheet" href="./css/styles.css">
+<link rel="stylesheet" href="./css/styles.css?v=201">
 <script>
 (function () {
   try {
@@ -39,7 +39,45 @@
 </script>
 </head>
 
-<body data-build="200" data-theme="light">
+<body data-build="201" data-theme="light">
+<script>
+/* 古い SW / Cache Storage / HTTP キャッシュを強制破棄して1回だけ読み直す */
+(function () {
+  var BUST = '201';
+  var KEY = 'artclub.forceClear';
+  var qs = location.search || '';
+  var alreadyBusted = /(?:\?|&)_bust=/.test(qs);
+  try {
+    if (localStorage.getItem(KEY) === BUST && alreadyBusted) {
+      // URL の bust クエリは掃除
+      try { history.replaceState(null, '', location.pathname + (location.hash || '')); } catch (e) {}
+      return;
+    }
+    if (localStorage.getItem(KEY) === BUST && !alreadyBusted) return;
+    localStorage.setItem(KEY, BUST);
+  } catch (e) { /* private mode */ }
+
+  function reloadFresh() {
+    var url = location.pathname + '?_bust=' + encodeURIComponent(BUST) + (location.hash || '');
+    location.replace(url);
+  }
+
+  Promise.resolve()
+    .then(function () { return (typeof caches !== 'undefined' && caches.keys) ? caches.keys() : []; })
+    .then(function (keys) {
+      return Promise.all((keys || []).map(function (k) { return caches.delete(k); }));
+    })
+    .then(function () {
+      return (navigator.serviceWorker && navigator.serviceWorker.getRegistrations)
+        ? navigator.serviceWorker.getRegistrations() : [];
+    })
+    .then(function (regs) {
+      return Promise.all((regs || []).map(function (r) { return r.unregister(); }));
+    })
+    .catch(function () {})
+    .then(reloadFresh);
+})();
+</script>
 
 <div id="site-gate" class="confirm-dialog site-gate-dialog" role="dialog" aria-modal="true" aria-labelledby="site-gate-title">
   <div class="confirm-dialog-inner site-gate-inner">
@@ -1076,6 +1114,6 @@
   </div>
 </div>
 
-<script type="module" src="./js/app.js"></script>
+<script type="module" src="./js/app.js?v=201"></script>
 </body>
 </html>
