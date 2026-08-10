@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '47';
+const BUILD = '48';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -2135,7 +2135,7 @@ function wireNav() {
 }
 
 const THEME_COLORS = {
-  light: '#f7f7f5',
+  light: '#f4f4f1',
   dark: '#000000',
   paper: '#f5f4ee',
 };
