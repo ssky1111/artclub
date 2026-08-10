@@ -97,7 +97,10 @@ const DICT = {
   'gal.loginToLike':      { ja: 'いいねするにはログインしてね', en: 'Log in to like' },
   'gal.shareWork':        { ja: 'このスケッチをシェア',       en: 'Share this work' },
   'gal.workNotFound':     { ja: 'スケッチが見つかりません',   en: 'Artwork not found' },
-  'work.ctrLead':         { ja: 'ドローイング練習してみよう', en: 'Try a drawing practice' },
+  'work.ctrLead':         { ja: 'はじめてでもOK。今日のドローイング練習', en: 'New here? Try today\'s drawing practice' },
+  'work.ctrStepGesture':  { ja: 'ジェスチャードローイング', en: 'Gesture drawing' },
+  'work.ctrStepPart':     { ja: '部位練習（{part}）', en: 'Body part ({part})' },
+  'work.ctrStepCroquis':  { ja: 'クロッキー', en: 'Croquis' },
 
   /* ---------- アトリエ ---------- */
   'atelier.title':        { ja: 'アトリエ',               en: 'Atelier' },

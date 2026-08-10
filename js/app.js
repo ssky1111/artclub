@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '158';
+const BUILD = '159';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -103,6 +103,7 @@ function repaint() {
   if (screen === 'log') renderLog();
   if (screen === 'settings') renderSettings();
   if (screen === 'library') renderLibrary();
+  if (screen === 'work') renderWorkCtr();
 }
 
 /* ==================== ホーム ==================== */
@@ -2132,6 +2133,21 @@ function updateWorkAuthUI(u = getUser()) {
   }
 }
 
+function renderWorkCtr() {
+  const list = $('#work-ctr-steps');
+  if (!list) return;
+  const part = partForDate(dateKey());
+  const partLabel = getLang() === 'en' ? part.en : part.label;
+  list.innerHTML = '';
+  for (const key of ['work.ctrStepGesture', 'work.ctrStepPart', 'work.ctrStepCroquis']) {
+    const li = el('li');
+    li.textContent = key === 'work.ctrStepPart'
+      ? t('work.ctrStepPart', { part: partLabel })
+      : t(key);
+    list.append(li);
+  }
+}
+
 function fillWorkPage(work, userId = getUser()?.id) {
   currentArtwork = work;
   setWorkPageState({ loading: false, missing: false });
@@ -2168,11 +2184,13 @@ function fillWorkPage(work, userId = getUser()?.id) {
     }
   }
   updateWorkAuthUI();
+  renderWorkCtr();
 }
 
 async function showWorkRoute(workId) {
   showScreen('work');
   updateWorkAuthUI();
+  renderWorkCtr();
   if (!workId) {
     currentArtwork = null;
     setWorkPageState({ missing: true });
