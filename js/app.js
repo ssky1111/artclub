@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '96';
+const BUILD = '97';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -199,7 +199,6 @@ function renderDaily(history) {
   });
   hero.append(cta);
 
-  if (rounds >= 4) hero.append(el('span', 'free-badge', t('home.freeNow')));
   top.append(hero);
 }
 
@@ -216,7 +215,6 @@ function renderModes() {
     if (mode.steps) {
       card.append(el('div', 'menu-time', fmtDur(menuDuration(mode))));
     }
-    card.append(el('span', 'free-badge', t('home.freeNow')));
     card.addEventListener('click', () => {
       openPaywall(() => {
         if (mode.picker === 'part') return openPartSheet();
