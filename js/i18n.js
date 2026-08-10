@@ -76,6 +76,7 @@ const DICT = {
   'siteGate.ph':          { ja: 'パスワード',           en: 'Password' },
   'siteGate.enter':       { ja: '入室',                 en: 'Enter' },
   'siteGate.wrong':       { ja: 'パスワードが違います', en: 'Wrong password' },
+  'siteGate.needPass':    { ja: 'パスワードを入力してください', en: 'Please enter the password' },
 
   /* ---------- ギャラリー ---------- */
   'gal.showAll':          { ja: 'みんなのスケッチを見る',     en: 'See what others drew' },
