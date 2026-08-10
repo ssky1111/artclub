@@ -156,7 +156,7 @@ const DICT = {
   'rev.shareText':       { ja: '今日は {n}枚 / {d} 描きました。#ARTCLUB',
                            en: 'Drew {n} sketches in {d} today. #ARTCLUB' },
   'rev.save':            { ja: '保存して終わる',       en: 'Save & finish' },
-  'rev.again':           { ja: 'もう一度試す',          en: 'Try again' },
+  'rev.again':           { ja: 'もう一周やる',          en: 'Try again' },
   'rev.streakLine':      { ja: '連続 {s} 日 / 通算 {n} 回', en: '{s}-day streak · {n} sessions' },
   'rev.sheetDone':       { ja: 'まとめ画像を作りました', en: 'Contact sheet ready' },
 
