@@ -170,14 +170,46 @@ export async function composeSheet(blobs, { date = '', crop = true } = {}) {
     }
   });
 
-  // ARTCLUB は下中央に小さく
+  // ARTCLUB は右下（OGPでも読める位置）
   ctx.fillStyle = SOFT;
-  ctx.textAlign = 'center';
+  ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  ctx.font = '600 14px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
-  ctx.fillText('ARTCLUB', W / 2, H - bottomBand / 2);
+  ctx.font = '600 16px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
+  ctx.fillText('ARTCLUB', W - pad, H - bottomBand / 2);
 
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.88));
+}
+
+/**
+ * OGP用に右下へ ARTCLUB を焼き込む。
+ * ギャラリー本体の絵はそのままにし、og_image_url 側で使う。
+ */
+export async function brandForOgp(blob, { label = 'ARTCLUB' } = {}) {
+  if (!blob) return null;
+  const img = await loadImage(blob);
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = PAPER;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0);
+
+  const fontSize = Math.max(16, Math.round(Math.min(img.width, img.height) * 0.045));
+  const pad = Math.max(12, Math.round(fontSize * 0.75));
+  ctx.font = `700 ${fontSize}px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif`;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  // 白縁＋本体でどんな背景でも読めるようにする
+  ctx.lineWidth = Math.max(3, Math.round(fontSize * 0.18));
+  ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+  ctx.strokeText(label, img.width - pad, img.height - pad);
+  ctx.fillStyle = 'rgba(43, 42, 39, 0.82)';
+  ctx.fillText(label, img.width - pad, img.height - pad);
+
+  return new Promise((resolve) => {
+    canvas.toBlob((b) => resolve(b || blob), 'image/jpeg', 0.9);
+  });
 }
 
 export function shareToX(text, url = location.href.split('#')[0]) {

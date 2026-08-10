@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '87';
+const BUILD = '88';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1406,6 +1406,8 @@ function saveResult(result) {
 }
 
 let pendingSessionMeta = null;
+/** まとめ画の work（short_id / artworkId）。OGP・シェア用 */
+let pendingSheetMeta = null;
 
 function sessionModeFrom(entry) {
   if (!entry) return 'Croquis';
@@ -1488,6 +1490,7 @@ async function uploadPendingArtworks({ quiet = false } = {}) {
         sessionId,
         mode,
         allowCopy: !!shot.allowCopy,
+        kind: 'drawing',
       });
       shot.uploaded = true;
       shot.artworkId = work?.id || null;
@@ -1502,6 +1505,30 @@ async function uploadPendingArtworks({ quiet = false } = {}) {
       shot.uploading = false;
     }
   }
+
+  // まとめ画も work URL を発行（OGP用）。公開設定は一括公開に合わせる
+  if (sheetBlob && !pendingSheetMeta?.uploaded) {
+    try {
+      const sheetWork = await uploadArtwork(sheetBlob, `session:${sessionId || 'local'}:sheet`, {
+        isPublic: globalPublic,
+        sessionId,
+        mode,
+        allowCopy: false,
+        kind: 'sheet',
+      });
+      pendingSheetMeta = {
+        uploaded: true,
+        artworkId: sheetWork?.id || null,
+        shortId: sheetWork?.short_id || null,
+      };
+      uploaded++;
+    } catch (err) {
+      failed++;
+      lastErr = err;
+      console.error('[sheet upload]', err);
+    }
+  }
+
   if (uploaded) {
     updateLastSession({
       shots: drawings.map((shot, i) => ({
@@ -1510,6 +1537,8 @@ async function uploadPendingArtworks({ quiet = false } = {}) {
         seconds: shot.seconds || null,
         artworkId: shot.artworkId || null,
       })),
+      sheetArtworkId: pendingSheetMeta?.artworkId || null,
+      sheetShortId: pendingSheetMeta?.shortId || null,
     });
   }
   if (!quiet) {
@@ -1536,6 +1565,7 @@ async function finishLeavingReview() {
   });
   pendingDrawings = [];
   pendingSessionMeta = null;
+  pendingSheetMeta = null;
   sheetBlob = null;
 }
 
@@ -1590,6 +1620,7 @@ async function finishSession(result) {
   // ふりかえりに入った時点で端末保存＋クラウド投稿する
   await persistPendingLocally();
   if (getUser() && pendingDrawings.length) {
+    // まとめ画ができてから投稿（まとめ画の work URL / OGP 用）
     void uploadPendingArtworks();
   }
 
@@ -1774,8 +1805,13 @@ function wireDrawingLightbox() {
     if (getUser()) {
       btn.disabled = true;
       try {
-        const url = await uploadShareImage(shot.blob);
-        shareToX(`${text}\n${url}`);
+        await uploadPendingArtworks({ quiet: true });
+        const key = shot.shortId || shot.artworkId;
+        if (key) shareToX(`${text}\n${workPageUrl(key)}`);
+        else {
+          const url = await uploadShareImage(shot.blob);
+          shareToX(`${text}\n${url}`);
+        }
       } catch { shareToX(text); }
       btn.disabled = false;
     } else {
@@ -1835,8 +1871,11 @@ function wireReview() {
     btn.disabled = true;
     try {
       await uploadPendingArtworks();
+      const sheetKey = pendingSheetMeta?.shortId || pendingSheetMeta?.artworkId;
       const shot = pendingDrawings.find((s) => s.artworkId || s.shortId);
-      if (shot) {
+      if (sheetKey) {
+        shareToX(`${text}\n${workPageUrl(sheetKey)}`);
+      } else if (shot) {
         shareToX(`${text}\n${workPageUrl(shot.shortId || shot.artworkId)}`);
       } else if (sheetBlob && getUser()) {
         const url = await uploadShareImage(sheetBlob);

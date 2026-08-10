@@ -9,6 +9,7 @@
 
 import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
 import { getSession, getUser, getUsername, ensureFreshSession } from './auth.js';
+import { brandForOgp } from './export.js';
 
 const BUCKET = 'artworks';
 const SITE_ORIGIN = 'https://artclub.space';
@@ -78,6 +79,8 @@ function normalizeArtwork(row) {
     allow_copy: row.allow_copy === true,
     like_count: likeCount,
     liked_by_me: !!row.liked_by_me,
+    kind: row.kind || 'drawing',
+    og_image_url: row.og_image_url || null,
   };
 }
 
@@ -105,12 +108,15 @@ export async function upsertProfile(username) {
 
 /**
  * 作品を保存する。user_id は常にログイン中の Auth ユーザー。
+ * kind: 'drawing' | 'sheet'
+ * og_image_url: ARTCLUB 入りの OGP 用画像（別ファイル）
  */
 export async function uploadArtwork(drawingBlob, promptId, {
   isPublic = true,
   sessionId = null,
   mode = null,
   allowCopy = false,
+  kind = 'drawing',
 } = {}) {
   await ensureFreshSession();
   const user = getUser();
@@ -120,22 +126,25 @@ export async function uploadArtwork(drawingBlob, promptId, {
   const compressed = await shrinkForUpload(drawingBlob);
   const ts = Date.now();
   // 先頭のフォルダ名が自分の user id であることが Storage 側の許可条件
-  const path = `${user.id}/${ts}.webp`;
+  const path = `${user.id}/${kind === 'sheet' ? 'sheet-' : ''}${ts}.webp`;
 
-  const putImage = () => fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
-    method: 'POST',
-    headers: { ...authHeaders(), 'Content-Type': 'image/webp' },
-    body: compressed,
-  });
+  const putImage = (body, objectPath, contentType) => fetch(
+    `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${objectPath}`,
+    {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': contentType },
+      body,
+    },
+  );
 
-  let uploadRes = await putImage();
+  let uploadRes = await putImage(compressed, path, 'image/webp');
   // 弾かれたら、トークンが古かった可能性を潰してから1回だけやり直す
   if (uploadRes.status === 400 || uploadRes.status === 401 || uploadRes.status === 403) {
     await ensureFreshSession({ force: true });
     if (!getSession()?.access_token) {
       throw new Error('ログインの期限が切れました。ログインし直してから投稿してください。');
     }
-    uploadRes = await putImage();
+    uploadRes = await putImage(compressed, path, 'image/webp');
   }
   if (!uploadRes.ok) {
     const text = await uploadRes.text();
@@ -150,6 +159,21 @@ export async function uploadArtwork(drawingBlob, promptId, {
   }
 
   const imageUrl = publicUrl(path);
+
+  // OGP用（右下 ARTCLUB）。失敗しても本体投稿は通す
+  let ogImageUrl = null;
+  try {
+    const branded = await brandForOgp(drawingBlob);
+    if (branded) {
+      const ogBlob = await shrinkForUpload(branded);
+      const ogPath = `${user.id}/og-${ts}.jpg`;
+      const ogRes = await putImage(ogBlob, ogPath, 'image/jpeg');
+      if (ogRes.ok) ogImageUrl = publicUrl(ogPath);
+    }
+  } catch (err) {
+    console.warn('[og brand]', err);
+  }
+
   const visibility = isPublic ? 'public' : 'private';
   const shortId = makeShortId(8);
   const fullRow = {
@@ -164,6 +188,8 @@ export async function uploadArtwork(drawingBlob, promptId, {
     username: getUsername() || user.email?.split('@')[0] || null,
     allow_copy: !!allowCopy,
     short_id: shortId,
+    kind,
+    og_image_url: ogImageUrl,
   };
   const legacyRow = {
     user_id: user.id,
@@ -195,15 +221,28 @@ export async function uploadArtwork(drawingBlob, promptId, {
         body: JSON.stringify(fullRow),
       });
     } else {
-      // マイグレーション前の古い列構成でも動くようにする
+      // kind / og_image_url / short_id 未移行でも動くように段階的に落とす
+      const midRow = { ...fullRow };
+      delete midRow.og_image_url;
+      delete midRow.kind;
       dbRes = await fetch(`${SUPABASE_URL}/rest/v1/artworks`, {
         method: 'POST',
         headers: authHeaders({
           'Content-Type': 'application/json',
           Prefer: 'return=representation',
         }),
-        body: JSON.stringify(legacyRow),
+        body: JSON.stringify(midRow),
       });
+      if (!dbRes.ok) {
+        dbRes = await fetch(`${SUPABASE_URL}/rest/v1/artworks`, {
+          method: 'POST',
+          headers: authHeaders({
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation',
+          }),
+          body: JSON.stringify(legacyRow),
+        });
+      }
     }
   }
   if (!dbRes.ok) {
@@ -263,7 +302,7 @@ export async function fetchArtworks(promptId, { limit = 10 } = {}) {
     });
   }
   if (!res.ok) return [];
-  const rows = (await res.json()).map(normalizeArtwork);
+  const rows = (await res.json()).map(normalizeArtwork).filter((w) => w.kind !== 'sheet');
   return attachLikeState(rows);
 }
 
@@ -291,6 +330,7 @@ export async function fetchPublicArtworks({ limit = 40 } = {}) {
   // ログイン中は自分の非公開もRLSで見えるので、みんな用は公開だけ残す
   const rows = (await res.json()).map(normalizeArtwork)
     .filter((w) => w.visibility !== 'private' && w.is_public !== false)
+    .filter((w) => w.kind !== 'sheet')
     .slice(0, limit);
   return attachLikeState(rows);
 }
@@ -315,7 +355,7 @@ export async function fetchMyArtworks({ limit = 60 } = {}) {
     });
   }
   if (!res.ok) return [];
-  const rows = (await res.json()).map(normalizeArtwork);
+  const rows = (await res.json()).map(normalizeArtwork).filter((w) => w.kind !== 'sheet');
   return attachLikeState(rows);
 }
 

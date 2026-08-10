@@ -22,7 +22,7 @@ function escapeHtml(s) {
 
 async function fetchArtwork(env, id) {
   const url = new URL(`${env.SUPABASE_URL}/rest/v1/artworks`);
-  url.searchParams.set('select', 'id,short_id,image_url,username,mode,created_at,visibility,prompt_id');
+  url.searchParams.set('select', 'id,short_id,image_url,og_image_url,kind,username,mode,created_at,visibility,prompt_id');
   url.searchParams.set(UUID_RE.test(id) ? 'id' : 'short_id', `eq.${id}`);
   url.searchParams.set('limit', '1');
 
@@ -59,11 +59,16 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
   const origin = env.SITE_ORIGIN || 'https://artclub.space';
   const key = workKey(work);
   const pageUrl = `${origin}/work/${key}`;
-  const title = `ArtClub - 3分${modeLabel(work.mode)}`;
+  const kindLabel = work.kind === 'sheet' ? 'まとめ' : modeLabel(work.mode);
+  const title = work.kind === 'sheet'
+    ? `ArtClub - ${kindLabel}`
+    : `ArtClub - 3分${kindLabel}`;
   const desc = work.username
-    ? `${work.username} さんが描いた作品`
+    ? (work.kind === 'sheet'
+      ? `${work.username} さんのまとめ`
+      : `${work.username} さんが描いた作品`)
     : 'ArtClub で描いたクロッキー';
-  const image = work.image_url;
+  const image = work.og_image_url || work.image_url;
   const appLink = `${origin}/#work/${encodeURIComponent(key)}`;
 
   if (forBot) {

@@ -49,9 +49,19 @@ alter table public.artworks
 alter table public.artworks
   add column if not exists short_id text;
 
+alter table public.artworks
+  add column if not exists kind text default 'drawing';
+
+alter table public.artworks
+  add column if not exists og_image_url text;
+
 update public.artworks
 set short_id = substr(replace(id::text, '-', ''), 1, 8)
 where short_id is null;
+
+update public.artworks
+set kind = 'drawing'
+where kind is null;
 
 create unique index if not exists idx_artworks_short_id on public.artworks(short_id);
 
