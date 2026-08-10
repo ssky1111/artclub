@@ -174,10 +174,17 @@ body[data-skin='pastel-rpg'][data-theme='paper'] {
   --lift-accent: none;
 }
 
-/* パステルRPG：フラットな面（グラデーションなし） */
+/* パステルRPG：やわらかい水玉の地（ボタンはフラットのまま） */
 body[data-skin='pastel-rpg'] {
   background-color: var(--bg);
-  background-image: none;
+  background-image:
+    radial-gradient(circle at 20% 18%, color-mix(in srgb, var(--brand) 22%, transparent) 0 18px, transparent 19px),
+    radial-gradient(circle at 78% 12%, color-mix(in srgb, var(--mint) 24%, transparent) 0 14px, transparent 15px),
+    radial-gradient(circle at 88% 72%, color-mix(in srgb, var(--sun) 28%, transparent) 0 16px, transparent 17px),
+    radial-gradient(circle at 12% 78%, color-mix(in srgb, var(--lime) 20%, transparent) 0 12px, transparent 13px),
+    radial-gradient(color-mix(in srgb, var(--line) 55%, transparent) 1.2px, transparent 1.3px);
+  background-size: auto, auto, auto, auto, 18px 18px;
+  background-attachment: fixed;
 }
 body[data-skin='pastel-rpg'] .card,
 body[data-skin='pastel-rpg'] .streak-card,
