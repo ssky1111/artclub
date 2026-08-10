@@ -17,7 +17,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="30">
+<body data-build="31">
 
 <!-- 明暗ポスタライズ用のSVGフィルタ（ノタン練習で使う） -->
 <svg class="filter-defs" aria-hidden="true" focusable="false">
@@ -762,7 +762,10 @@
   <div class="confirm-dialog-inner week-review-inner">
     <h2 id="week-review-title" class="week-review-title">直近1週間分の振り返りワード</h2>
     <ul id="week-review-list" class="week-review-list"></ul>
-    <p class="week-review-lead">振り返りの内容を意識して取り組んでみよう</p>
+    <p id="week-review-empty" class="week-review-empty" hidden>
+      振り返りはまだありません<br>終わった後に振り返りの言葉を入れてみよう
+    </p>
+    <p id="week-review-lead" class="week-review-lead">振り返りの内容を意識して取り組んでみよう</p>
     <div class="confirm-dialog-actions">
       <button id="week-review-ok" class="confirm-dialog-btn ok" data-i18n="home.startPlain">はじめる</button>
     </div>
