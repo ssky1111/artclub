@@ -176,8 +176,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     const drill = DRILLS[item.drillId];
     if (!isFirst) timer.stop();
     if (isFirst) requestWakeLock();
-    dom.bridgeLabel.hidden = !!isFirst;
-    dom.bridgeLabel.textContent = isFirst ? '' : t('sess.next');
+    dom.bridgeLabel.hidden = true;
     dom.bridgeTitle.textContent = stepTitle(item, drill);
     dom.bridgeTheory.textContent = tr(drill, 'theory');
 
