@@ -39,6 +39,8 @@
   --font-display: 'Special Gothic Expanded One', 'Arial Black', 'Helvetica Neue',
                   'Hiragino Maru Gothic ProN', 'Yu Gothic UI', system-ui, sans-serif;
   --font-ja: 'DotGothic16', 'Hiragino Sans', 'Noto Sans JP', system-ui, sans-serif;
+  --font-body: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN',
+               'Yu Gothic UI', 'Yu Gothic', system-ui, sans-serif;
 }
 
 /* 夜用。同じ設計のまま地と文字を入れ替える */
@@ -320,7 +322,7 @@ html, body {
   padding: 0;
   background-color: var(--bg);
   color: var(--text);
-  font-family: 'DotGothic16', -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -367,17 +369,27 @@ a:focus,
 a:active { color: var(--accent); text-decoration: none; }
 
 .muted { color: var(--muted); }
-.small { font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif; }
+.small { font-size: 13px; font-family: var(--font-body); }
 .label { font-size: 12px; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
 
+/* 日本語 UI: 見出しだけドット書体、本文は --font-body を継承 */
+html:lang(ja) h1,
 html:lang(ja) h2,
+html:lang(ja) h3,
 html:lang(ja) .bridge-card h2,
 html:lang(ja) .sheet-inner h2,
+html:lang(ja) .section-head h2,
+html:lang(ja) .week-review-title,
+html:lang(ja) .focus-title,
+html:lang(ja) .feedback-bubble-title,
+html:lang(ja) .feedback-tab,
 html:lang(ja) .btn.big,
 html:lang(ja) .menu-title,
 html:lang(ja) .drill-name,
 html:lang(ja) .bridge-meta,
-html:lang(ja) .chip { font-family: var(--font-ja); }
+html:lang(ja) .chip,
+html:lang(ja) .tabbar button,
+html:lang(ja) .atelier-tabs button { font-family: var(--font-ja); }
 
 /* ---------- 画面 ---------- */
 
@@ -2040,10 +2052,9 @@ button.tl-media img {
 }
 
 /* ---------- プライバシー／利用規約 ---------- */
-/* 本文はドット書体にせず、普通のゴシックで読ませる */
+/* 見出しはドット、本文は普通のゴシック */
 .legal-body {
-  --font-legal: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN',
-                'Yu Gothic UI', 'Yu Gothic', 'Segoe UI', system-ui, sans-serif;
+  --font-legal: var(--font-body);
   min-height: 100dvh;
   margin: 0;
   background: var(--bg);
@@ -2086,7 +2097,7 @@ button.tl-media img {
   font-family: var(--font-legal);
 }
 .legal h1 {
-  font-family: var(--font-legal);
+  font-family: var(--font-ja);
   font-size: clamp(1.35rem, 5vw, 1.65rem);
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -2096,7 +2107,7 @@ button.tl-media img {
   color: var(--text);
 }
 .legal h2 {
-  font-family: var(--font-legal);
+  font-family: var(--font-ja);
   font-size: 1.05rem;
   font-weight: 700;
   margin: 1.7em 0 0.55em;
@@ -2105,7 +2116,7 @@ button.tl-media img {
   color: var(--text);
 }
 .legal h3 {
-  font-family: var(--font-legal);
+  font-family: var(--font-ja);
   font-size: 0.98rem;
   font-weight: 700;
   margin: 1.15em 0 0.4em;
