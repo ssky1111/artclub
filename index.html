@@ -27,7 +27,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="110" data-theme="light">
+<body data-build="111" data-theme="light">
 <script>
 /* 設定があれば先に当てる。無ければ／移行前はシンプル（data-skin なし） */
 (function () {
@@ -69,7 +69,7 @@
 <!-- ============ ホーム ============ -->
 <main id="screen-home" class="screen is-active">
   <header class="topbar">
-    <a href="#home" class="brand brand-link" aria-label="ARTCLUB">
+    <a href="/" class="brand brand-link" aria-label="ARTCLUB">
       <span class="brand-stack">
         <span class="brand-text">ARTCLUB</span>
         <span class="beta" data-i18n="app.beta">テスト公開中</span>
@@ -337,7 +337,7 @@
   <header class="topbar work-topbar">
     <button id="work-back" class="icon-btn" type="button" data-icon="back"
             data-i18n-title="common.back" title="もどる"></button>
-    <a href="#home" class="brand brand-link work-brand" aria-label="ARTCLUB">
+    <a href="/" class="brand brand-link work-brand" aria-label="ARTCLUB">
       <span class="brand-text">ARTCLUB</span>
     </a>
     <div class="topbar-actions work-auth-actions">
@@ -834,7 +834,7 @@
 <main id="screen-atelier" class="screen">
   <header class="topbar atelier-topbar">
     <span class="atelier-topbar-spacer" aria-hidden="true"></span>
-    <a href="#home" class="brand brand-link atelier-brand" aria-label="ARTCLUB">
+    <a href="/" class="brand brand-link atelier-brand" aria-label="ARTCLUB">
       <span class="brand-text">ARTCLUB</span>
     </a>
     <button class="icon-btn" data-nav="settings" data-icon="settings"></button>

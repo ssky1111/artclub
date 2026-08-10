@@ -979,7 +979,7 @@ function wireAdmin() {
   });
 
   $('#admin-lock').addEventListener('click', () => { adminOpen = false; openAdmin(); });
-  $('#admin-open')?.addEventListener('click', () => { location.hash = '#admin'; openAdmin(); });
+  $('#admin-open')?.addEventListener('click', () => { navigateTo('admin'); });
 
   $('#admin-add').addEventListener('click', () => $('#admin-input').click());
   $('#admin-input').addEventListener('change', async (e) => {
@@ -2519,6 +2519,11 @@ async function renderNotes() {
 
   if (!getUser()) {
     wrap.append(el('p', 'muted small tl-empty', t('log.loginNotes')));
+    const btn = el('button', 'btn primary small', t('auth.login'));
+    btn.type = 'button';
+    btn.style.marginTop = '10px';
+    btn.addEventListener('click', () => openAuthSheet());
+    wrap.append(btn);
     return;
   }
 
@@ -2746,6 +2751,11 @@ async function renderAtelierMine() {
   login.hidden = true;
   if (!getUser()) {
     login.hidden = false;
+    const btn = el('button', 'btn primary small', t('auth.login'));
+    btn.type = 'button';
+    btn.style.marginTop = '10px';
+    btn.addEventListener('click', () => openAuthSheet());
+    feed.append(btn);
     return;
   }
   const works = await fetchMyArtworks({ limit: 60 }).catch(() => []);
@@ -2871,48 +2881,81 @@ function wireAtelier() {
   });
 }
 
-/* ==================== URL ルーティング ==================== */
+/* ==================== URL ルーティング（パスで分ける） ==================== */
 
-function parseRoute(hash = location.hash) {
-  const raw = String(hash || '').replace(/^#/, '').trim();
-  if (!raw) return { root: 'home', parts: [] };
+function appBasePath() {
+  return location.pathname.indexOf('/artclub') === 0 ? '/artclub' : '';
+}
+
+function parseRoute(rawInput = '') {
+  const raw = String(rawInput || '').replace(/^#/, '').replace(/^\/+|\/+$/g, '').trim();
+  if (!raw || raw === 'home') return { root: 'home', parts: ['home'] };
   const parts = raw.split('/').map((p) => {
     try { return decodeURIComponent(p); } catch { return p; }
   }).filter(Boolean);
   return { root: parts[0] || 'home', parts };
 }
 
+function pathForRoute(route) {
+  const clean = String(route || 'home').replace(/^#/, '').replace(/^\/+|\/+$/g, '');
+  const base = appBasePath();
+  if (!clean || clean === 'home') return base ? `${base}/` : '/';
+  return `${base}/${clean}`;
+}
+
+function currentRouteKey() {
+  const route = routeFromLocation();
+  if (!route?.root || route.root === 'home') return 'home';
+  return route.parts.join('/');
+}
+
 function routeFromLocation() {
-  const path = location.pathname.replace(/\/+$/, '');
+  const path = location.pathname.replace(/\/+$/, '') || '/';
   const segs = path.split('/').filter(Boolean);
   const idx = segs[0] === 'artclub' ? 1 : 0;
   const root = segs[idx];
+
+  // 別HTML・Worker のパスは SPA では扱わない
+  if (root === 'privacy' || root === 'terms') {
+    return { root: 'home', parts: ['home'] };
+  }
+
   if (root === 'atelier') {
     const sub = segs[idx + 1];
     return { root: 'atelier', parts: sub ? ['atelier', sub] : ['atelier'] };
   }
-  if (['home', 'log', 'settings', 'admin', 'library'].includes(root) && !segs[idx + 1]) {
-    return { root, parts: [root] };
+  if (root === 'work' && segs[idx + 1]) {
+    return { root: 'work', parts: ['work', segs[idx + 1]] };
   }
+  if (['home', 'log', 'settings', 'admin', 'library', 'auth', 'daily'].includes(root)) {
+    return { root, parts: segs.slice(idx) };
+  }
+  if (!root) return { root: 'home', parts: ['home'] };
+
+  // 旧 #hash 互換
   return parseRoute(location.hash);
 }
 
+/** 古い #atelier などのリンクを /atelier に寄せる。OAuth のトークン hash は触らない。 */
+function migrateHashRouteToPath() {
+  const hash = location.hash || '';
+  if (!hash || hash.includes('access_token') || hash.includes('error=')) return;
+  const raw = hash.replace(/^#/, '').trim();
+  if (!raw) return;
+  const path = pathForRoute(raw);
+  history.replaceState(null, '', path);
+}
+
 function navigateTo(route, { replace = false } = {}) {
-  const clean = String(route || 'home').replace(/^#/, '');
-  const next = clean || 'home';
-  const hash = `#${next}`;
-  const current = (location.hash || '#home').replace(/^#/, '') || 'home';
-  if (current === next) {
-    applyRoute(parseRoute(hash));
+  const next = String(route || 'home').replace(/^#/, '').replace(/^\/+|\/+$/g, '') || 'home';
+  const url = pathForRoute(next);
+  if (currentRouteKey() === next && !location.hash) {
+    applyRoute(routeFromLocation());
     return;
   }
-  // replaceState は hashchange が飛ばないので自分で適用。通常遷移は hash 代入に任せる。
-  if (replace) {
-    history.replaceState(null, '', hash);
-    applyRoute(parseRoute(hash));
-    return;
-  }
-  location.hash = next;
+  if (replace) history.replaceState(null, '', url);
+  else history.pushState(null, '', url);
+  applyRoute(routeFromLocation());
 }
 
 function applyRoute(route = routeFromLocation()) {
@@ -2966,7 +3009,12 @@ function applyRoute(route = routeFromLocation()) {
 }
 
 function wireRoutes() {
-  window.addEventListener('hashchange', () => applyRoute(parseRoute(location.hash)));
+  window.addEventListener('popstate', () => applyRoute(routeFromLocation()));
+  window.addEventListener('hashchange', () => {
+    if ((location.hash || '').includes('access_token')) return;
+    const raw = (location.hash || '').replace(/^#/, '').trim();
+    if (raw) navigateTo(raw, { replace: true });
+  });
 }
 
 /* ==================== 起動 ==================== */
@@ -3130,13 +3178,18 @@ function wireAuth() {
 
   onAuthChange((u) => {
     updateAuthUI(u);
-    if (!u) return;
+    if (!u) {
+      // ログアウト後も今のURLのまま中身だけ更新（公開アトリエなど）
+      applyRoute(routeFromLocation());
+      return;
+    }
     // 端末に名前が無くても、DB にあれば復元してからユーザーネーム入力を出すか決める
     hydrateUsername().then((name) => {
       updateAuthUI(getUser());
       if (!name && !hasUsername()) {
         sheet.hidden = true;
         showUsernameSheet(() => {
+          applyRoute(routeFromLocation());
           if (pendingStart) {
             const fn = pendingStart;
             pendingStart = null;
@@ -3145,8 +3198,10 @@ function wireAuth() {
         });
         return;
       }
+      sheet.hidden = true;
+      // /log や /atelier/mine に直リンクできていたら、ログイン後に中身を出す
+      applyRoute(routeFromLocation());
       if (pendingStart) {
-        sheet.hidden = true;
         const fn = pendingStart;
         pendingStart = null;
         fn();
@@ -3167,6 +3222,15 @@ function openAuthSheet() {
 
 function init() {
   applyTheme();
+  // GitHub Pages の 404 経由で来たパスを復元
+  try {
+    const saved = sessionStorage.getItem('artclub.spaPath');
+    if (saved) {
+      sessionStorage.removeItem('artclub.spaPath');
+      history.replaceState(null, '', saved);
+    }
+  } catch { /* */ }
+
   applyI18n();
   paintIcons();
   $('#lang-btn').textContent = getLang() === 'ja' ? 'EN' : 'JA';
@@ -3186,6 +3250,7 @@ function init() {
   wireAdmin();
   wireRoutes();
 
+  migrateHashRouteToPath();
   applyRoute(routeFromLocation());
 
   document.addEventListener('pointerdown', () => { if (settings.sfx) sfx.unlock(); }, { once: true });

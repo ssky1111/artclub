@@ -4,48 +4,18 @@
 <meta charset="utf-8">
 <title>ARTCLUB</title>
 <!--
-  GitHub Pages は静的配信なので /atelier のようなパスは 404 になる。
-  そのとき、この 404 ページが index.html のハッシュへ流し直す。
-  アドレスバーに /home や /atelier/mine と打っても同じ画面に入れる。
+  GitHub Pages など、実ファイルのない /atelier や /log はここに来る。
+  アドレスバーのパスはそのまま残し、トップの SPA を読み直してから
+  同じパスへ戻す（History API 用）。
 
-  何でもかんでも飛ばすと、ただの打ち間違いまで画面が開いてしまうので、
-  受け付けるのは下の ROUTES に書いたものだけ。それ以外はトップに戻す。
+  /privacy/ /terms/ /work/ は実体がある（or Worker）ので通常ここには来ない。
 -->
 <script>
   (function () {
-    var ROUTES = {
-      admin: 'admin',
-      home: 'home',
-      log: 'log',
-      settings: 'settings',
-      library: 'library',
-      atelier: 'atelier'
-    };
-    var path = location.pathname.replace(/\/+$/, '');
-    var parts = path.split('/').filter(Boolean);
-    var base = '/';
-    // /work/{id} は Worker が本番で受ける。Pages 単体のときはハッシュへ落とす
-    if (parts[0] === 'work' && parts[1]) {
-      location.replace(base + '#work/' + encodeURIComponent(parts[1]));
-      return;
-    }
-    // /atelier /atelier/mine /atelier/prompt
-    if (parts[0] === 'atelier') {
-      var sub = parts[1];
-      if (!sub) {
-        location.replace(base + '#atelier');
-        return;
-      }
-      if (sub === 'mine' || sub === 'prompt') {
-        location.replace(base + '#atelier/' + sub);
-        return;
-      }
-      location.replace(base);
-      return;
-    }
-    var last = parts[parts.length - 1] || '';
-    var hash = ROUTES[last] ? '#' + ROUTES[last] : '';
-    location.replace(base + hash);
+    var path = location.pathname + location.search + location.hash;
+    try { sessionStorage.setItem('artclub.spaPath', path); } catch (e) {}
+    var base = location.pathname.indexOf('/artclub') === 0 ? '/artclub/' : '/';
+    location.replace(base);
   })();
 </script>
 </head>
