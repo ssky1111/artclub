@@ -47,6 +47,7 @@ import {
   uploadArtwork, uploadShareImage, fetchArtworks, fetchArtwork, fetchPublicArtworks, fetchMyArtworks,
   fetchTopCopyableArtworks, deleteArtwork, toggleLike, workPageUrl, upsertProfile,
 } from './gallery.js';
+import { submitFeedback } from './feedback.js';
 
 /*
  * index.html の data-build と揃えておく番号。
@@ -57,7 +58,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '124';
+const BUILD = '125';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -3219,6 +3220,51 @@ function openAuthSheet() {
   else $('#auth-sheet').hidden = false;
 }
 
+function wireFeedback() {
+  const tab = $('#feedback-tab');
+  const sheet = $('#feedback-sheet');
+  const message = $('#feedback-message');
+  const contact = $('#feedback-contact');
+  const send = $('#feedback-send');
+  if (!tab || !sheet || !message || !send) return;
+
+  const open = () => {
+    sheet.hidden = false;
+    message.focus();
+  };
+  const close = () => { sheet.hidden = true; };
+
+  tab.addEventListener('click', open);
+  $('#feedback-close')?.addEventListener('click', close);
+  sheet.addEventListener('click', (e) => {
+    if (e.target.id === 'feedback-sheet') close();
+  });
+
+  send.addEventListener('click', async () => {
+    const text = message.value.trim();
+    if (!text) return toast(t('fb.empty'));
+    send.disabled = true;
+    const prev = send.textContent;
+    send.textContent = t('fb.sending');
+    try {
+      await submitFeedback({
+        message: text,
+        contact: contact?.value || '',
+      });
+      message.value = '';
+      if (contact) contact.value = '';
+      close();
+      toast(t('fb.thanks'));
+    } catch (err) {
+      console.error('[feedback]', err);
+      toast(t('fb.fail'));
+    } finally {
+      send.disabled = false;
+      send.textContent = prev;
+    }
+  });
+}
+
 function init() {
   applyTheme();
   // GitHub Pages の 404 経由で来たパスを復元
@@ -3236,6 +3282,7 @@ function init() {
 
   wireNav();
   wireAuth();
+  wireFeedback();
   wireReview();
   wireAtelier();
   wireDrawingLightbox();
