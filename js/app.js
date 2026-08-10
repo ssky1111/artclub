@@ -1407,20 +1407,8 @@ async function finishSession(result) {
   $('#gallery-card').hidden = true;
   renderDrawingStrip();
   $('#review-note').value = '';
-  $$('.rate-btn').forEach((b) => b.classList.remove('on'));
 
   renderReviewChecks(entry.lessonId, entry.lessonMode);
-
-  const drillLines = Object.entries(entry.byDrill)
-    .map(([id, sec]) => `<li><span>${tr(DRILLS[id], 'name') || id}</span><b>${fmtDur(sec)}</b></li>`)
-    .join('');
-  const s = stats();
-  const short = entry.seconds < 60;
-  $('#review-summary').innerHTML =
-    `<div class="review-big">${short ? entry.seconds : Math.round(entry.seconds / 60)}` +
-    `<span>${short ? t('common.sec') : t('common.min')}</span></div>` +
-    `<ul class="review-drills">${drillLines}</ul>` +
-    `<div class="muted small">${t('rev.streakLine', { s: s.streak, n: s.sessions })}</div>`;
 
   const hasDrawings = pendingDrawings.length > 0 && !!getUser();
   $('#publish-card').hidden = !hasDrawings;
@@ -1429,9 +1417,10 @@ async function finishSession(result) {
     updatePublishNote(true);
   }
 
-  showScreen('review');
-
+  // 写真を先に出してから、まとめ画像を作る
   if (pendingDrawings.length > 0) {
+    $('#sheet-preview').hidden = true;
+    showScreen('review');
     const blob = await composeSheet(pendingDrawings.map((s) => s.blob), {
       date: dateKey(),
     });
@@ -1442,6 +1431,7 @@ async function finishSession(result) {
     }
   } else {
     $('#sheet-preview').hidden = true;
+    showScreen('review');
   }
 }
 
@@ -1547,14 +1537,6 @@ function updatePublishNote(isPublic) {
 }
 
 function wireReview() {
-  $$('.rate-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      $$('.rate-btn').forEach((b) => b.classList.remove('on'));
-      btn.classList.add('on');
-      if (settings.sfx) sfx.tap();
-    });
-  });
-
   $('#publish-toggle').addEventListener('change', (e) => {
     updatePublishNote(e.target.checked);
   });
@@ -1584,7 +1566,6 @@ function wireReview() {
   });
 
   $('#review-save').addEventListener('click', async () => {
-    const rated = $$('.rate-btn').find((b) => b.classList.contains('on'));
     const checkBtns = $$('#review-checks .check-btn');
     const missed = [];
     for (const btn of checkBtns) {
@@ -1593,7 +1574,7 @@ function wireReview() {
       if (!ok) missed.push(btn.textContent);
     }
     const entry = updateLastSession({
-      rating: rated ? Number(rated.dataset.rate) : null,
+      rating: null,
       note: $('#review-note').value.trim() || null,
       hasDrawing: pendingDrawings.length > 0,
       drawingCount: pendingDrawings.length || null,
