@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '182';
+const BUILD = '183';
 const SITE_PASS_SESSION = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 
@@ -492,14 +492,16 @@ function renderCopyGrid() {
   if (!grid) return;
   grid.innerHTML = '';
   for (const work of copyCandidates) {
-    const btn = el('button', `copy-pick${selectedCopyWork?.id === work.id ? ' on' : ''}`);
+    const mine = !!(work.is_mine || (getUser()?.id && work.user_id === getUser().id));
+    const btn = el('button', `copy-pick${selectedCopyWork?.id === work.id ? ' on' : ''}${mine ? ' is-mine' : ''}`);
     btn.type = 'button';
     const img = el('img');
     img.src = work.image_url;
     img.alt = work.username || '';
     img.loading = 'lazy';
     const meta = el('div', 'copy-pick-meta');
-    meta.append(el('span', 'copy-pick-user', artworkDisplayName(work)));
+    const name = mine ? t('atelier.you') : artworkDisplayName(work);
+    meta.append(el('span', 'copy-pick-user', name || t('atelier.you')));
     meta.append(el('span', 'copy-pick-likes', `♥ ${work.like_count || 0}`));
     btn.append(img, meta);
     btn.addEventListener('click', () => {
@@ -508,7 +510,9 @@ function renderCopyGrid() {
       const startBtn = $('#copy-start');
       if (startBtn) startBtn.disabled = false;
       const status = $('#copy-status');
-      if (status) status.textContent = t('copy.selected', { n: artworkDisplayName(work) });
+      if (status) {
+        status.textContent = mine ? t('copy.selectedMine') : t('copy.selected', { n: name });
+      }
     });
     grid.append(btn);
   }
@@ -1715,6 +1719,8 @@ async function uploadPendingArtworks({ quiet = false } = {}) {
       hasSheet: !!(pendingSheetMeta?.artworkId || sheetBlob),
     });
   }
+  // アップロード中にトグルを変えた場合に備え、最終状態を再同期
+  await syncAllPendingShotArtworks();
   if (!quiet) {
     if (failed) toast(`${t('gal.uploadFail')}\n${formatErr(lastErr)}`, 8000);
     else if (uploaded) toast(t('gal.uploaded'));
