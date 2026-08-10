@@ -1671,7 +1671,6 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
   color: var(--lime-ink); background: color-mix(in srgb, var(--lime) 30%, transparent);
   border-radius: 999px; padding: 3px 10px;
 }
-#pay-sheet h2 { font-size: 19px; }
 
 /* モードのカードに畳んだ説明を入れる。名前だけでは分からないものがあるので */
 .menu-card .why { margin-top: 8px; }

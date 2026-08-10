@@ -57,7 +57,7 @@ import { initFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '156';
+const BUILD = '157';
 
 function refreshHomeIfVisible() {
   if (document.body.dataset.screen === 'home') renderHome();
@@ -267,17 +267,6 @@ function renderExtras() {
   }
 }
 
-let paywallCallback = null;
-
-function setPaySheetCopy({ titleKey, bodyKey, ctaKey }) {
-  const title = $('#pay-title');
-  const body = $('#pay-body');
-  const cta = $('#pay-continue');
-  if (title) title.textContent = t(titleKey);
-  if (body) body.textContent = t(bodyKey);
-  if (cta) cta.textContent = t(ctaKey);
-}
-
 /** レベルアップだけ祝う（バッジは外した）。 */
 function celebrate(history = getHistory()) {
   const level = takeLevelUp(totalXp(history));
@@ -334,17 +323,6 @@ function wirePartSheet() {
     $('#part-sheet').hidden = true;
     await weekReviewDialog(recentReviewNotes(7));
     startSession(buildPartMenu(currentPart), { tags: currentPart.tags, part: currentPart });
-  });
-
-  $('#pay-close').addEventListener('click', () => { $('#pay-sheet').hidden = true; });
-  $('#pay-sheet').addEventListener('click', (e) => {
-    if (e.target.id === 'pay-sheet') $('#pay-sheet').hidden = true;
-  });
-  $('#pay-continue').addEventListener('click', () => {
-    $('#pay-sheet').hidden = true;
-    const fn = paywallCallback;
-    paywallCallback = null;
-    if (fn) fn();
   });
 }
 

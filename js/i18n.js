@@ -158,10 +158,6 @@ const DICT = {
   'home.paywallBody':    { ja: 'このメニューをはじめる。',
                            en: 'Start this practice menu.' },
   'home.paywallCta':     { ja: 'はじめる',               en: 'Start' },
-  'home.dailyLimitTitle':{ ja: '今日の無料デイリーはここまで', en: "Today's free daily is done" },
-  'home.dailyLimitBody': { ja: 'デイリーの無料は1日2回までです。またあしたやろう。',
-                           en: 'Free daily is limited to 2 rounds a day. Come back tomorrow.' },
-  'home.dailyLimitCta':  { ja: 'わかった',               en: 'Got it' },
   'home.unsplash':       { ja: 'お題の写真は Unsplash（unsplash.com）のものを使っています。',
                            en: 'Reference photos come from Unsplash (unsplash.com).' },
 
