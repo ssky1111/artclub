@@ -1182,7 +1182,10 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
 
 .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
 .stat { text-align: center; }
-.stat-num { font-size: 24px; font-weight: 700; }
+.stat-num {
+  font-size: 24px; font-weight: 900; line-height: 1;
+  font-family: var(--font-display); letter-spacing: .02em; font-stretch: expanded;
+}
 .stat-label { font-size: 11px; color: var(--muted); }
 
 .bar-row { display: grid; grid-template-columns: 118px 1fr 56px; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 13px; }
