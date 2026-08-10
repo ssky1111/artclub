@@ -39,6 +39,17 @@ function clear() {
   try { localStorage.removeItem(STORAGE_KEY); } catch {}
 }
 
+function clearUsernameCache() {
+  try { localStorage.removeItem(USERNAME_KEY); } catch {}
+}
+
+function cacheUsername(name) {
+  const trimmed = String(name || '').trim().slice(0, 32);
+  if (!trimmed) return '';
+  try { localStorage.setItem(USERNAME_KEY, trimmed); } catch {}
+  return trimmed;
+}
+
 function notify() {
   for (const fn of listeners) {
     try { fn(user); } catch {}
@@ -203,6 +214,7 @@ export async function logout() {
   session = null;
   user = null;
   clear();
+  clearUsernameCache();
   notify();
 }
 
@@ -239,8 +251,26 @@ export function getUsername() {
   try { return localStorage.getItem(USERNAME_KEY) || ''; } catch { return ''; }
 }
 
+/**
+ * DB の profiles からユーザーネームを読み、端末キャッシュへ戻す。
+ * 新しい端末でも再入力を求めないための入口。
+ */
+export async function hydrateUsername() {
+  if (!user) return '';
+  try {
+    const { fetchMyProfile } = await import('./gallery.js');
+    const profile = await fetchMyProfile();
+    if (profile?.username) {
+      cacheUsername(profile.username);
+      notify();
+      return profile.username;
+    }
+  } catch { /* オフライン等はローカルのまま */ }
+  return getUsername();
+}
+
 export function setUsername(name) {
-  try { localStorage.setItem(USERNAME_KEY, name); } catch {}
+  cacheUsername(name);
   // 他ユーザーのスケッチカードに出す名前。失敗してもローカルは残す
   import('./gallery.js')
     .then((m) => m.upsertProfile(name))

@@ -106,6 +106,23 @@ export async function upsertProfile(username) {
   return rows[0] || null;
 }
 
+/** 自分のプロフィールを DB から読む。別端末ログイン時のユーザーネーム復元用。 */
+export async function fetchMyProfile() {
+  const user = getUser();
+  if (!user?.id) return null;
+  const params = new URLSearchParams({
+    select: 'id,username,updated_at',
+    id: `eq.${user.id}`,
+    limit: '1',
+  });
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?${params}`, {
+    headers: authHeaders({ Accept: 'application/json' }),
+  });
+  if (!res.ok) return null;
+  const [row] = await res.json().catch(() => []);
+  return row || null;
+}
+
 /**
  * スケッチを保存する。user_id は常にログイン中の Auth ユーザー。
  * kind: 'drawing' | 'sheet'

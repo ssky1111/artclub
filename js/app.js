@@ -44,7 +44,7 @@ import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog } from '.
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
-import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, userAvatar, hasUsername, setUsername, getUsername } from './auth.js';
+import { initAuth, loginWithProvider, logout, getUser, onAuthChange, userName, userAvatar, hasUsername, setUsername, getUsername, hydrateUsername } from './auth.js';
 import {
   uploadArtwork, uploadShareImage, fetchArtworks, fetchArtwork, fetchPublicArtworks, fetchMyArtworks,
   fetchTopCopyableArtworks, deleteArtwork, toggleLike, workPageUrl, upsertProfile,
@@ -3114,26 +3114,34 @@ function wireAuth() {
 
   onAuthChange((u) => {
     updateAuthUI(u);
-    if (u && !hasUsername()) {
-      sheet.hidden = true;
-      showUsernameSheet(() => {
-        if (pendingStart) {
-          const fn = pendingStart;
-          pendingStart = null;
-          fn();
-        }
-      });
-      return;
-    }
-    if (u && pendingStart) {
-      sheet.hidden = true;
-      const fn = pendingStart;
-      pendingStart = null;
-      fn();
-    }
+    if (!u) return;
+    // 端末に名前が無くても、DB にあれば復元してからユーザーネーム入力を出すか決める
+    hydrateUsername().then((name) => {
+      updateAuthUI(getUser());
+      if (!name && !hasUsername()) {
+        sheet.hidden = true;
+        showUsernameSheet(() => {
+          if (pendingStart) {
+            const fn = pendingStart;
+            pendingStart = null;
+            fn();
+          }
+        });
+        return;
+      }
+      if (pendingStart) {
+        sheet.hidden = true;
+        const fn = pendingStart;
+        pendingStart = null;
+        fn();
+      }
+    });
   });
 
-  initAuth().then((u) => updateAuthUI(u));
+  initAuth().then(async (u) => {
+    if (u) await hydrateUsername();
+    updateAuthUI(u);
+  });
 }
 
 function openAuthSheet() {
