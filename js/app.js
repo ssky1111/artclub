@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '44';
+const BUILD = '45';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -139,8 +139,10 @@ function renderWeekBars(history) {
     const box = el('div', 'week-box');
     if (count) {
       // 数字は累計と同じ太い英字フォント。単位だけ和文
-      box.append(el('span', 'week-num', String(count)));
-      if (getLang() === 'ja') box.append(el('span', 'week-unit', '枚'));
+      const countEl = el('span', 'week-count');
+      countEl.append(el('span', 'week-num', String(count)));
+      if (getLang() === 'ja') countEl.append(el('span', 'week-unit', '枚'));
+      box.append(countEl);
     }
     // 枚数が多い日ほど濃くする。0枚の日は色を付けない
     if (count) box.style.setProperty('--fill', String(0.35 + 0.65 * (count / max)));

@@ -1043,8 +1043,18 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 .week-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .week-box {
   width: 100%; aspect-ratio: 1; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center; gap: 1px;
+  display: grid;
+  place-items: center;
   background: var(--surface-2); color: var(--muted);
+}
+.week-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  line-height: 1;
+  /* 表示フォントの字形が上寄りに見える分を補正 */
+  transform: translateY(0.14em);
 }
 .week-num {
   font-family: var(--font-display);
@@ -1055,8 +1065,6 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 .week-unit {
   font-family: var(--font-ja);
   font-size: 10px; font-weight: 700; line-height: 1;
-  /* 表示フォントの数字と和文「枚」のベースライン差を抑える */
-  translate: 0 0.05em;
 }
 .week-col.on .week-box {
   background: color-mix(in srgb, var(--brand) calc(var(--fill, 1) * 100%), var(--surface-2));
