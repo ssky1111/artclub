@@ -2,7 +2,7 @@
  * Cloudflare Worker — /work/{id} の OGP + 作品ページ
  *
  * - X などのクローラ → og:* meta 付き HTML
- * - ブラウザ → 作品画像とユーザーネームを見せる簡易ページ（インラインCSS）
+ * - ブラウザ → ヘッダー付きの作品ページ（インラインCSS）
  * - id は short_id（8桁）または従来の uuid のどちらでも可
  *
  * Routes: artclub.space/work/*
@@ -69,7 +69,7 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
       : `${work.username} さんが描いた作品`)
     : 'ARTCLUB で描いたクロッキー';
   const image = work.og_image_url || work.image_url;
-  const appLink = `${origin}/#work/${encodeURIComponent(key)}`;
+  const authLink = `${origin}/#auth`;
 
   if (forBot) {
     return `<!DOCTYPE html>
@@ -137,14 +137,46 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
       radial-gradient(circle at 88% 12%, rgba(168, 196, 240, .2), transparent 36%),
       var(--bg);
     color: var(--text);
-    padding: 24px 16px 40px;
+    padding: 16px 16px 40px;
   }
   .wrap { width: min(100%, 560px); margin: 0 auto; }
+  .topbar {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .back {
+    width: 40px; height: 40px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: none; border-radius: 999px; background: transparent;
+    color: var(--text); cursor: pointer;
+  }
+  .back:hover { background: rgba(255,255,255,.55); }
+  .back svg { display: block; }
   .brand {
     font-family: "Special Gothic Expanded One", sans-serif;
-    font-weight: 400; letter-spacing: .04em; font-size: 22px;
-    color: var(--brand-ink); margin: 0 0 18px; text-decoration: none;
-    display: inline-block;
+    font-weight: 400; letter-spacing: .04em; font-size: 20px;
+    color: var(--text); margin: 0; text-decoration: none;
+    min-width: 0;
+  }
+  .brand:hover { color: var(--brand-ink); }
+  .auth {
+    display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;
+  }
+  .auth a {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 36px; padding: 0 12px; border-radius: 999px;
+    text-decoration: none; font-weight: 700; font-size: 13px;
+    white-space: nowrap;
+  }
+  .auth .signup {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--line);
+  }
+  .auth .login {
+    background: var(--surface); color: var(--text); border: none;
   }
   .card {
     background: var(--surface);
@@ -159,27 +191,24 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
     width: 100%; height: auto; display: block; border-radius: 12px;
     background: #f3eef7; border: 1px solid var(--line);
   }
-  .actions { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
-  a.btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    padding: 11px 18px; border-radius: 999px; text-decoration: none;
-    font-weight: 700; font-size: 14px;
-  }
-  a.primary { background: #1c1a17; color: #fff; }
-  a.ghost { background: #efe6f3; color: var(--text); }
 </style>
 </head>
 <body>
   <div class="wrap">
-    <a class="brand" href="${escapeHtml(origin)}/">ARTCLUB</a>
+    <header class="topbar">
+      <button class="back" type="button" aria-label="戻る" onclick="if(history.length>1)history.back();else location.href='${escapeHtml(origin)}/';">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <a class="brand" href="${escapeHtml(origin)}/">ARTCLUB</a>
+      <div class="auth">
+        <a class="signup" href="${escapeHtml(authLink)}">新規登録</a>
+        <a class="login" href="${escapeHtml(authLink)}">ログイン</a>
+      </div>
+    </header>
     <main class="card">
       <h1>${escapeHtml(title)}</h1>
       <p class="meta">${escapeHtml(desc)}</p>
       <img class="work" src="${escapeHtml(image)}" alt="${escapeHtml(desc)}">
-      <div class="actions">
-        <a class="btn primary" href="${escapeHtml(appLink)}">ARTCLUB で見る</a>
-        <a class="btn ghost" href="${escapeHtml(origin)}/">トップへ</a>
-      </div>
     </main>
   </div>
 </body>

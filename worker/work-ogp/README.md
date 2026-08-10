@@ -5,7 +5,7 @@
 ## 役割
 
 - 作品ごとの OGP（X カード用）
-- 作品の簡易公開ページ（**インラインCSS**。SPA を /work に出すと CSS が壊れる）
+- 作品の公開ページ（ヘッダー付き・インラインCSS。SPA を /work に出すと CSS が壊れる）
 - 通常の ARTCLUB UI は GitHub Pages のまま
 - `{id}` は **short_id（8桁）** または従来の uuid
 

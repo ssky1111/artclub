@@ -1434,6 +1434,12 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 
 /* ロゴ */
 .brand { display: flex; align-items: center; gap: 10px; }
+.brand-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+.brand-link:hover .brand-text { color: var(--brand-ink); }
 .brand-text {
   font-family: var(--font-display);
   font-size: 24px; font-weight: 600; letter-spacing: .03em;
@@ -1675,6 +1681,59 @@ body[data-theme='dark'] .google-btn {
   gap: 12px; width: min(92vw, 520px); margin-top: 10px; color: #fff;
 }
 .gallery-lb-user { font-weight: 700; }
+
+/* ---------- 作品ページ ---------- */
+
+.work-topbar {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.work-brand {
+  margin: 0;
+  min-width: 0;
+}
+.work-brand .brand-text {
+  font-size: 20px;
+  letter-spacing: .05em;
+}
+.work-auth-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.auth-btn-secondary {
+  background: transparent;
+  border: 1px solid var(--line);
+}
+.auth-btn-secondary:hover { background: var(--surface-2); }
+.work-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 24px;
+}
+.work-page-img {
+  width: 100%;
+  max-height: min(72vh, 720px);
+  object-fit: contain;
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.work-page-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.work-page-user { font-weight: 700; }
+.work-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 
 /* ---------- アトリエ ---------- */
 

@@ -33,6 +33,7 @@ const DICT = {
 
   /* ---------- ログイン ---------- */
   'auth.login':           { ja: 'ログイン',             en: 'Log in' },
+  'auth.signup':          { ja: '新規登録',             en: 'Sign up' },
   'auth.logout':          { ja: 'ログアウト',           en: 'Log out' },
   'auth.loginTitle':      { ja: 'ログイン',             en: 'Log in' },
   'auth.loginNote':       { ja: 'ログインすると、ジェスチャードローイングやクロッキーなどすべての練習メニューが使えるようになります。練習の記録やスケッチの保存もできます。',

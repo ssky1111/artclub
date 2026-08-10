@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '89';
+const BUILD = '90';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1969,7 +1969,7 @@ function renderGalleryCard(work, userId) {
   img.loading = 'lazy';
   img.alt = work.username || '';
   thumb.append(img);
-  thumb.addEventListener('click', () => openGalleryLightbox(work, userId));
+  thumb.addEventListener('click', () => openWorkPage(work));
 
   const meta = el('div', 'gallery-item-meta');
   meta.append(el('span', 'gallery-username', work.username || 'anonymous'));
@@ -1997,38 +1997,131 @@ function renderGalleryCard(work, userId) {
 }
 
 let currentArtwork = null;
+let workFetchToken = 0;
+let workCanGoBack = false;
 
-function openGalleryLightbox(work, userId) {
+function workRouteKey(work) {
+  return work?.short_id || work?.id || '';
+}
+
+/** 作品ページへ。履歴に残すので左上の←で元の画面に戻れる。 */
+function openWorkPage(work) {
+  const key = workRouteKey(work);
+  if (!key) return;
+  workCanGoBack = true;
+  navigateTo(`work/${key}`);
+}
+
+function openAtelierWork(work) {
+  openWorkPage(work);
+}
+
+function setWorkPageState({ loading = false, missing = false } = {}) {
+  const loadingEl = $('#work-loading');
+  const missingEl = $('#work-missing');
+  const content = $('#work-content');
+  if (loadingEl) loadingEl.hidden = !loading;
+  if (missingEl) missingEl.hidden = !missing;
+  if (content) content.hidden = loading || missing;
+}
+
+function updateWorkAuthUI(u = getUser()) {
+  const signup = $('#work-signup-btn');
+  const login = $('#work-login-btn');
+  const account = $('#work-account-btn');
+  const label = $('#work-account-label');
+  if (!signup || !login || !account) return;
+  if (u) {
+    signup.hidden = true;
+    login.hidden = true;
+    account.hidden = false;
+    if (label) label.textContent = userName(u);
+    account.title = userName(u);
+  } else {
+    signup.hidden = false;
+    login.hidden = false;
+    account.hidden = true;
+  }
+}
+
+function fillWorkPage(work, userId = getUser()?.id) {
   currentArtwork = work;
-  $('#gallery-lb-img').src = work.image_url;
-  $('#gallery-lb-user').textContent = work.username || 'anonymous';
-  const delBtn = $('#gallery-lb-delete');
-  delBtn.hidden = work.user_id !== userId;
-  const copyBtn = $('#gallery-lb-copy');
+  setWorkPageState({ loading: false, missing: false });
+  const img = $('#work-img');
+  if (img) {
+    img.src = work.image_url || '';
+    img.alt = work.username || '';
+  }
+  const userEl = $('#work-user');
+  if (userEl) userEl.textContent = work.username || 'anonymous';
+
+  const delBtn = $('#work-delete');
+  if (delBtn) delBtn.hidden = work.user_id !== userId;
+
+  const copyBtn = $('#work-copy');
   const canCopy = !!work.allow_copy && work.user_id !== userId;
   if (copyBtn) copyBtn.hidden = !canCopy;
-  const likeBtn = $('#gallery-lb-like');
-  const likeCount = $('#gallery-lb-like-count');
-  likeBtn.hidden = false;
-  likeBtn.classList.toggle('on', !!work.liked_by_me);
-  likeCount.textContent = String(work.like_count || 0);
-  const share = $('#gallery-lb-share');
-  if (work.id) {
-    share.hidden = false;
-    share.href = workPageUrl(work);
-  } else {
-    share.hidden = true;
+
+  const likeBtn = $('#work-like');
+  const likeCount = $('#work-like-count');
+  if (likeBtn) {
+    likeBtn.hidden = false;
+    likeBtn.classList.toggle('on', !!work.liked_by_me);
   }
-  $('#gallery-lightbox').hidden = false;
+  if (likeCount) likeCount.textContent = String(work.like_count || 0);
+
+  const share = $('#work-share');
+  if (share) {
+    if (work.id || work.short_id) {
+      share.hidden = false;
+      share.href = workPageUrl(work);
+    } else {
+      share.hidden = true;
+    }
+  }
+  updateWorkAuthUI();
+}
+
+async function showWorkRoute(workId) {
+  showScreen('work');
+  updateWorkAuthUI();
+  if (!workId) {
+    currentArtwork = null;
+    setWorkPageState({ missing: true });
+    return;
+  }
+  const token = ++workFetchToken;
+  setWorkPageState({ loading: true });
+  try {
+    const work = await fetchArtwork(workId);
+    if (token !== workFetchToken) return;
+    if (work) fillWorkPage(work);
+    else {
+      currentArtwork = null;
+      setWorkPageState({ missing: true });
+      toast(t('gal.workNotFound'));
+    }
+  } catch {
+    if (token !== workFetchToken) return;
+    currentArtwork = null;
+    setWorkPageState({ missing: true });
+    toast(t('gal.workNotFound'));
+  }
+}
+
+function goBackFromWork() {
+  if (workCanGoBack) {
+    workCanGoBack = false;
+    history.back();
+    return;
+  }
+  navigateTo('home', { replace: true });
 }
 
 function wireGallery() {
-  const lb = $('#gallery-lightbox');
+  $('#work-back')?.addEventListener('click', goBackFromWork);
 
-  $('#gallery-lb-close').addEventListener('click', () => { lb.hidden = true; });
-  lb.addEventListener('click', (e) => { if (e.target === lb) lb.hidden = true; });
-
-  $('#gallery-lb-like').addEventListener('click', async () => {
+  $('#work-like')?.addEventListener('click', async () => {
     if (!currentArtwork) return;
     if (!getUser()) return toast(t('gal.loginToLike'));
     try {
@@ -2038,31 +2131,34 @@ function wireGallery() {
         0,
         (currentArtwork.like_count || 0) + (nowLiked ? 1 : -1),
       );
-      $('#gallery-lb-like').classList.toggle('on', nowLiked);
-      $('#gallery-lb-like-count').textContent = String(currentArtwork.like_count);
+      $('#work-like')?.classList.toggle('on', nowLiked);
+      const countEl = $('#work-like-count');
+      if (countEl) countEl.textContent = String(currentArtwork.like_count);
       loadSamePromptGallery();
     } catch {
       toast(t('gal.uploadFail'));
     }
   });
 
-  $('#gallery-lb-delete').addEventListener('click', async () => {
+  $('#work-delete')?.addEventListener('click', async () => {
     if (!currentArtwork) return;
     if (!(await confirmDialog(t('gal.deleteConfirm')))) return;
     try {
       await deleteArtwork(currentArtwork.id, currentArtwork.storage_path);
-      lb.hidden = true;
       loadSamePromptGallery();
+      goBackFromWork();
       if (document.body.dataset.screen === 'atelier') renderAtelier();
     } catch { toast(t('gal.uploadFail')); }
   });
 
-  const copyBtn = $('#gallery-lb-copy');
-  if (copyBtn) {
-    copyBtn.addEventListener('click', () => {
-      toast(t('atelier.copySoon'));
-    });
-  }
+  $('#work-copy')?.addEventListener('click', () => {
+    toast(t('atelier.copySoon'));
+  });
+
+  const openAuth = () => openAuthSheet();
+  $('#work-signup-btn')?.addEventListener('click', openAuth);
+  $('#work-login-btn')?.addEventListener('click', openAuth);
+  $('#work-account-btn')?.addEventListener('click', openAuth);
 }
 
 let sheetBlob = null;
@@ -2466,10 +2562,6 @@ function renderArtworkTlPost(work, { mine = false } = {}) {
   return post;
 }
 
-function openAtelierWork(work) {
-  openGalleryLightbox(work, getUser()?.id);
-}
-
 async function ensureAtelierPhotoIndex() {
   if (atelierPhotoIndex) return atelierPhotoIndex;
   const photos = await everyPhoto().catch(() => []);
@@ -2679,15 +2771,13 @@ function applyRoute(route = routeFromLocation()) {
     return;
   }
   if (root === 'work') {
-    const workId = route.parts[1];
-    showScreen('home');
+    showWorkRoute(route.parts[1]);
+    return;
+  }
+  if (root === 'auth') {
     renderHome();
-    if (workId) {
-      fetchArtwork(workId).then((work) => {
-        if (work) openAtelierWork(work);
-        else toast(t('gal.workNotFound'));
-      }).catch(() => toast(t('gal.workNotFound')));
-    }
+    showScreen('home');
+    openAuthSheet();
     return;
   }
 
@@ -2793,6 +2883,7 @@ function updateAuthUI(u) {
     label.textContent = t('auth.login');
     btn.title = t('auth.login');
   }
+  updateWorkAuthUI(u);
 
   const loggedIn = !!u;
   const heroStats = $('.hero-stats');
@@ -2859,6 +2950,11 @@ function wireAuth() {
     }
   }
 
+  window.__openAuthSheet = () => {
+    renderSheet();
+    sheet.hidden = false;
+  };
+
   $('#auth-btn').addEventListener('click', () => {
     renderSheet();
     sheet.hidden = false;
@@ -2905,6 +3001,11 @@ function wireAuth() {
   });
 
   initAuth().then((u) => updateAuthUI(u));
+}
+
+function openAuthSheet() {
+  if (typeof window.__openAuthSheet === 'function') window.__openAuthSheet();
+  else $('#auth-sheet').hidden = false;
 }
 
 function init() {
