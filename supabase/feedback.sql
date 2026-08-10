@@ -1,5 +1,7 @@
 -- ARTCLUB feedback（Supabase SQL Editor で実行）
 -- 右端タブの吹き出しフォームから INSERT。中身は管理者が読む。
+-- メール通知: worker/feedback-mail をデプロイし、
+--   フロントからの POST または Database Webhook（Insert → /api/feedback-mail）で送る。
 
 create table if not exists public.feedback (
   id uuid primary key default gen_random_uuid(),
