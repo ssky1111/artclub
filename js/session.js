@@ -57,6 +57,9 @@ export function createSessionRunner({ onFinish, onQuit }) {
   };
 
   const pad = createPad($('#pad'));
+  // HTML で選ばれている太さ（既定＝真ん中）に合わせる
+  const initialSize = $('.pad-size.on')?.dataset.size;
+  if (initialSize) pad.setSize(Number(initialSize));
 
   const beeper = sfx;
   let state = null;
