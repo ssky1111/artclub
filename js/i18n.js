@@ -40,8 +40,6 @@ const DICT = {
                            en: 'Ideas, requests, bugs — anything helps.' },
   'fb.message':          { ja: '内容',               en: 'Message' },
   'fb.messagePh':        { ja: 'ここに書いてね',     en: 'Write here' },
-  'fb.contact':          { ja: '連絡先（任意）',     en: 'Contact (optional)' },
-  'fb.contactPh':        { ja: '返信が欲しければメールやXなど', en: 'Email / X if you want a reply' },
   'fb.send':             { ja: '送る',               en: 'Send' },
   'fb.sending':          { ja: '送信中…',            en: 'Sending…' },
   'fb.thanks':           { ja: 'ありがとう！届いたよ', en: 'Thanks — got it!' },
