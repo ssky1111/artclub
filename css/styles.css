@@ -231,7 +231,7 @@ body[data-skin='pastel-rpg'] .btn.primary:active,
 body[data-skin='pastel-rpg'] .btn.cta:active {
   transform: translateY(3px);
   box-shadow:
-    0 1px 0 color-mix(in srgb, var(--cta-ink) 22%, #e8a0b8),
+    0 1px 0 color-mix(in srgb, var(--cta-ink) 22%, #ff9ec8),
     inset 0 3px 5px rgba(80, 30, 50, .2);
   text-shadow: none;
 }
@@ -1519,7 +1519,7 @@ body[data-theme='dark'] .google-btn {
   font: inherit; font-size: 12px; font-weight: 700;
   color: var(--muted); cursor: pointer;
 }
-.gallery-like-btn.on { color: var(--brand-ink, #e03d7f); }
+.gallery-like-btn.on { color: var(--brand-ink, #ff6fa5); }
 .gallery-heart { font-size: 13px; line-height: 1; }
 .lightbox-meta {
   display: flex; align-items: center; justify-content: space-between;
