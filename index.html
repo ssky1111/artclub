@@ -27,7 +27,7 @@
   data-build は js/app.js の BUILD と揃えてある。
   古い HTML と新しい JS が混ざると画面が壊れるので、その検出に使う。
 -->
-<body data-build="128" data-theme="light">
+<body data-build="129" data-theme="light">
 <script>
 /* テーマは設定ロード後に JS が当てる（端末 localStorage には依存しない） */
 </script>
@@ -900,9 +900,6 @@
     <label class="label" for="feedback-message" data-i18n="fb.message">内容</label>
     <textarea id="feedback-message" class="input feedback-message" rows="5"
               data-i18n-ph="fb.messagePh" placeholder="ここに書いてね" maxlength="4000"></textarea>
-    <label class="label" for="feedback-contact" data-i18n="fb.contact">連絡先（任意）</label>
-    <input id="feedback-contact" class="input" type="text" maxlength="200"
-           data-i18n-ph="fb.contactPh" placeholder="返信が欲しければメールやXなど">
     <button id="feedback-send" class="btn primary big" data-i18n="fb.send">送る</button>
   </div>
 </div>

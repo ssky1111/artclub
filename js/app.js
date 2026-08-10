@@ -58,7 +58,7 @@ import { submitFeedback } from './feedback.js';
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '128';
+const BUILD = '129';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -3236,7 +3236,6 @@ function wireFeedback() {
   const tab = $('#feedback-tab');
   const sheet = $('#feedback-sheet');
   const message = $('#feedback-message');
-  const contact = $('#feedback-contact');
   const send = $('#feedback-send');
   if (!tab || !sheet || !message || !send) return;
 
@@ -3249,7 +3248,6 @@ function wireFeedback() {
   const close = () => {
     sheet.hidden = true;
     message.blur();
-    contact?.blur();
     restorePageScroll();
   };
 
@@ -3277,10 +3275,8 @@ function wireFeedback() {
     try {
       await submitFeedback({
         message: text,
-        contact: contact?.value || '',
       });
       message.value = '';
-      if (contact) contact.value = '';
       close();
       toast(t('fb.thanks'));
     } catch (err) {

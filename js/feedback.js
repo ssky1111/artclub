@@ -16,7 +16,7 @@ function authHeaders(extra = {}) {
 }
 
 /**
- * @param {{ message: string, contact?: string }} input
+ * @param {{ message: string }} input
  */
 export async function submitFeedback(input) {
   const message = String(input?.message || '').trim();
@@ -26,7 +26,7 @@ export async function submitFeedback(input) {
   const user = getUser();
   const body = {
     message,
-    contact: String(input?.contact || '').trim().slice(0, 200) || null,
+    contact: null,
     page_path: `${location.pathname}${location.search}${location.hash}`.slice(0, 500),
     user_id: user?.id || null,
     username: getUsername() || null,

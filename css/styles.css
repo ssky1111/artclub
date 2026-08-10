@@ -2231,6 +2231,5 @@ body[data-screen='review'] .feedback-tab {
 .feedback-message {
   resize: vertical;
   min-height: 120px;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
 }
-#feedback-contact { margin-bottom: 14px; }
