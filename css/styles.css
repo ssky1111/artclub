@@ -638,10 +638,46 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
   gap: 8px; margin-top: 10px;
   align-items: start;
 }
+.drawing-strip-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 .strip-item {
   padding: 6px; overflow: hidden; cursor: pointer;
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: #fff;
   min-height: 88px; display: flex; align-items: center; justify-content: center;
+}
+.drawing-strip-vertical .strip-item {
+  width: 100%;
+  min-height: 160px;
+  padding: 8px;
+}
+.drawing-strip-vertical .strip-item img {
+  max-height: 280px;
+}
+.strip-shot-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.strip-shot-controls .toggle-row {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--brand) 12%, var(--surface-2));
+}
+.strip-shot-controls .toggle-row.is-off {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.strip-copy-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.35;
 }
 .strip-item img {
   width: 100%; height: auto; max-height: 160px; object-fit: contain; display: block;
@@ -1247,9 +1283,11 @@ html:lang(ja) .chip { font-family: var(--font-ja); }
 }
 body[data-screen='home'] .tabbar,
 body[data-screen='library'] .tabbar,
+body[data-screen='atelier'] .tabbar,
 body[data-screen='log'] .tabbar { display: flex; }
 body[data-screen='home'] #screen-home,
 body[data-screen='library'] #screen-library,
+body[data-screen='atelier'] #screen-atelier,
 body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 
 .tabbar button {
@@ -1555,3 +1593,76 @@ body[data-theme='dark'] .google-btn {
   gap: 12px; width: min(92vw, 520px); margin-top: 10px; color: #fff;
 }
 .gallery-lb-user { font-weight: 700; }
+
+/* ---------- アトリエ ---------- */
+
+.atelier-tabs {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin: 0 0 12px; padding: 0 2px;
+}
+.atelier-lead { margin: 0 0 10px; padding: 0 2px; }
+.atelier-panel { margin-bottom: 8px; }
+.atelier-prompt-list { display: flex; flex-direction: column; gap: 18px; }
+.atelier-prompt-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.atelier-prompt-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 8px; margin-bottom: 10px;
+}
+.atelier-prompt-label { font-size: 13px; font-weight: 800; color: var(--brand-ink); }
+.atelier-prompt-count { font-size: 12px; color: var(--muted); }
+.atelier-prompt-photo {
+  width: 100%; aspect-ratio: 4 / 3; object-fit: cover;
+  border-radius: var(--radius-sm); background: var(--surface-2);
+  display: block; margin-bottom: 10px;
+}
+.atelier-prompt-photo.is-empty {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 13px; font-weight: 700;
+}
+.atelier-hscroll {
+  display: flex; gap: 10px; overflow-x: auto;
+  padding-bottom: 6px; -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
+.atelier-hscroll .atelier-thumb {
+  flex: 0 0 132px; scroll-snap-align: start;
+  border: none; padding: 0; background: transparent;
+  text-align: left; cursor: pointer; font: inherit; color: inherit;
+}
+.atelier-thumb-frame {
+  position: relative; width: 132px; height: 132px;
+  border-radius: var(--radius-sm); overflow: hidden;
+  background: var(--surface-2); border: 1px solid var(--line);
+}
+.atelier-thumb.is-mine .atelier-thumb-frame {
+  outline: 2px solid var(--brand); outline-offset: -2px;
+}
+.atelier-thumb img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.atelier-thumb-meta {
+  margin-top: 6px; font-size: 11px; font-weight: 700; color: var(--text-soft);
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+}
+.atelier-badge {
+  font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 999px;
+  background: color-mix(in srgb, var(--brand) 22%, transparent); color: var(--brand-ink);
+}
+.atelier-badge.copy { background: color-mix(in srgb, var(--mint) 35%, transparent); color: var(--accent-ink); }
+.atelier-badge.private { background: var(--surface-2); color: var(--muted); }
+.tl-post .atelier-badge { margin-left: 4px; }
+button.tl-media {
+  display: block; width: 100%; border: none; padding: 0;
+  background: transparent; cursor: pointer; text-align: left;
+  margin-top: 10px; border-radius: var(--radius-sm); overflow: hidden;
+  border: 1px solid var(--line);
+}
+button.tl-media img {
+  display: block; width: 100%; height: auto; max-height: 360px; object-fit: contain;
+  background: #fff;
+}

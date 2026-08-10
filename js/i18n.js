@@ -70,12 +70,36 @@ const DICT = {
   'gal.private':          { ja: '一覧には出さず、自分だけに保存', en: 'Save privately (hidden from the gallery)' },
   'gal.exclude':          { ja: '投稿から外す',           en: 'Exclude from post' },
   'gal.include':          { ja: '投稿に含める',           en: 'Include in post' },
+  'gal.postThis':         { ja: '公開する',               en: 'Make public' },
+  'gal.allowCopy':        { ja: '模写してOK',             en: 'OK to copy' },
+  'gal.allowCopyHint':    { ja: 'ONにすると、他の人が模写モードで練習できます', en: 'When on, others can practice by copying this drawing' },
   'gal.loginToLike':      { ja: 'いいねするにはログインしてね', en: 'Log in to like' },
   'gal.shareWork':        { ja: 'この作品をシェア',       en: 'Share this work' },
+
+  /* ---------- アトリエ ---------- */
+  'atelier.title':        { ja: 'アトリエ',               en: 'Atelier' },
+  'atelier.tabPublic':    { ja: 'みんなのアトリエ',       en: 'Everyone' },
+  'atelier.tabMine':      { ja: '自分のアトリエ',         en: 'Mine' },
+  'atelier.tabPrompt':    { ja: 'お題別',                 en: 'By prompt' },
+  'atelier.publicDesc':   { ja: 'みんなの公開スケッチが新しい順に流れます', en: 'Public sketches, newest first' },
+  'atelier.mineDesc':     { ja: '自分の投稿（非公開も含む）', en: 'Your posts (including private)' },
+  'atelier.promptDesc':   { ja: 'お題写真のあとに、自分とみんなの絵が横に並びます', en: 'Prompt photo first, then drawings side by side' },
+  'atelier.emptyPublic':  { ja: 'まだ公開投稿がありません', en: 'No public posts yet' },
+  'atelier.emptyMine':    { ja: 'まだ自分の投稿がありません', en: 'You have no posts yet' },
+  'atelier.loginMine':    { ja: 'ログインすると自分のアトリエが見られます', en: 'Log in to see your atelier' },
+  'atelier.emptyPrompt':  { ja: 'まだお題別の投稿がありません', en: 'No prompt groups yet' },
+  'atelier.promptPhoto':  { ja: 'お題',                   en: 'Prompt' },
+  'atelier.you':          { ja: '自分',                   en: 'You' },
+  'atelier.copyable':     { ja: '模写OK',                 en: 'Copyable' },
+  'atelier.copySoon':     { ja: '模写モードはもうすぐ用意します', en: 'Copy mode is coming soon' },
+  'atelier.copyAction':   { ja: '模写する',               en: 'Copy this' },
+  'atelier.privateBadge': { ja: '非公開',                 en: 'Private' },
+  'atelier.noPromptPhoto':{ ja: 'お題写真なし',           en: 'No prompt photo' },
 
   /* ---------- タブ ---------- */
   'tab.home':            { ja: 'ホーム',   en: 'Home' },
   'tab.library':         { ja: 'しゃしん', en: 'Photos' },
+  'tab.atelier':         { ja: 'アトリエ', en: 'Atelier' },
   'tab.log':             { ja: 'きろく',   en: 'Log' },
 
   /* ---------- ホーム ---------- */
