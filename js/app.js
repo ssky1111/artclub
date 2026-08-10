@@ -17,7 +17,7 @@ import { createPhotoQueue } from './images.js';
 import { searchPlatesMulti, createPlateQueue } from './commons.js';
 import {
   ensureLessonCards, cardsForLesson, dueCards, weakestLesson,
-  grade, reminderFor, injectWeakStep, buildReviewMenu,
+  reminderFor, injectWeakStep, buildReviewMenu,
 } from './review.js';
 import { createSessionRunner } from './session.js';
 import { putDrawing, getDrawing } from './db.js';
@@ -59,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '40';
+const BUILD = '41';
 
 function shellIsCurrent() {
   if (document.body.dataset.build === BUILD) {
@@ -1431,8 +1431,6 @@ async function finishSession(result) {
   $('#gallery-card').hidden = true;
   $('#review-note').value = '';
 
-  renderReviewChecks(entry.lessonId, entry.lessonMode);
-
   const hasDrawings = pendingDrawings.length > 0 && !!getUser();
   $('#publish-card').hidden = !hasDrawings;
   if (hasDrawings) {
@@ -1477,34 +1475,6 @@ async function cropPendingDrawings() {
 }
 
 /* ==================== ふりかえり ==================== */
-
-function renderReviewChecks(lessonId, lessonMode) {
-  const card = $('#review-checks-card');
-  const list = $('#review-checks');
-  const lesson = lessonId ? lessonById(lessonId) : null;
-  list.innerHTML = '';
-  card.hidden = !lesson;
-  if (!lesson) return;
-
-  ensureLessonCards(lesson.id);
-  const cards = lessonMode === 'lesson'
-    ? cardsForLesson(lesson.id)
-    : dueCards().filter((c) => c.lessonId === lesson.id).slice(0, 4);
-
-  if (!cards.length) { card.hidden = true; return; }
-
-  for (const item of cards) {
-    const li = el('li');
-    const btn = el('button', 'check-btn', item.text);
-    btn.dataset.cardId = item.id;
-    btn.addEventListener('click', () => {
-      btn.classList.toggle('on');
-      if (settings.sfx && btn.classList.contains('on')) sfx.check();
-    });
-    li.append(btn);
-    list.append(li);
-  }
-}
 
 /**
  * その回に描いた絵をならべる。
@@ -1649,13 +1619,6 @@ function wireReview() {
   });
 
   $('#review-save').addEventListener('click', async () => {
-    const checkBtns = $$('#review-checks .check-btn');
-    const missed = [];
-    for (const btn of checkBtns) {
-      const ok = btn.classList.contains('on');
-      grade(btn.dataset.cardId, ok);          // ここで次に出る日が決まる
-      if (!ok) missed.push(btn.textContent);
-    }
     // まだ上げていなければ、ここでクラウドにも残す
     await uploadPendingArtworks();
     const entry = updateLastSession({
@@ -1669,7 +1632,7 @@ function wireReview() {
         seconds: shot.seconds || null,
         artworkId: shot.artworkId || null,
       })),
-      missed: missed.length ? missed : null,
+      missed: null,
     });
     if (entry) {
       try {
