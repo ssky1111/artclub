@@ -218,11 +218,9 @@ function renderModes() {
       card.append(el('div', 'menu-time', t('copy.unlimited')));
     }
     card.addEventListener('click', () => {
-      openPaywall(() => {
-        if (mode.picker === 'part') return openPartSheet();
-        if (mode.picker === 'copy') return openCopySheet();
-        startSession(mode);
-      });
+      if (mode.picker === 'part') return openPartSheet();
+      if (mode.picker === 'copy') return openCopySheet();
+      startSession(mode);
     });
     wrap.append(card);
   }
@@ -262,16 +260,6 @@ function setPaySheetCopy({ titleKey, bodyKey, ctaKey }) {
   if (title) title.textContent = t(titleKey);
   if (body) body.textContent = t(bodyKey);
   if (cta) cta.textContent = t(ctaKey);
-}
-
-function openPaywall(onContinue) {
-  paywallCallback = onContinue || null;
-  setPaySheetCopy({
-    titleKey: 'home.paywallTitle',
-    bodyKey: 'home.paywallBody',
-    ctaKey: 'home.paywallCta',
-  });
-  $('#pay-sheet').hidden = false;
 }
 
 /** デイリー無料上限。続ける導線は出さず、閉じるだけ。 */
@@ -475,8 +463,15 @@ function wireCopySheet() {
   });
 }
 
-/** DAILY 開始。直近1週間の振り返り（無ければ案内）を先にモーダルで出す。 */
+/**
+ * DAILY 開始。
+ * 未ログインなら先にログイン → 振り返りワード → セッション開始。
+ */
 async function startDaily(daily, part) {
+  if (!getUser()) {
+    requireLogin(() => startDaily(daily, part));
+    return;
+  }
   await weekReviewDialog(recentReviewNotes(7));
   startSession(daily, { part });
 }
@@ -2748,8 +2743,10 @@ async function renderAtelierMine() {
 async function renderAtelierByPrompt() {
   const list = $('#atelier-prompt-list');
   const empty = $('#atelier-prompt-empty');
+  const panel = $('#atelier-prompt');
   list.innerHTML = '';
   empty.hidden = true;
+  panel?.querySelectorAll('.atelier-prompt-more').forEach((btn) => btn.remove());
 
   const [publicWorks, myWorks, photos] = await Promise.all([
     fetchPublicArtworks({ limit: 120 }).catch(() => []),
@@ -2779,7 +2776,15 @@ async function renderAtelierByPrompt() {
     return score(b) - score(a);
   });
 
-  for (const promptId of promptIds) {
+  const PROMPT_PREVIEW = 2; // 3件以上あるとき最初は2件＋もっと見る
+  const visibleIds = promptIds.length >= 3
+    ? promptIds.slice(0, PROMPT_PREVIEW)
+    : promptIds;
+  const hiddenIds = promptIds.length >= 3
+    ? promptIds.slice(PROMPT_PREVIEW)
+    : [];
+
+  const appendPromptCard = (promptId) => {
     const topWorks = [...byPrompt.get(promptId)]
       .sort((a, b) => {
         const likeDiff = (b.like_count || 0) - (a.like_count || 0);
@@ -2820,6 +2825,18 @@ async function renderAtelierByPrompt() {
 
     card.append(block);
     list.append(card);
+  };
+
+  for (const promptId of visibleIds) appendPromptCard(promptId);
+
+  if (hiddenIds.length) {
+    const more = el('button', 'btn ghost atelier-prompt-more', t('atelier.seeMore'));
+    more.type = 'button';
+    more.addEventListener('click', () => {
+      more.remove();
+      for (const promptId of hiddenIds) appendPromptCard(promptId);
+    });
+    list.after(more);
   }
 }
 
