@@ -206,7 +206,7 @@ body[data-skin='pastel-rpg'] .primary-card .btn.primary {
 /* RPG風の立体ボタン：上ハイライト＋下のふち＋押すと沈む */
 body[data-skin='pastel-rpg'] .btn {
   border: 2px solid color-mix(in srgb, var(--text) 14%, transparent);
-  border-radius: 16px;
+  border-radius: 999px;
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--surface) 55%, #fff) 0%,
@@ -252,7 +252,7 @@ body[data-skin='pastel-rpg'] .btn.ghost {
   border-color: var(--line-strong);
 }
 body[data-skin='pastel-rpg'] .btn.big {
-  border-radius: 18px;
+  border-radius: 999px;
   padding-top: 16px;
   padding-bottom: 16px;
 }
@@ -313,7 +313,7 @@ body[data-skin='pastel-rpg'] .tabbar button.on:active {
 }
 body[data-skin='pastel-rpg'] .confirm-dialog-btn {
   border: 2px solid color-mix(in srgb, var(--text) 14%, transparent);
-  border-radius: 14px;
+  border-radius: 999px;
   box-shadow: var(--lift);
   font-weight: 700;
 }
