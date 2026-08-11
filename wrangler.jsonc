@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "artclub-pages-dev",
+  "compatibility_date": "2026-08-11",
+  "assets": {
+    "directory": "."
+  },
+  "compatibility_flags": ["nodejs_compat"]
+}
