@@ -1809,6 +1809,70 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 .range { width: 100%; accent-color: var(--accent); margin: 6px 0 2px; }
 #screen-admin .input { margin-bottom: 6px; }
 
+/* ---------- 管理画面：2カラム ---------- */
+
+#screen-admin.admin-screen {
+  max-width: 1100px;
+}
+#screen-admin .admin-shell {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+#screen-admin .admin-nav {
+  position: sticky;
+  top: calc(12px + env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--card, #fff);
+  border: 1px solid color-mix(in srgb, var(--muted) 28%, transparent);
+}
+#screen-admin .admin-nav-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--text-soft, var(--text));
+  cursor: pointer;
+}
+#screen-admin .admin-nav-btn:hover {
+  background: color-mix(in srgb, var(--muted) 12%, transparent);
+}
+#screen-admin .admin-nav-btn.on {
+  background: color-mix(in srgb, var(--brand, #222) 12%, transparent);
+  color: var(--text);
+}
+#screen-admin .admin-panels {
+  min-width: 0;
+}
+#screen-admin .admin-panel[hidden] {
+  display: none !important;
+}
+@media (max-width: 720px) {
+  #screen-admin .admin-shell {
+    grid-template-columns: 1fr;
+  }
+  #screen-admin .admin-nav {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  #screen-admin .admin-nav-btn {
+    flex: 1 1 auto;
+    text-align: center;
+    padding: 8px 10px;
+  }
+}
+
 /* ---------- 管理：デイリー解析 ---------- */
 
 .analytics-date-row {

@@ -26,9 +26,6 @@ import {
   refreshCustomTags, getCustomTags, allTagsWithCustom,
 } from './library.js';
 import {
-  getRepoConfig, saveRepoConfig, testRepo,
-} from './repo.js';
-import {
   loadManifest as sbLoadManifest, pushToSupabase, testConnection as sbTest,
   supabasePhotos, updateTags as sbUpdateTags, bulkUpdateTags, bulkRemoveTags,
   removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
@@ -62,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '219';
+const BUILD = '220';
 const SITE_PASS_KEY = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 /** サイトパスワード解除の有効期限（約1週間） */
@@ -911,24 +908,28 @@ async function openAdmin() {
 }
 
 async function renderAdmin() {
-  // 端末ローカルお題は廃止。管理は Supabase 側へ。
-  $('#admin-untagged').textContent = '';
-  fillPhotoGrid($('#admin-grid'), [], openPhoto);
-  fillPhotoGrid($('#admin-bundled'), await bundledPhotos(), openPhoto);
-
-  const cfg = getRepoConfig();
-  $('#repo-path').value = cfg.owner && cfg.repo ? `${cfg.owner}/${cfg.repo}` : '';
-  $('#repo-branch').value = cfg.branch || 'main';
-  $('#repo-token').value = cfg.token || '';
-  $('#repo-push').textContent = t('admin.push', { n: 0 });
-
   try {
     const fixed = await repairManifestExtensions();
     if (fixed) toast(`${fixed}件の写真URLをWebPに直しました`);
   } catch { /* */ }
 
+  showAdminPanel(currentAdminPanel);
   await renderSupabaseGrid();
   await renderTagManager();
+}
+
+let currentAdminPanel = 'photos';
+
+function showAdminPanel(name) {
+  currentAdminPanel = name || 'photos';
+  for (const btn of $$('.admin-nav-btn')) {
+    btn.classList.toggle('on', btn.dataset.adminPanel === currentAdminPanel);
+  }
+  for (const panel of $$('.admin-panel')) {
+    const on = panel.dataset.adminPanel === currentAdminPanel;
+    panel.hidden = !on;
+    panel.classList.toggle('on', on);
+  }
 }
 
 /* ---------- Supabase 写真グリッド ---------- */
@@ -1131,16 +1132,6 @@ async function renderTagManager() {
   }
 }
 
-function readRepoForm() {
-  const [owner, repo] = ($('#repo-path').value || '').trim().split('/');
-  return saveRepoConfig({
-    owner: (owner || '').trim(),
-    repo: (repo || '').trim(),
-    branch: ($('#repo-branch').value || 'main').trim(),
-    token: ($('#repo-token').value || '').trim(),
-  });
-}
-
 function wireAdmin() {
   $('#admin-enter').addEventListener('click', async () => {
     const value = $('#admin-pass').value;
@@ -1163,29 +1154,13 @@ function wireAdmin() {
   $('#admin-lock').addEventListener('click', () => { adminOpen = false; openAdmin(); });
   $('#admin-open')?.addEventListener('click', () => { navigateTo('admin'); });
 
-  $('#admin-add').addEventListener('click', () => {
-    toast('端末への写真追加はやめました。下の Supabase から上げてください');
-  });
-
-  $('#repo-test').addEventListener('click', async () => {
-    const cfg = readRepoForm();
-    const status = $('#repo-status');
-    status.textContent = '…';
-    try {
-      const info = await testRepo(cfg);
-      status.textContent = `OK — ${info.name}${info.canPush ? '' : '（書き込み権限なし）'}`;
-    } catch (err) {
-      status.textContent = `NG：${err.message}`;
-    }
-  });
-
-  $('#repo-push').addEventListener('click', () => {
-    $('#repo-status').textContent = '端末ローカル写真は廃止しました。Supabase を使ってください';
-  });
-
-  $('#repo-export').addEventListener('click', () => {
-    toast('端末ローカル写真は廃止しました');
-  });
+  for (const btn of $$('.admin-nav-btn')) {
+    btn.addEventListener('click', () => {
+      showAdminPanel(btn.dataset.adminPanel);
+      if (btn.dataset.adminPanel === 'tags') renderTagManager().catch(() => {});
+      if (btn.dataset.adminPanel === 'photos') renderSupabaseGrid().catch(() => {});
+    });
+  }
 
   /* ---------- Supabase ---------- */
 
