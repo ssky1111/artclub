@@ -9,7 +9,7 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
 
 const STORAGE_KEY = 'artclub.auth';
-const REDIRECT_URL = 'https://artclub.space';
+const REDIRECT_URL = location.origin;
 
 let session = null;
 let user = null;
