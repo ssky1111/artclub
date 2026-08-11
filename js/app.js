@@ -945,6 +945,24 @@ const sbFilterTags = new Set();
 let sbLastClickedIndex = -1;
 let sbPhotosCache = [];
 
+function syncSbTagToggle(btnId, tags, closedLabel) {
+  const btn = $(btnId);
+  if (!btn) return;
+  const list = [...tags];
+  btn.textContent = list.length
+    ? `${closedLabel}（${list.join('・')}）`
+    : closedLabel;
+}
+
+function setSbTagPanelOpen(toggleId, panelId, open) {
+  const toggle = $(toggleId);
+  const panel = $(panelId);
+  if (!toggle || !panel) return;
+  panel.hidden = !open;
+  toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  toggle.classList.toggle('is-open', open);
+}
+
 function renderUploadTagChips() {
   const wrap = $('#sb-upload-tags');
   wrap.innerHTML = '';
@@ -957,9 +975,11 @@ function renderUploadTagChips() {
     chip.addEventListener('click', () => {
       if (sbUploadTags.has(tag)) sbUploadTags.delete(tag); else sbUploadTags.add(tag);
       chip.classList.toggle('on');
+      syncSbTagToggle('#sb-upload-toggle', sbUploadTags, 'タグを選んで追加');
     });
     wrap.append(chip);
   }
+  syncSbTagToggle('#sb-upload-toggle', sbUploadTags, 'タグを選んで追加');
 }
 
 function renderFilterTagChips() {
@@ -975,10 +995,12 @@ function renderFilterTagChips() {
     chip.addEventListener('click', () => {
       if (sbFilterTags.has(tag)) sbFilterTags.delete(tag); else sbFilterTags.add(tag);
       chip.classList.toggle('on');
+      syncSbTagToggle('#sb-filter-toggle', sbFilterTags, 'タグでしぼりこみ');
       renderSupabaseGrid({ keepCache: true });
     });
     wrap.append(chip);
   }
+  syncSbTagToggle('#sb-filter-toggle', sbFilterTags, 'タグでしぼりこみ');
 }
 
 function filteredSbPhotos(photos) {

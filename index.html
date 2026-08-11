@@ -767,12 +767,24 @@
           <button id="sb-add-notag" class="btn ghost small">＋ タグなしで追加</button>
         </div>
         <p class="muted small">本番 Storage と共有。ここでの変更は本番にも反映されます。非アクティブにすると一覧には残りますが、お題には出ません。</p>
-        <div class="label" style="margin-top:8px">タグを選んでから追加</div>
-        <div id="sb-upload-tags" class="chips"></div>
-        <button id="sb-add" class="btn primary" style="margin-top:10px">選んだタグで写真を追加</button>
+        <div class="sb-tag-panel">
+          <button type="button" id="sb-upload-toggle" class="btn ghost small sb-tag-toggle" aria-expanded="false">
+            タグを選んで追加
+          </button>
+          <div id="sb-upload-panel" class="sb-tag-body" hidden>
+            <div id="sb-upload-tags" class="chips"></div>
+            <button id="sb-add" class="btn primary" style="margin-top:10px">選んだタグで写真を追加</button>
+          </div>
+        </div>
         <input type="file" id="sb-input" accept="image/*" multiple hidden>
-        <div class="label" style="margin-top:14px">タグでしぼりこみ</div>
-        <div id="sb-filter-tags" class="chips"></div>
+        <div class="sb-tag-panel">
+          <button type="button" id="sb-filter-toggle" class="btn ghost small sb-tag-toggle" aria-expanded="false">
+            タグでしぼりこみ
+          </button>
+          <div id="sb-filter-panel" class="sb-tag-body" hidden>
+            <div id="sb-filter-tags" class="chips"></div>
+          </div>
+        </div>
         <p id="sb-status" class="muted small" style="margin-top:6px"></p>
         <div id="sb-grid" class="lib-grid selectable-grid"></div>
         <div id="sb-select-bar" class="select-bar" hidden>
