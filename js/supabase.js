@@ -6,8 +6,15 @@
  * SDK は使わず REST API を直接叩く。
  */
 
-export const SUPABASE_URL = 'https://clifnylwatvtrikrfpft.supabase.co';
-export const SUPABASE_KEY = 'sb_publishable_kzKAxV0nVjU4ts-ewGHgRg_HmaQPFRj';
+const ENV_MAP = {
+  'artclub.space':     { url: 'https://clifnylwatvtrikrfpft.supabase.co', key: 'sb_publishable_kzKAxV0nVjU4ts-ewGHgRg_HmaQPFRj' },
+  'dev.artclub.space': { url: 'https://fuggnreupdntutktient.supabase.co', key: 'sb_publishable_vs2GFcc2mV1yjGCZkRIyNA_YP0ocE_l' },
+  'localhost':         { url: 'https://fuggnreupdntutktient.supabase.co', key: 'sb_publishable_vs2GFcc2mV1yjGCZkRIyNA_YP0ocE_l' },
+};
+const env = ENV_MAP[location.hostname];
+if (!env) throw new Error(`Unknown host: ${location.hostname} — Supabase 接続を拒否しました`);
+export const SUPABASE_URL = env.url;
+export const SUPABASE_KEY = env.key;
 const BUCKET = 'photos';
 
 function hdrs(extra = {}) {
