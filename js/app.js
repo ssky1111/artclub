@@ -706,7 +706,7 @@ function openSetup() {
 function renderSetupTags() {
   const wrap = $('#setup-tags');
   wrap.innerHTML = '';
-  for (const tag of ALL_TAGS) {
+  for (const tag of allTagsWithCustom()) {
     const chip = el('button', `chip${setup.tags.includes(tag) ? ' on' : ''}`, tag);
     chip.addEventListener('click', () => {
       const next = new Set(setup.tags);
@@ -773,7 +773,7 @@ async function renderLibrary() {
 
   const filter = $('#lib-filter');
   filter.innerHTML = '';
-  for (const tag of ALL_TAGS) {
+  for (const tag of allTagsWithCustom()) {
     const chip = el('button', `chip${libFilter.includes(tag) ? ' on' : ''}`, tag);
     chip.addEventListener('click', () => {
       const next = new Set(libFilter);
@@ -1324,10 +1324,13 @@ function wireAdmin() {
     const input = $('#tag-new-input');
     const name = input.value.trim();
     if (!name) return;
-    const existing = [...ALL_TAGS, ...getCustomTags()];
-    if (existing.includes(name)) return toast('そのタグはすでにあります');
-    const next = [...getCustomTags(), name];
-    await saveCustomTags(next);
+    if (allTagsWithCustom().includes(name)) return toast('そのタグはすでにあります');
+    // 組み込みを削除済みなら復活。新規なら custom に追加。
+    if (ALL_TAGS.includes(name)) {
+      await saveCustomTags(getCustomTags(), { revive: [name] });
+    } else {
+      await saveCustomTags([...getCustomTags(), name]);
+    }
     input.value = '';
     await refreshCustomTags();
     await renderTagManager();
