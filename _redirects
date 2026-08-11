@@ -1,4 +1,0 @@
-# Cloudflare Pages — リダイレクトのみ（SPA フォールバックは _routes.json で処理）
-
-/privacy.html /privacy/ 301
-/terms.html /terms/ 301
