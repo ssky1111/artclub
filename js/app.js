@@ -62,7 +62,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '218';
+const BUILD = '219';
 const SITE_PASS_KEY = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 /** サイトパスワード解除の有効期限（約1週間） */
@@ -1108,12 +1108,11 @@ async function renderTagManager() {
   const wrap = $('#tag-manage-list');
   wrap.innerHTML = '';
 
-  const custom = new Set(getCustomTags());
   for (const tag of allTagsWithCustom()) {
     const chip = el('button', 'chip on', `${tag} ×`);
     chip.addEventListener('click', async () => {
       if (!(await confirmDialog(
-        `「${tag}」を削除しますか？\nすべての写真のタグからも外します。`,
+        `「${tag}」を削除しますか？\nすべての写真のタグからも外し、一覧からも消えます。`,
       ))) return;
       try {
         const { photos } = await deleteTagEverywhere(tag);
@@ -1121,11 +1120,9 @@ async function renderTagManager() {
         await renderTagManager();
         renderUploadTagChips();
         await renderSupabaseGrid();
-        // 組み込みタグは一覧に残る（コード固定）。写真からは外れている。
-        const note = custom.has(tag)
-          ? (photos ? `「${tag}」を削除し、${photos}枚から外しました` : `「${tag}」を削除しました`)
-          : (photos ? `「${tag}」を${photos}枚から外しました` : `「${tag}」が付いた写真はありませんでした`);
-        toast(note);
+        toast(photos
+          ? `「${tag}」を削除し、${photos}枚から外しました`
+          : `「${tag}」を削除しました`);
       } catch (err) {
         toast(`削除に失敗しました：${err.message || err}`);
       }

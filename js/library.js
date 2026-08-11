@@ -5,7 +5,7 @@
  */
 
 import { loadManifest, manifestPhotoUrl } from './repo.js';
-import { supabasePhotos, loadCustomTags } from './supabase.js';
+import { supabasePhotos, loadCustomTags, loadRemovedTags } from './supabase.js';
 
 /** よく使うタグ。これ以外も自由に足せる。 */
 export const TAG_GROUPS = [
@@ -18,19 +18,27 @@ export const TAG_GROUPS = [
 export const ALL_TAGS = TAG_GROUPS.flatMap((g) => g.tags);
 
 let customTags = [];
+let removedTags = [];
 
 export async function refreshCustomTags() {
   customTags = await loadCustomTags();
+  removedTags = await loadRemovedTags();
   return customTags;
 }
 
 export function getCustomTags() { return customTags; }
 
-/** @deprecated 非表示タグは廃止。互換のため空配列。 */
+/** @deprecated */
 export function getHiddenTags() { return []; }
 
+export function getRemovedTags() { return removedTags; }
+
+/** 使えるタグ一覧（削除済みは出さない） */
 export function allTagsWithCustom() {
-  return [...ALL_TAGS, ...customTags.filter((t) => !ALL_TAGS.includes(t))];
+  const removed = new Set(removedTags);
+  const base = ALL_TAGS.filter((t) => !removed.has(t));
+  const extra = customTags.filter((t) => !ALL_TAGS.includes(t) && !removed.has(t));
+  return [...base, ...extra];
 }
 
 /** 端末ローカルのお題は持たない（互換のため空配列）。 */

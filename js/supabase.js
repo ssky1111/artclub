@@ -123,31 +123,47 @@ const TAGS_FILE = 'custom-tags.json';
 
 let tagConfig = null;
 
+function normalizeTagConfig(data) {
+  if (Array.isArray(data)) return { custom: data, removed: [] };
+  const custom = Array.isArray(data?.custom) ? data.custom : [];
+  // 旧 hidden は「削除済み」として引き継ぐ（復元UIは出さない）
+  const removed = [...new Set([
+    ...(Array.isArray(data?.removed) ? data.removed : []),
+    ...(Array.isArray(data?.hidden) ? data.hidden : []),
+  ])].filter((t) => t && !custom.includes(t));
+  return { custom, removed };
+}
+
 export async function loadTagConfig() {
   if (tagConfig) return tagConfig;
   try {
     const res = await fetch(publicUrl(TAGS_FILE), { cache: 'reload' });
-    if (!res.ok) return { custom: [] };
+    if (!res.ok) {
+      tagConfig = { custom: [], removed: [] };
+      return tagConfig;
+    }
     const data = await res.json();
-    if (Array.isArray(data)) return { custom: data };
-    // 旧 hidden は読み捨て（非表示リスト概念は廃止）
-    return { custom: data.custom || [] };
+    tagConfig = normalizeTagConfig(data);
+    return tagConfig;
   } catch {
-    return { custom: [] };
+    tagConfig = { custom: [], removed: [] };
+    return tagConfig;
   }
 }
 
 async function saveTagConfig(cfg) {
-  // custom だけ保存。hidden は書かない
-  const body = JSON.stringify({ custom: cfg.custom || [] });
-  tagConfig = { custom: cfg.custom || [] };
+  const next = {
+    custom: Array.isArray(cfg.custom) ? cfg.custom : [],
+    removed: Array.isArray(cfg.removed) ? cfg.removed : [],
+  };
+  tagConfig = next;
   const res = await fetch(storageUrl(TAGS_FILE), {
     method: 'POST',
     headers: hdrs({
       'Content-Type': 'application/json',
       'x-upsert': 'true',
     }),
-    body,
+    body: JSON.stringify(next),
   });
   if (!res.ok) throw new Error(`tags save failed: ${res.status}`);
   return tagConfig;
@@ -158,16 +174,26 @@ export async function loadCustomTags() {
   return cfg.custom;
 }
 
+export async function loadRemovedTags() {
+  const cfg = await loadTagConfig();
+  return cfg.removed || [];
+}
+
 export async function saveCustomTags(tags) {
-  return saveTagConfig({ custom: tags });
+  const cfg = await loadTagConfig();
+  // 追加し直した名前は削除済みから外す
+  const custom = tags || [];
+  const removed = (cfg.removed || []).filter((t) => !custom.includes(t));
+  return saveTagConfig({ custom, removed });
 }
 
 export function invalidateTagConfig() { tagConfig = null; }
 
 /**
- * カスタムタグを Storage から本削除する。
+ * タグを Storage から本削除する。
  * - 全写真の manifest.tags から外す
  * - カスタム一覧から外す
+ * - 組み込みタグも一覧に出さないよう removed に入れる
  * @returns {{ photos: number }}
  */
 export async function deleteTagEverywhere(tag) {
@@ -186,7 +212,8 @@ export async function deleteTagEverywhere(tag) {
   invalidateTagConfig();
   const cfg = await loadTagConfig();
   const nextCustom = (cfg.custom || []).filter((t) => t !== name);
-  await saveTagConfig({ custom: nextCustom });
+  const nextRemoved = [...new Set([...(cfg.removed || []), name])];
+  await saveTagConfig({ custom: nextCustom, removed: nextRemoved });
 
   return { photos };
 }
