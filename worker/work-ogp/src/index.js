@@ -47,6 +47,7 @@ function modeLabel(mode) {
   if (m.includes('gesture')) return 'ジェスチャードローイング';
   if (m.includes('part')) return '部位練習';
   if (m.includes('daily')) return 'DAILY';
+  if (m.includes('compose') || m.includes('構図')) return '構図とポーズ';
   if (m.includes('croquis')) return 'クロッキー';
   return mode;
 }
