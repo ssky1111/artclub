@@ -225,64 +225,79 @@ export async function uploadArtwork(drawingBlob, promptId, {
     kind,
     og_image_url: ogImageUrl,
   };
-  const legacyRow = {
-    user_id: user.id,
-    prompt_id: promptId,
-    image_url: imageUrl,
-    storage_path: path,
-    is_public: isPublic,
-    username: fullRow.username,
-  };
 
-  let dbRes = await fetch(`${SUPABASE_URL}/rest/v1/artworks`, {
+  const postRow = (row) => fetch(`${SUPABASE_URL}/rest/v1/artworks`, {
     method: 'POST',
     headers: authHeaders({
       'Content-Type': 'application/json',
       Prefer: 'return=representation',
     }),
-    body: JSON.stringify(fullRow),
+    body: JSON.stringify(row),
   });
-  // short_id 衝突時は1回だけ作り直す
-  if (!dbRes.ok) {
-    const errText = await dbRes.text();
-    if (/short_id|duplicate|unique/i.test(errText)) {
+
+  // 本番スキーマが追いついていない列は段階的に外す。
+  // session_id / mode は解析の単位になるので、最後まで残す。
+  const attempts = [
+    fullRow,
+    ((r) => { const x = { ...r }; delete x.og_image_url; delete x.kind; return x; })(fullRow),
+    ((r) => {
+      const x = { ...r };
+      delete x.og_image_url;
+      delete x.kind;
+      delete x.short_id;
+      return x;
+    })(fullRow),
+    {
+      user_id: user.id,
+      prompt_id: promptId,
+      image_url: imageUrl,
+      storage_path: path,
+      is_public: isPublic,
+      visibility,
+      session_id: sessionId,
+      mode,
+      username: fullRow.username,
+      allow_copy: !!allowCopy,
+    },
+    {
+      user_id: user.id,
+      prompt_id: promptId,
+      image_url: imageUrl,
+      storage_path: path,
+      is_public: isPublic,
+      session_id: sessionId,
+      mode,
+      username: fullRow.username,
+    },
+    {
+      user_id: user.id,
+      prompt_id: promptId,
+      image_url: imageUrl,
+      storage_path: path,
+      is_public: isPublic,
+      username: fullRow.username,
+    },
+  ];
+
+  let dbRes = null;
+  let lastErrText = '';
+  for (let i = 0; i < attempts.length; i++) {
+    const row = attempts[i];
+    dbRes = await postRow(row);
+    if (dbRes.ok) break;
+    lastErrText = await dbRes.text().catch(() => '');
+    // short_id 衝突は作り直して同段をもう一度
+    if (i === 0 && /short_id|duplicate|unique/i.test(lastErrText)) {
       fullRow.short_id = makeShortId(8);
-      dbRes = await fetch(`${SUPABASE_URL}/rest/v1/artworks`, {
-        method: 'POST',
-        headers: authHeaders({
-          'Content-Type': 'application/json',
-          Prefer: 'return=representation',
-        }),
-        body: JSON.stringify(fullRow),
-      });
-    } else {
-      // kind / og_image_url / short_id 未移行でも動くように段階的に落とす
-      const midRow = { ...fullRow };
-      delete midRow.og_image_url;
-      delete midRow.kind;
-      dbRes = await fetch(`${SUPABASE_URL}/rest/v1/artworks`, {
-        method: 'POST',
-        headers: authHeaders({
-          'Content-Type': 'application/json',
-          Prefer: 'return=representation',
-        }),
-        body: JSON.stringify(midRow),
-      });
-      if (!dbRes.ok) {
-        dbRes = await fetch(`${SUPABASE_URL}/rest/v1/artworks`, {
-          method: 'POST',
-          headers: authHeaders({
-            'Content-Type': 'application/json',
-            Prefer: 'return=representation',
-          }),
-          body: JSON.stringify(legacyRow),
-        });
-      }
+      attempts[0] = fullRow;
+      dbRes = await postRow(fullRow);
+      if (dbRes.ok) break;
+      lastErrText = await dbRes.text().catch(() => '');
     }
+    console.warn('[artwork insert fallback]', i, dbRes.status, lastErrText.slice(0, 160));
   }
-  if (!dbRes.ok) {
-    const text = await dbRes.text();
-    throw new Error(`db insert failed: ${dbRes.status} ${text}`);
+  if (!dbRes?.ok) {
+    throw new Error(`db insert failed: ${dbRes?.status || '?'} ${lastErrText}`);
   }
 
   const [inserted] = await dbRes.json();

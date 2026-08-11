@@ -172,6 +172,11 @@ function isSheetArtwork(a) {
   return prompt.includes(':sheet') || /:sheet$/i.test(prompt);
 }
 
+function sessionIdFromPrompt(promptId) {
+  const m = String(promptId || '').match(/^session:([^:]+)/);
+  return m ? m[1] : null;
+}
+
 function modeToMenuId(mode) {
   const raw = String(mode || '').trim();
   const m = raw.toLowerCase();
@@ -183,35 +188,100 @@ function modeToMenuId(mode) {
   return '';
 }
 
+/**
+ * 投稿を「練習1回」単位にまとめる。
+ * session_id が欠けていても、まとめ画の session:ID や近い時刻の塊で1回にする
+ * （Daily 5枚を 5 回と数えない）。
+ */
 function artworksToRows(artworks = []) {
-  const seen = new Map();
+  const SESSION_GAP_MS = 45 * 60 * 1000;
+  const SHEET_LINK_MS = 10 * 60 * 1000;
+
+  const drawings = [];
+  const sheets = [];
   for (const a of artworks) {
     if (!a?.user_id) continue;
-    if (isSheetArtwork(a)) continue;
-    const day = dateKey(new Date(a.created_at));
-    const sid = a.session_id || `art:${a.id || a.created_at}`;
-    const key = `${a.user_id}|${day}|${sid}`;
     const ts = new Date(a.created_at).getTime() || 0;
-    const menuId = modeToMenuId(a.mode);
+    const item = { ...a, _ts: ts, _day: dateKey(new Date(a.created_at)) };
+    if (isSheetArtwork(a)) sheets.push(item);
+    else drawings.push(item);
+  }
+
+  // まとめ画の session:xxx:sheet → 直前の描画に同じセッションを付ける
+  for (const sheet of sheets) {
+    const sid = sheet.session_id || sessionIdFromPrompt(sheet.prompt_id);
+    if (!sid) continue;
+    for (const d of drawings) {
+      if (d.user_id !== sheet.user_id || d._day !== sheet._day) continue;
+      if (d.session_id || d._cluster) continue;
+      if (d._ts <= sheet._ts && sheet._ts - d._ts <= SHEET_LINK_MS) {
+        d._cluster = sid;
+        if (!d.mode && sheet.mode) d.mode = sheet.mode;
+      }
+    }
+  }
+
+  // 残りはユーザーごとに時系列で塊にする（隙間が空いたら別セッション）
+  const byUser = new Map();
+  for (const d of drawings) {
+    if (!byUser.has(d.user_id)) byUser.set(d.user_id, []);
+    byUser.get(d.user_id).push(d);
+  }
+  for (const list of byUser.values()) {
+    list.sort((a, b) => a._ts - b._ts);
+    let cluster = null;
+    let lastTs = 0;
+    let n = 0;
+    for (const d of list) {
+      const known = d.session_id || sessionIdFromPrompt(d.prompt_id) || d._cluster;
+      if (known) {
+        d._cluster = known;
+        cluster = known;
+        lastTs = d._ts;
+        continue;
+      }
+      if (!cluster || d._ts - lastTs > SESSION_GAP_MS) {
+        n += 1;
+        cluster = `burst:${d.user_id}:${d._day}:${n}:${d._ts}`;
+      }
+      d._cluster = cluster;
+      lastTs = d._ts;
+    }
+  }
+
+  const seen = new Map();
+  for (const d of drawings) {
+    const sid = d.session_id || d._cluster || `art:${d.id || d._ts}`;
+    const key = `${d.user_id}|${d._day}|${sid}`;
+    const menuId = modeToMenuId(d.mode);
     if (seen.has(key)) {
       const prev = seen.get(key);
-      if (ts > prev.ts) prev.ts = ts;
+      if (d._ts > prev.ts) prev.ts = d._ts;
       if (!prev.menu_id && menuId) {
         prev.menu_id = menuId;
-        prev.payload = { menuId, username: a.username || null };
+        prev.payload = { ...(prev.payload || {}), menuId, username: d.username || null };
+      }
+      // 枚数が多い塊は Daily の可能性が高い（mode 欠落の救済）
+      prev._drawCount = (prev._drawCount || 1) + 1;
+      if (!prev.menu_id && prev._drawCount >= 4) {
+        prev.menu_id = 'daily';
+        prev.payload = { ...(prev.payload || {}), menuId: 'daily', username: d.username || null };
       }
       continue;
     }
     seen.set(key, {
-      user_id: a.user_id,
-      day_date: day,
-      ts,
+      user_id: d.user_id,
+      day_date: d._day,
+      ts: d._ts,
       menu_id: menuId || null,
       session_id: sid,
-      payload: { id: sid, menuId: menuId || null, username: a.username || null },
+      _drawCount: 1,
+      payload: { id: sid, menuId: menuId || null, username: d.username || null },
     });
   }
-  return [...seen.values()];
+
+  // 1回分として確定した行から内部カウンタを外す
+  return [...seen.values()].map(({ _drawCount, ...row }) => row);
 }
 
 async function fetchUsernames(userIds) {
