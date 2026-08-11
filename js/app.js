@@ -2639,7 +2639,7 @@ function renderWorkCtr() {
   const part = partForDate(dateKey());
   const partLabel = getLang() === 'en' ? part.en : part.label;
   list.innerHTML = '';
-  for (const key of ['work.ctrStepGesture', 'work.ctrStepPart', 'work.ctrStepCroquis']) {
+  for (const key of ['work.ctrStepGesture', 'work.ctrStepPart', 'work.ctrStepCroquis', 'work.ctrStepComposePose']) {
     const li = el('li');
     li.textContent = key === 'work.ctrStepPart'
       ? t('work.ctrStepPart', { part: partLabel })

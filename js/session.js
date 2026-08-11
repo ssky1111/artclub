@@ -365,17 +365,22 @@ export function createSessionRunner({ onFinish, onQuit }) {
     timer.stop();
     releaseWakeLock();
     await harvestDrawing();
-    closePad();
-    onFinish({
-      drawings: state.drawings,
-      menuId: state.menu.id,
-      menuTitle: state.menu.title,
-      seconds: state.totalSeconds,
-      byDrill: state.byDrill,
-      focusId: state.focus.id,
-      lessonId: state.lessonId,
-      lessonMode: state.lessonMode,
-    });
+    // closePad を先にやると、旧い「お題写真だけ」の stage が一瞬見えてちらつく。
+    // 画面遷移のあとで閉じる。
+    try {
+      await onFinish({
+        drawings: state.drawings,
+        menuId: state.menu.id,
+        menuTitle: state.menu.title,
+        seconds: state.totalSeconds,
+        byDrill: state.byDrill,
+        focusId: state.focus.id,
+        lessonId: state.lessonId,
+        lessonMode: state.lessonMode,
+      });
+    } finally {
+      closePad();
+    }
   }
 
   async function quit() {
@@ -390,7 +395,6 @@ export function createSessionRunner({ onFinish, onQuit }) {
       }
     }
 
-    closePad();
     if (state?.current) {
       const spent = spentSeconds(state.current, { skipped: true });
       if (spent > 0) record(state.current, Math.round(spent));
@@ -401,7 +405,11 @@ export function createSessionRunner({ onFinish, onQuit }) {
           lessonMode: state.lessonMode, drawings: state.drawings, partial: true }
       : null;
     state = null;
-    onQuit(partial);
+    try {
+      await onQuit(partial);
+    } finally {
+      closePad();
+    }
   }
 
   /* ---------- 画面を消させない ---------- */

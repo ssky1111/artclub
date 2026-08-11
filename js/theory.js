@@ -426,6 +426,7 @@ export function buildDaily(part) {
         label: `部位練習：${part.label}`,
         labelEn: `Body part: ${part.en}`,
       },
+      { drill: 'croquis', count: 1, seconds: 180, source: 'croquis' },
       {
         drill: 'composePose', count: 1, seconds: 180, source: 'composePose',
         label: '構図とポーズ',

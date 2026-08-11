@@ -128,7 +128,8 @@ const DICT = {
   'work.ctrLead':         { ja: 'ブラウザ内で完結。気軽なドローイング練習', en: 'All in your browser. Easy drawing practice' },
   'work.ctrStepGesture':  { ja: 'ジェスチャードローイング', en: 'Gesture drawing' },
   'work.ctrStepPart':     { ja: '部位練習（{part}）', en: 'Body part ({part})' },
-  'work.ctrStepCroquis':  { ja: '構図とポーズ', en: 'Composition & pose' },
+  'work.ctrStepCroquis':  { ja: 'クロッキー', en: 'Croquis' },
+  'work.ctrStepComposePose': { ja: '構図とポーズ', en: 'Composition & pose' },
   'setup.composePoseCount': { ja: '何枚やる？', en: 'How many drawings?' },
   'setup.composePoseNote': {
     ja: '1枚あたり3分。「構図」タグの写真から出します。',
