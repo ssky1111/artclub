@@ -126,29 +126,43 @@ async function fetchSessions(fromDate, toDate) {
 /**
  * 公開 artworks は他ユーザー分も読める（practice_sessions の管理者 RLS が未適用でも使える）。
  * 1セッション複数枚でも session_id 単位で1回と数える。
- * ※本番DBに kind 列が無いことがあるので select しない（prompt_id でまとめ画を除外）。
+ * kind 列が本番に無い場合は prompt_id だけでまとめ画を除外する（supabase/artworks-kind.sql を実行推奨）。
  */
 async function fetchArtworksUsage(fromDate, toDate) {
   await ensureFreshSession();
   if (!isAdminAnalyticsUser()) throw new Error('not admin');
 
-  const params = new URLSearchParams({
-    select: 'id,user_id,created_at,mode,session_id,username,prompt_id',
+  const range = {
     created_at: `gte.${new Date(`${fromDate}T00:00:00`).toISOString()}`,
     order: 'created_at.desc',
     limit: '5000',
-  });
-  params.append('created_at', `lte.${new Date(`${toDate}T23:59:59.999`).toISOString()}`);
+  };
+  const end = `lte.${new Date(`${toDate}T23:59:59.999`).toISOString()}`;
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
-    headers: authHeaders({ Accept: 'application/json' }),
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    console.warn('[analytics] artworks fetch failed', res.status, text);
+  const tryFetch = async (select) => {
+    const params = new URLSearchParams({ ...range, select });
+    params.append('created_at', end);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
+      headers: authHeaders({ Accept: 'application/json' }),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      return { ok: false, status: res.status, text, rows: [] };
+    }
+    return { ok: true, rows: await res.json() };
+  };
+
+  // 本番に kind がある前提。未移行ならフォールバック。
+  let result = await tryFetch('id,user_id,created_at,mode,session_id,username,prompt_id,kind');
+  if (!result.ok && /kind/i.test(result.text || '')) {
+    console.warn('[analytics] artworks.kind missing — run supabase/artworks-kind.sql');
+    result = await tryFetch('id,user_id,created_at,mode,session_id,username,prompt_id');
+  }
+  if (!result.ok) {
+    console.warn('[analytics] artworks fetch failed', result.status, result.text);
     return [];
   }
-  return res.json();
+  return result.rows;
 }
 
 function isSheetArtwork(a) {
