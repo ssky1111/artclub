@@ -1,15 +1,25 @@
-name = "artclub-work-ogp"
+name = "artclub"
 main = "src/index.js"
 compatibility_date = "2026-08-01"
 
-# artclub.space を Cloudflare に置いたうえで、
-# /work/* だけこの Worker に振り分ける（残りは GitHub Pages）。
-# ダッシュボードの Routes 例: artclub.space/work/*
+# ===== Production（main ブランチ → artclub.space） =====
+routes = [{ pattern = "artclub.space/work/*", zone_name = "artclub.space" }]
 
 [vars]
 SUPABASE_URL = "https://clifnylwatvtrikrfpft.supabase.co"
-# publishable / anon key（公開前提）。Dashboard の Vars で上書き可
 SUPABASE_ANON_KEY = "sb_publishable_kzKAxV0nVjU4ts-ewGHgRg_HmaQPFRj"
 SITE_ORIGIN = "https://artclub.space"
+PAGES_ORIGIN = "https://ssky1111.github.io"
+PAGES_BASE = "/artclub"
+
+# ===== Development（dev ブランチ → dev.artclub.space） =====
+[env.dev]
+name = "artclub-dev"
+routes = [{ pattern = "dev.artclub.space/work/*", zone_name = "artclub.space" }]
+
+[env.dev.vars]
+SUPABASE_URL = "https://fuggnreupdntutktient.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_vs2GFcc2mV1yjGCZkRIyNA_YP0ocE_l"
+SITE_ORIGIN = "https://dev.artclub.space"
 PAGES_ORIGIN = "https://ssky1111.github.io"
 PAGES_BASE = "/artclub"
