@@ -12,6 +12,7 @@ import { createPad } from './draw.js';
 import { $, $$, showScreen, toast, fmtClock, confirmDialog, hintList } from './ui.js';
 import { t, tr, fmtDur, getLang } from './i18n.js';
 import { saveSettings } from './storage.js';
+import { paintIcons } from './icons.js';
 
 export function createSessionRunner({ onFinish, onQuit }) {
   const dom = {
@@ -237,6 +238,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
 
     showScreen('session');
     ensurePad();
+    updateSaveNextLabel();
     dom.stageMessage.hidden = false;
     dom.stageMessage.textContent =
       item.source === 'plate' ? t('sess.loadingPlate') : t('sess.loading');
@@ -270,6 +272,17 @@ export function createSessionRunner({ onFinish, onQuit }) {
       timer.start(item.seconds);
     }
     setPauseIcon();
+  }
+
+  /** 次の課題があるときは「保存して次へ」、最後は「保存して終わる」。 */
+  function updateSaveNextLabel() {
+    const btn = $('#pad-next');
+    if (!btn || !state?.plan) return;
+    const hasNext = state.cursor + 1 < state.plan.length;
+    const key = hasNext ? 'sess.saveNext' : 'sess.saveFinish';
+    btn.dataset.i18nLabel = key;
+    btn.dataset.iconLabel = t(key);
+    paintIcons(btn.parentElement || document);
   }
 
   function setReferenceLocked(locked) {
