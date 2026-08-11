@@ -47,6 +47,9 @@ function hdrs(extra = {}) {
 const storageUrl = (path) => `${PHOTOS_URL}/storage/v1/object/${BUCKET}/${path}`;
 const publicUrl  = (path) => `${PHOTOS_URL}/storage/v1/object/public/${BUCKET}/${path}`;
 
+/** アップロード時に CDN が長くキャッシュしないよう指示する */
+const WRITE_CACHE_HDRS = { cacheControl: '0' };
+
 let manifestCache = null;
 
 /* ---------- manifest (メタデータ) ---------- */
@@ -54,6 +57,36 @@ let manifestCache = null;
 /** WebP 変換後の対になるパス（pxxx.jpg → pxxx.webp）。 */
 export function webpTwin(file) {
   return typeof file === 'string' ? file.replace(/\.(jpe?g|png)$/i, '.webp') : file;
+}
+
+/**
+ * manifest / タグ JSON は公開 CDN 経由だと upsert 直後に古い内容が返り、
+ * リロードで写真が消えたように見える。認証付き object API + no-store で読む。
+ */
+async function fetchStorageJson(path) {
+  const res = await fetch(storageUrl(path), {
+    headers: hdrs(),
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(String(res.status));
+  return res.json();
+}
+
+async function putStorageJson(path, data) {
+  const res = await fetch(storageUrl(path), {
+    method: 'POST',
+    headers: hdrs({
+      'Content-Type': 'application/json',
+      'x-upsert': 'true',
+      ...WRITE_CACHE_HDRS,
+    }),
+    body: JSON.stringify(data, null, 2),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${path} save failed: ${res.status} ${text}`);
+  }
+  return data;
 }
 
 /**
@@ -84,9 +117,7 @@ export async function repairManifestExtensions() {
 export async function loadManifest({ fresh = false } = {}) {
   if (manifestCache && !fresh) return manifestCache;
   try {
-    const res = await fetch(publicUrl('manifest.json'), { cache: fresh ? 'reload' : 'default' });
-    if (!res.ok) throw new Error(String(res.status));
-    const data = await res.json();
+    const data = await fetchStorageJson('manifest.json');
     manifestCache = Array.isArray(data?.photos) ? data.photos : [];
   } catch {
     manifestCache = [];
@@ -95,24 +126,11 @@ export async function loadManifest({ fresh = false } = {}) {
 }
 
 async function saveManifest(entries) {
-  const body = JSON.stringify({
+  await putStorageJson('manifest.json', {
     version: 1,
     updatedAt: new Date().toISOString(),
     photos: entries,
-  }, null, 2);
-
-  const res = await fetch(storageUrl('manifest.json'), {
-    method: 'POST',
-    headers: hdrs({
-      'Content-Type': 'application/json',
-      'x-upsert': 'true',
-    }),
-    body,
   });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`manifest save failed: ${res.status} ${text}`);
-  }
   manifestCache = entries;
   return entries;
 }
@@ -137,12 +155,7 @@ function normalizeTagConfig(data) {
 export async function loadTagConfig() {
   if (tagConfig) return tagConfig;
   try {
-    const res = await fetch(publicUrl(TAGS_FILE), { cache: 'reload' });
-    if (!res.ok) {
-      tagConfig = { custom: [], removed: [] };
-      return tagConfig;
-    }
-    const data = await res.json();
+    const data = await fetchStorageJson(TAGS_FILE);
     tagConfig = normalizeTagConfig(data);
     return tagConfig;
   } catch {
@@ -156,16 +169,8 @@ async function saveTagConfig(cfg) {
     custom: Array.isArray(cfg.custom) ? cfg.custom : [],
     removed: Array.isArray(cfg.removed) ? cfg.removed : [],
   };
+  await putStorageJson(TAGS_FILE, next);
   tagConfig = next;
-  const res = await fetch(storageUrl(TAGS_FILE), {
-    method: 'POST',
-    headers: hdrs({
-      'Content-Type': 'application/json',
-      'x-upsert': 'true',
-    }),
-    body: JSON.stringify(next),
-  });
-  if (!res.ok) throw new Error(`tags save failed: ${res.status}`);
   return tagConfig;
 }
 
@@ -239,6 +244,7 @@ export async function uploadPhoto(blob, id) {
     headers: hdrs({
       'Content-Type': contentType,
       'x-upsert': 'true',
+      ...WRITE_CACHE_HDRS,
     }),
     body: blob,
   });
@@ -392,8 +398,8 @@ export function supabasePhotoUrl(entry) {
   return publicUrl(entry.file);
 }
 
-export async function supabasePhotos() {
-  const entries = await loadManifest();
+export async function supabasePhotos({ fresh = true } = {}) {
+  const entries = await loadManifest({ fresh });
   return entries.map((entry) => {
     const file = entry.file;
     const twin = webpTwin(file);
@@ -456,7 +462,11 @@ export async function convertToWebp(entry, maxSide = 1000, quality = 0.82) {
   if (!(alreadyWebp && oldPath === newPath)) {
     const up = await fetch(storageUrl(newPath), {
       method: 'POST',
-      headers: hdrs({ 'Content-Type': 'image/webp', 'x-upsert': 'true' }),
+      headers: hdrs({
+        'Content-Type': 'image/webp',
+        'x-upsert': 'true',
+        ...WRITE_CACHE_HDRS,
+      }),
       body: webpBlob,
     });
     if (!up.ok) {
