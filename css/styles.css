@@ -311,6 +311,15 @@ body[data-skin='pastel-rpg'] .brand {
   font-weight: 800;
   color: var(--brand-ink);
 }
+.review-note-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-family: var(--font-ja);
+  font-weight: 800;
+  letter-spacing: .02em;
+  color: var(--brand-ink);
+}
+#review-note-card .note { margin-top: 10px; }
 .screen-page-title { margin: 0 0 14px; }
 body[data-skin='pastel-rpg'] .week-col.on .week-box {
   color: #fff;
