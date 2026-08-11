@@ -452,51 +452,75 @@ export function partById(partId) {
   return activePartList().find((p) => p.id === partId) || null;
 }
 
-/** 直前にやった部位の「次」（手 → 上半身 → 手 …）。 */
-export function nextPartAfter(partId) {
-  const list = activePartList();
-  if (!list.length) return PARTS[0];
-  const idx = list.findIndex((p) => p.id === partId);
-  if (idx < 0) return list[0];
-  return list[(idx + 1) % list.length];
+/** デイリー部位の目標比率（手 : 上半身 ≒ 7 : 3）。 */
+export const PART_TARGET_WEIGHTS = { hand: 7, upper: 3 };
+
+/**
+ * 履歴から部位の実施回数を数える。
+ * partId が無い古い DAILY は、メニュー id（part-hand 等）だけ拾う。
+ */
+export function countPartsInHistory(history = []) {
+  const counts = { hand: 0, upper: 0 };
+  for (const h of history || []) {
+    let id = h?.partId || null;
+    if (!id && typeof h?.menuId === 'string' && h.menuId.startsWith('part-')) {
+      id = h.menuId.slice('part-'.length);
+    }
+    if (id === 'hand' || id === 'upper') counts[id] += 1;
+  }
+  return counts;
 }
 
 /**
- * デイリーの部位。
- * - きょうすでに DAILY をやっていたら、そのときの部位に固定（同じ日はブレない）
- * - そうでなければ、前回の DAILY でやった部位の次を出す（履歴ベースで交互）
- * - 履歴が無ければ ACTIVE_PARTS の先頭（いまは手）
- *
- * カレンダー日付だけのローテだと、練習する曜日が偏ると同じ部位ばかりになるため。
+ * 手7割・上半身3割に収束するよう、不足している側を重めに抽選する。
+ * （単純な固定重みではなく、その人の履歴比率を見て補正する）
  */
-export function partForDaily(today, history = []) {
+export function pickPartTowardTarget(history = [], weights = PART_TARGET_WEIGHTS) {
   const list = activePartList();
   if (!list.length) return PARTS[0];
 
-  const dailies = (history || []).filter((h) => h?.menuId === 'daily' && h.date);
+  const wHand = Math.max(0, Number(weights.hand) || 0);
+  const wUpper = Math.max(0, Number(weights.upper) || 0);
+  const wTotal = wHand + wUpper || 1;
+  const targetHand = wHand / wTotal;
 
-  const todayEntries = dailies
-    .filter((h) => h.date === today)
-    .sort((a, b) => (a.ts || 0) - (b.ts || 0));
-  if (todayEntries.length) {
-    const id = todayEntries[0].partId || partForDate(today)?.id;
-    return partById(id) || partForDate(today) || list[0];
+  const counts = countPartsInHistory(history);
+  // ACTIVE に無い部位は候補から外す
+  const candidates = list.filter((p) => p.id === 'hand' || p.id === 'upper');
+  if (!candidates.length) {
+    return list[Math.floor(Math.random() * list.length)];
+  }
+  if (candidates.length === 1) return candidates[0];
+
+  const handCount = counts.hand || 0;
+  const upperCount = counts.upper || 0;
+  const total = handCount + upperCount;
+  const nextTotal = total + 1;
+
+  // 「あと何回やると目標比率に近づくか」を重みにする
+  let handNeed = targetHand * nextTotal - handCount;
+  let upperNeed = (1 - targetHand) * nextTotal - upperCount;
+  // どちらも足りている／超えすぎのときは目標比率そのもので振る
+  if (handNeed <= 0 && upperNeed <= 0) {
+    handNeed = targetHand;
+    upperNeed = 1 - targetHand;
+  } else {
+    handNeed = Math.max(0.01, handNeed);
+    upperNeed = Math.max(0.01, upperNeed);
   }
 
-  const past = dailies
-    .filter((h) => h.date < today)
-    .sort((a, b) => {
-      const ts = (b.ts || 0) - (a.ts || 0);
-      if (ts) return ts;
-      return a.date < b.date ? 1 : a.date > b.date ? -1 : 0;
-    });
-  if (past.length) {
-    const last = past[0];
-    const lastId = last.partId || partForDate(last.date)?.id;
-    return nextPartAfter(lastId);
-  }
+  const r = Math.random() * (handNeed + upperNeed);
+  const pickId = r < handNeed ? 'hand' : 'upper';
+  return partById(pickId) || candidates[0];
+}
 
-  return list[0];
+/**
+ * デイリーの部位。履歴を見て手≈7割・上半身≈3割に収束するよう抽選する。
+ * today 引数は呼び出し互換のため残している（日付固定ローテはしない）。
+ */
+export function partForDaily(today, history = []) {
+  void today;
+  return pickPartTowardTarget(history);
 }
 
 /**

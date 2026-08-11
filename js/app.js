@@ -728,7 +728,9 @@ async function startDaily(daily, part) {
   }
   await maybeShowFreePeriodNotice(daily);
   await weekReviewDialog(recentReviewNotes(7));
-  startSession(daily, { part, skipFreePeriod: true });
+  // 開始直前に履歴を見て手7割へ収束するよう再抽選（画面表示時点の仮抽選は使わない）
+  const picked = partForDaily(dateKey(), getHistory());
+  startSession(buildDaily(picked), { part: picked, skipFreePeriod: true });
 }
 
 /* ==================== はじめる前の設定 ==================== */
@@ -1737,6 +1739,25 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
   }
   // 他ダイアログより先に出す（呼び出し側で先出し済みなら skip）
   if (!skipFreePeriod) await maybeShowFreePeriodNotice(menu);
+  // 部位ステップがあるのに part が無いと全写真キューに落ちるので、menu.partId から補完する
+  if (!part) part = partById(menu?.partId) || null;
+  if (!part && (menu?.steps || []).some((s) => s.source === 'part')) {
+    part = partForDaily(dateKey(), getHistory());
+  }
+  if (part && menu) {
+    menu = {
+      ...menu,
+      partId: part.id,
+      steps: (menu.steps || []).map((step) => {
+        if (step.source !== 'part') return step;
+        return {
+          ...step,
+          label: `部位練習：${part.label}`,
+          labelEn: `Body part: ${part.en}`,
+        };
+      }),
+    };
+  }
   lastStart = () => startSession(menu, { tags, part, skipFreePeriod: true });
   settings = getSettings();
   const weak = weakestLesson();
@@ -1775,7 +1796,8 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
   }
 
   // 部位練習 / デイリーの部位ステップ：選んだ部位タグの写真だけ（フォールバックなし）
-  if (needed.has('part') && part) {
+  if (needed.has('part')) {
+    if (!part) part = partForDaily(dateKey(), getHistory());
     const tagged = own.filter((p) => part.tags.every((tag) => p.tags.includes(tag)));
     queues.part = tagged.length
       ? createLibraryQueue(part.tags, silent, null, fromAdmin)
@@ -2638,8 +2660,8 @@ function updateWorkAuthUI(u = getUser()) {
 function renderWorkCtr() {
   const list = $('#work-ctr-steps');
   if (!list) return;
-  const part = partForDaily(dateKey(), getHistory());
-  const partLabel = getLang() === 'en' ? part.en : part.label;
+  // 部位は開始時に履歴から抽選するので、ここでは手・上半身の併記にする
+  const partLabel = getLang() === 'en' ? 'hands / upper body' : '手・上半身';
   list.innerHTML = '';
   for (const key of ['work.ctrStepGesture', 'work.ctrStepPart', 'work.ctrStepCroquis', 'work.ctrStepComposePose']) {
     const li = el('li');
