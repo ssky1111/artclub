@@ -126,28 +126,36 @@ async function fetchSessions(fromDate, toDate) {
 /**
  * 公開 artworks は他ユーザー分も読める（practice_sessions の管理者 RLS が未適用でも使える）。
  * 1セッション複数枚でも session_id 単位で1回と数える。
+ * ※本番DBに kind 列が無いことがあるので select しない（prompt_id でまとめ画を除外）。
  */
 async function fetchArtworksUsage(fromDate, toDate) {
   await ensureFreshSession();
   if (!isAdminAnalyticsUser()) throw new Error('not admin');
 
   const params = new URLSearchParams({
-    select: 'user_id,created_at,mode,session_id,username,kind',
+    select: 'id,user_id,created_at,mode,session_id,username,prompt_id',
     created_at: `gte.${new Date(`${fromDate}T00:00:00`).toISOString()}`,
     order: 'created_at.desc',
     limit: '5000',
   });
   params.append('created_at', `lte.${new Date(`${toDate}T23:59:59.999`).toISOString()}`);
-  // 公開 or 自分（RLSどおり）。private 他人は来ない
 
   const res = await fetch(`${SUPABASE_URL}/rest/v1/artworks?${params}`, {
     headers: authHeaders({ Accept: 'application/json' }),
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`artworks fetch failed: ${res.status} ${text}`);
+    console.warn('[analytics] artworks fetch failed', res.status, text);
+    return [];
   }
   return res.json();
+}
+
+function isSheetArtwork(a) {
+  if (!a) return false;
+  if (a.kind === 'sheet') return true;
+  const prompt = String(a.prompt_id || '');
+  return prompt.includes(':sheet') || /:sheet$/i.test(prompt);
 }
 
 function modeToMenuId(mode) {
@@ -165,7 +173,7 @@ function artworksToRows(artworks = []) {
   const seen = new Map();
   for (const a of artworks) {
     if (!a?.user_id) continue;
-    if (a.kind === 'sheet') continue;
+    if (isSheetArtwork(a)) continue;
     const day = dateKey(new Date(a.created_at));
     const sid = a.session_id || `art:${a.id || a.created_at}`;
     const key = `${a.user_id}|${day}|${sid}`;
