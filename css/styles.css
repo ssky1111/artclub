@@ -311,6 +311,17 @@ body[data-skin='pastel-rpg'] .brand {
   font-weight: 800;
   color: var(--brand-ink);
 }
+.review-note-title,
+.review-section-title,
+.section-head h2.review-section-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-family: var(--font-ja);
+  font-weight: 800;
+  letter-spacing: .02em;
+  color: var(--text);
+}
+#review-note-card .note { margin-top: 10px; }
 .screen-page-title { margin: 0 0 14px; }
 body[data-skin='pastel-rpg'] .week-col.on .week-box {
   color: #fff;
@@ -748,6 +759,12 @@ html[data-site-unlocked] .site-gate-dialog,
   font-size: 17px; font-weight: 700; font-family: var(--font-ja);
   color: var(--text-soft); margin: 0; line-height: 1.7;
 }
+.bridge-cue .bridge-lead {
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+}
 .hint-list,
 .menu-hints,
 .bridge-hints {
@@ -1042,10 +1059,8 @@ html[data-site-unlocked] .site-gate-dialog,
   position: absolute; inset: 0; z-index: 10;
   display: flex; flex-direction: column; background: #fffdf8;
 }
-/* 描くモード中は下のステージ側入れ替えが前面に浮いてしまうので消す */
-.stage.with-pad #stage-swap { display: none; }
 .pad-body { flex: 1; display: flex; min-height: 0; }
-.pad-ref { display: none; position: relative; }
+.pad-ref { display: none; position: relative; overflow: hidden; }
 .pad-canvas { position: relative; flex: 1; min-width: 0; display: flex; }
 .pad { flex: 1; width: 100%; touch-action: none; cursor: crosshair; }
 
@@ -1425,6 +1440,7 @@ html[data-site-unlocked] .site-gate-dialog,
   font-size: 13px; line-height: 1.3;
 }
 .tl-name { font-weight: 800; color: var(--text); }
+.tl-handle { color: var(--muted); font-size: 12px; font-weight: 600; }
 .tl-dot, .tl-time, .tl-menu { color: var(--muted); font-size: 12px; }
 .tl-menu {
   width: 100%; margin-top: 1px; font-weight: 600;
@@ -1805,8 +1821,100 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
   position: absolute; left: 4px; top: 4px; font-size: 9px; font-weight: 700;
   background: rgba(0,0,0,.6); color: #fff; border-radius: 999px; padding: 1px 7px;
 }
+.lib-badge.inactive {
+  left: auto; right: 4px; background: rgba(80,80,80,.85);
+}
+.lib-item.is-inactive img { opacity: .45; filter: grayscale(.35); }
 .range { width: 100%; accent-color: var(--accent); margin: 6px 0 2px; }
 #screen-admin .input { margin-bottom: 6px; }
+
+#screen-admin .sb-tag-panel {
+  margin-top: 10px;
+}
+#screen-admin .sb-tag-toggle {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+#screen-admin .sb-tag-toggle::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 6px;
+  transition: transform .15s ease;
+}
+#screen-admin .sb-tag-toggle.is-open::before {
+  transform: rotate(90deg);
+}
+#screen-admin .sb-tag-body {
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--muted) 10%, transparent);
+}
+
+/* ---------- 管理画面：2カラム ---------- */
+
+#screen-admin.admin-screen {
+  max-width: 1100px;
+}
+#screen-admin .admin-shell {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+#screen-admin .admin-nav {
+  position: sticky;
+  top: calc(12px + env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--card, #fff);
+  border: 1px solid color-mix(in srgb, var(--muted) 28%, transparent);
+}
+#screen-admin .admin-nav-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--text-soft, var(--text));
+  cursor: pointer;
+}
+#screen-admin .admin-nav-btn:hover {
+  background: color-mix(in srgb, var(--muted) 12%, transparent);
+}
+#screen-admin .admin-nav-btn.on {
+  background: color-mix(in srgb, var(--brand, #222) 12%, transparent);
+  color: var(--text);
+}
+#screen-admin .admin-panels {
+  min-width: 0;
+}
+#screen-admin .admin-panel[hidden] {
+  display: none !important;
+}
+@media (max-width: 720px) {
+  #screen-admin .admin-shell {
+    grid-template-columns: 1fr;
+  }
+  #screen-admin .admin-nav {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  #screen-admin .admin-nav-btn {
+    flex: 1 1 auto;
+    text-align: center;
+    padding: 8px 10px;
+  }
+}
 
 /* ---------- 管理：デイリー解析 ---------- */
 
@@ -2026,6 +2134,15 @@ body[data-theme='dark'] .google-btn {
 .gallery-username {
   font-size: 12px; font-weight: 700; color: var(--text-soft);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.gallery-author {
+  display: flex; align-items: baseline; gap: 6px;
+  min-width: 0; overflow: hidden;
+}
+.gallery-handle {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ---------- いいね（全体統一） ---------- */

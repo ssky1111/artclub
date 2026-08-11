@@ -5,33 +5,58 @@
  */
 
 import { loadManifest, manifestPhotoUrl } from './repo.js';
-import { supabasePhotos, loadCustomTags, loadHiddenTags } from './supabase.js';
+import { supabasePhotos, loadCustomTags, loadRemovedTags } from './supabase.js';
 
 /** よく使うタグ。これ以外も自由に足せる。 */
 export const TAG_GROUPS = [
   { name: '範囲',   tags: ['全身', '半身', '顔', '手', '足'] },
   { name: '性別',   tags: ['女性', '男性', 'どちらでも'] },
-  { name: '姿勢',   tags: ['立ち', '座り', '寝', '動き'] },
+  { name: '姿勢',   tags: ['立ち', '座り', '寝', 'ジェスチャー'] },
   { name: 'その他', tags: ['服のしわ', '筋肉が見える', '逆光', '難しい'] },
 ];
 
 export const ALL_TAGS = TAG_GROUPS.flatMap((g) => g.tags);
 
 let customTags = [];
-let hiddenTags = [];
+let removedTags = [];
 
 export async function refreshCustomTags() {
   customTags = await loadCustomTags();
-  hiddenTags = await loadHiddenTags();
+  removedTags = await loadRemovedTags();
   return customTags;
 }
 
 export function getCustomTags() { return customTags; }
-export function getHiddenTags() { return hiddenTags; }
 
+/** @deprecated */
+export function getHiddenTags() { return []; }
+
+export function getRemovedTags() { return removedTags; }
+
+/** 使えるタグ一覧（削除済みは出さない） */
 export function allTagsWithCustom() {
-  const all = [...ALL_TAGS, ...customTags.filter((t) => !ALL_TAGS.includes(t))];
-  return all.filter((t) => !hiddenTags.includes(t));
+  const removed = new Set(removedTags);
+  const base = ALL_TAGS.filter((t) => !removed.has(t));
+  const extra = customTags.filter((t) => !ALL_TAGS.includes(t) && !removed.has(t));
+  return [...base, ...extra];
+}
+
+/**
+ * グループ付きの表示用タグ一覧。
+ * 本タグから削除済みのものは出さない。カスタムは「その他」に足す。
+ */
+export function tagGroupsVisible() {
+  const removed = new Set(removedTags);
+  const customOnly = customTags.filter((t) => !ALL_TAGS.includes(t) && !removed.has(t));
+  const groups = TAG_GROUPS
+    .map((g) => ({ name: g.name, tags: g.tags.filter((t) => !removed.has(t)) }))
+    .filter((g) => g.tags.length);
+  if (customOnly.length) {
+    const other = groups.find((g) => g.name === 'その他');
+    if (other) other.tags = [...other.tags, ...customOnly];
+    else groups.push({ name: 'その他', tags: customOnly });
+  }
+  return groups;
 }
 
 /** 端末ローカルのお題は持たない（互換のため空配列）。 */
@@ -73,18 +98,24 @@ export async function bundledPhotos() {
   }));
 }
 
-/** 同梱の写真＋Supabaseの写真。お題を出すときはこちらを使う。 */
-export async function everyPhoto() {
+/** お題キューに出してよい写真か（非アクティブは一覧専用）。 */
+export function isPromptActive(photo) {
+  return !!photo && !photo.inactive;
+}
+
+/** 同梱の写真＋Supabaseの写真。一覧表示は非アクティブも含む。 */
+export async function everyPhoto({ includeInactive = true } = {}) {
   const [bundled, sb] = await Promise.all([
     bundledPhotos(),
     supabasePhotos().catch(() => []),
   ]);
-  return [...bundled, ...sb];
+  const all = [...bundled, ...sb];
+  return includeInactive ? all : all.filter(isPromptActive);
 }
 
-/** タグでしぼる。タグを1つも選んでいなければ全部。 */
+/** タグでしぼる（お題用なので非アクティブは除外）。タグを1つも選んでいなければ全部。 */
 export async function photosWithTags(tags = []) {
-  const photos = await everyPhoto();
+  const photos = await everyPhoto({ includeInactive: false });
   if (!tags.length) return photos;
   return photos.filter((p) => tags.every((t) => p.tags.includes(t)));
 }
@@ -114,21 +145,47 @@ export function setPhotoSrc(img, photoOrUrl) {
   img.src = primary;
 }
 
+/** Fisher–Yates。偏りのある Array.sort(Math.random) は使わない。 */
+function shuffle(list) {
+  const arr = [...list];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/**
+ * その人がまだ描いていないお題を先に、描いたことがあるものを後に並べる。
+ * それぞれのグループ内はランダム。seenIds が空なら全体をシャッフル。
+ */
+export function orderPreferUnseen(pool, seenIds = null) {
+  if (!pool?.length) return [];
+  if (!seenIds?.size) return shuffle(pool);
+  const unseen = [];
+  const seen = [];
+  for (const photo of pool) {
+    (seenIds.has(photo.id) ? seen : unseen).push(photo);
+  }
+  return [...shuffle(unseen), ...shuffle(seen)];
+}
+
 /**
  * セッション用のキュー。images.js のキューと同じ形で使える。
  * 同じ写真が続けて出ないよう、ひと回りしてから戻ってくるようにしている。
+ * seenIds があれば未実施のお題を優先する。
  */
-export function createWeightedQueue(weights, onNotice = () => {}, { photos = null } = {}) {
+export function createWeightedQueue(weights, onNotice = () => {}, { photos = null, seenIds = null } = {}) {
   let pools = [];
   let loading = null;
   const urls = [];
 
   async function load() {
-    const all = photos || await everyPhoto();
+    const all = (photos || await everyPhoto({ includeInactive: false }))
+      .filter(isPromptActive);
     pools = weights.map(({ tags, weight }) => {
       const matched = all.filter((p) => tags.every((t) => p.tags.includes(t)));
-      matched.sort(() => Math.random() - 0.5);
-      return { photos: matched, weight, cursor: 0 };
+      return { photos: orderPreferUnseen(matched, seenIds), weight, cursor: 0 };
     });
     const total = pools.reduce((s, p) => s + p.photos.length, 0);
     if (!total) onNotice('その条件の写真がありません。写真の管理から追加してください');
@@ -181,7 +238,7 @@ export function createWeightedQueue(weights, onNotice = () => {}, { photos = nul
   };
 }
 
-export function createLibraryQueue(tags, onNotice = () => {}, noticeText = null, { photos = null } = {}) {
+export function createLibraryQueue(tags, onNotice = () => {}, noticeText = null, { photos = null, seenIds = null } = {}) {
   let pool = [];
   let cursor = 0;
   let loading = null;
@@ -189,16 +246,17 @@ export function createLibraryQueue(tags, onNotice = () => {}, noticeText = null,
 
   async function load() {
     if (photos) {
+      const poolSource = photos.filter(isPromptActive);
       pool = tags?.length
-        ? photos.filter((p) => tags.every((t) => p.tags.includes(t)))
-        : [...photos];
+        ? poolSource.filter((p) => tags.every((t) => p.tags.includes(t)))
+        : [...poolSource];
     } else {
       pool = await photosWithTags(tags);
     }
     if (!pool.length) {
       onNotice(noticeText || 'その条件の写真がありません。写真の管理から追加してください');
     }
-    pool.sort(() => Math.random() - 0.5);
+    pool = orderPreferUnseen(pool, seenIds);
   }
 
   function ensure() {

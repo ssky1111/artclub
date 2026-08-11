@@ -24,6 +24,7 @@ const MODE_DEFS = [
   { key: 'gesture', labelKey: 'analytics.modeGesture', color: '#5a9c1e' },
   { key: 'part', labelKey: 'analytics.modePart', color: '#c45c26' },
   { key: 'croquis', labelKey: 'analytics.modeCroquis', color: '#2a7a8c' },
+  { key: 'composePose', labelKey: 'analytics.modeComposePose', color: '#6b5b95' },
   { key: 'copy', labelKey: 'analytics.modeCopy', color: '#8a6b4a' },
   { key: 'other', labelKey: 'analytics.modeOther', color: '#888888' },
 ];
@@ -44,6 +45,7 @@ function chartColors() {
       gesture: '#5a9c1e',
       part: '#c45c26',
       croquis: '#2a7a8c',
+      composePose: '#6b5b95',
       copy: '#8a6b4a',
       other: muted,
     },
@@ -79,6 +81,7 @@ function normalizeMode(row) {
   if (menuId === 'daily') return 'daily';
   if (menuId === 'gestureMode') return 'gesture';
   if (menuId === 'croquisMode') return 'croquis';
+  if (menuId === 'composePoseMode') return 'composePose';
   if (menuId === 'copyMode') return 'copy';
   if (String(menuId).startsWith('part-')) return 'part';
   return 'other';
@@ -184,6 +187,7 @@ function modeToMenuId(mode) {
   if (m.includes('gesture') || raw.includes('ジェスチャー')) return 'gestureMode';
   if (m.includes('part') || raw.includes('部位')) return 'part-unknown';
   if (m.includes('croquis') || raw.includes('クロッキー')) return 'croquisMode';
+  if (m.includes('compose') || m.includes('composepose') || raw.includes('構図')) return 'composePoseMode';
   if (m.includes('copy') || raw.includes('模写')) return 'copyMode';
   return '';
 }

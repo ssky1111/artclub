@@ -318,6 +318,17 @@ export function roundsToday(menuId = 'daily', history = getHistory()) {
   return history.filter((s) => s.date === today && s.menuId === menuId).length;
 }
 
+/** これまでに描いたお題写真の id 集合（未実施優先キュー用）。 */
+export function seenPhotoIds(history = getHistory()) {
+  const ids = new Set();
+  for (const entry of history || []) {
+    for (const shot of entry.shots || []) {
+      if (shot?.photoId) ids.add(shot.photoId);
+    }
+  }
+  return ids;
+}
+
 export function currentStreak(history = getHistory()) {
   const days = dailyTotals(history);
   const today = dateKey();

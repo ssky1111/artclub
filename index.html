@@ -39,7 +39,7 @@
 </script>
 </head>
 
-<body data-build="210" data-theme="light">
+<body data-build="220" data-theme="light">
 <script>
 /* 古い SW / Cache Storage / HTTP キャッシュを強制破棄して1回だけ読み直す */
 (function () {
@@ -189,50 +189,10 @@
 </main>
 
 <main id="screen-session" class="screen session">
-  <div class="stage">
-    <div id="stage-inner" class="stage-inner">
-      <img id="ref-image" class="ref-image" alt="お題の写真">
-      <button type="button" id="stage-swap" class="ref-swap" data-icon="photoSwap" data-icon-size="18" data-i18n-label="sess.swapShort" data-icon-label="変更" data-i18n-title="sess.swap" title="写真を入れ替え"></button>
-      <div id="grid-overlay" class="grid-overlay" hidden></div>
-      <div id="memory-cover" class="memory-cover" hidden>
-        <div class="memory-cover-inner">
-          <p data-i18n="sess.memory">記憶で描く時間</p>
-          <button id="peek-btn" class="btn ghost small">
-            <span data-i18n="sess.peek">3秒だけ見る</span>（<span id="peek-left">2</span>）
-          </button>
-        </div>
-      </div>
-    </div>
-
+  <div class="stage with-pad">
     <div id="stage-message" class="stage-message" hidden></div>
 
-    <div class="hud-top">
-      <button id="quit-btn" class="icon-btn" data-icon="close" data-i18n-title="common.cancel"></button>
-      <div class="hud-center">
-        <div id="drill-name" class="drill-name">—</div>
-        <div id="drill-progress" class="drill-progress muted">1 / 5</div>
-      </div>
-      <button id="attr-btn" class="icon-btn" data-icon="info" title="この写真について"></button>
-    </div>
-
-    <div class="hud-cue">
-      <p id="drill-cue"></p>
-    </div>
-
-    <div class="hud-bottom">
-      <div class="timebar"><div id="timebar-fill" class="timebar-fill"></div></div>
-      <div class="hud-controls">
-        <button id="tool-pad" class="tool-btn" data-icon="pencil" title="ここに描く (D)"></button>
-        <button id="tool-grid" class="tool-btn" data-icon="grid" title="グリッド (G)"></button>
-        <button id="tool-flip" class="tool-btn" data-icon="flip" title="左右反転 (F)"></button>
-        <button id="pause-btn" class="round-btn" data-icon="pause" title="一時停止 (Space)"></button>
-        <button id="time-left" class="time-left" title="残り時間">30</button>
-        <button id="skip-btn" class="tool-btn" data-icon="next" title="次へ (→)"></button>
-      </div>
-    </div>
-
-    
-    <div id="pad-wrap" class="pad-wrap" hidden>
+    <div id="pad-wrap" class="pad-wrap">
       <div class="pad-hud">
         <button id="pad-quit" class="pad-icon" data-icon="close" data-i18n-title="common.cancel"></button>
         <button id="pad-time" class="pad-time" title="押すと一時停止">
@@ -249,6 +209,15 @@
       <div class="pad-body">
         <div class="pad-ref">
           <img id="pad-ref-img" alt="お題の写真">
+          <div id="grid-overlay" class="grid-overlay" hidden></div>
+          <div id="memory-cover" class="memory-cover" hidden>
+            <div class="memory-cover-inner">
+              <p data-i18n="sess.memory">記憶で描く時間</p>
+              <button id="peek-btn" class="btn ghost small">
+                <span data-i18n="sess.peek">3秒だけ見る</span>（<span id="peek-left">2</span>）
+              </button>
+            </div>
+          </div>
           <button type="button" id="pad-ref-swap" class="ref-swap" data-icon="photoSwap" data-icon-size="18" data-i18n-label="sess.swapShort" data-icon-label="変更" data-i18n-title="sess.swap" title="写真を入れ替え"></button>
         </div>
 
@@ -286,6 +255,8 @@
         </label>
         <button class="pad-btn" data-pad="undo" data-i18n-title="sess.undo" data-icon="undo"></button>
         <button class="pad-btn" data-pad="clear" data-i18n-title="sess.clear" data-icon="trash"></button>
+        <button class="pad-btn" data-pad="grid" data-icon="grid" title="グリッド (G)"></button>
+        <button class="pad-btn" data-pad="flip" data-icon="flip" title="左右反転 (F)"></button>
         <button id="pad-skip" class="pad-btn" data-i18n-title="sess.skipDrill" data-icon="next"></button>
         <button id="pad-next" class="pad-next" data-icon="check" data-i18n-label="sess.saveNext"></button>
       </div>
@@ -353,20 +324,21 @@
     <p class="muted small" id="publish-note" hidden></p>
   </section>
 
+  <section class="card" id="review-note-card">
+    <h2 class="review-section-title" data-i18n="rev.noteTitle">振り返りメモ</h2>
+    <p class="muted small" data-i18n="rev.howWas">終わった後に絵を見返して気付いたことをメモしてみましょう。練習効率がアップします</p>
+    <textarea id="review-note" class="note" rows="3" data-i18n-ph="rev.notePh"></textarea>
+  </section>
+
   <section class="card" id="gallery-card" hidden>
     <div class="section-head">
-      <h2 data-i18n="gal.title">みんなが描いたスケッチ</h2>
+      <h2 class="review-section-title" data-i18n="gal.title">みんなが描いたスケッチ</h2>
       <span id="gallery-count" class="muted small"></span>
     </div>
     <p class="muted small gallery-desc" data-i18n="gal.desc">みんなが描いた同じお題のスケッチです。良いところを参考にしてみましょう</p>
     <div id="gallery-grid" class="gallery-grid"></div>
     <p id="gallery-empty" class="muted small" hidden data-i18n="gal.empty"></p>
     <p id="gallery-loading" class="muted small" hidden data-i18n="gal.loading"></p>
-  </section>
-
-  <section class="card">
-    <div class="label" data-i18n="rev.howWas">終わった後に絵を見返して気付いたことをメモしてみましょう。練習効率がアップします</div>
-    <textarea id="review-note" class="note" rows="3" data-i18n-ph="rev.notePh"></textarea>
   </section>
 
   <div class="stack">
@@ -555,6 +527,17 @@
   </div>
 </div>
 
+<div id="compose-pose-sheet" class="sheet" hidden>
+  <div class="sheet-inner">
+    <button id="compose-pose-close" class="icon-btn sheet-close" data-icon="close"></button>
+    <div class="label" data-i18n="setup.composePoseCount">何枚やる？</div>
+    <p class="muted small" data-i18n="setup.composePoseNote">1枚あたり3分。「構図」タグの写真から出します。</p>
+    <div id="compose-pose-count-chips" class="chips big-chips"></div>
+    <p id="compose-pose-note" class="muted small"></p>
+    <button id="compose-pose-start" class="btn primary big">はじめる</button>
+  </div>
+</div>
+
 <div id="copy-sheet" class="sheet" hidden>
   <div class="sheet-inner copy-sheet-inner">
     <button id="copy-close" class="icon-btn sheet-close" data-icon="close"></button>
@@ -593,6 +576,7 @@
         </div>
       </div>
       <button id="auth-change-username" class="btn ghost small" data-i18n="auth.changeUsername">ユーザーネームを変更</button>
+      <button id="auth-change-handle" class="btn ghost small" data-i18n="auth.changeHandle">ユーザーIDを変更</button>
       <button id="auth-logout" class="btn ghost small" data-i18n="auth.logout">ログアウト</button>
     </div>
   </div>
@@ -604,6 +588,19 @@
     <h2 data-i18n="auth.setUsername">ユーザーネームを決めてください</h2>
     <input type="text" id="username-input" class="input" maxlength="20" data-i18n-ph="auth.usernamePh" placeholder="ユーザーネーム" style="margin:16px 0;text-align:center;font-size:18px">
     <button id="username-ok" class="btn primary big" data-i18n="auth.usernameOk">決定</button>
+  </div>
+</div>
+
+<div id="handle-sheet" class="sheet" hidden>
+  <div class="sheet-inner" style="text-align:center">
+    <button id="handle-close" class="icon-btn sheet-close" data-icon="close" data-i18n-title="common.close"></button>
+    <h2 data-i18n="auth.setHandle">ユーザーIDを決めてください</h2>
+    <p class="muted small" data-i18n="auth.handleNote" style="margin:8px 0 0">半角英字で始め、英数字と _ のみ（3〜20文字）。あとから変えられます。</p>
+    <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin:16px 0">
+      <span class="muted" style="font-size:18px;font-weight:700">@</span>
+      <input type="text" id="handle-input" class="input" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="auth.handlePh" placeholder="userid" style="text-align:center;font-size:18px;max-width:220px">
+    </div>
+    <button id="handle-ok" class="btn primary big" data-i18n="auth.handleOk">決定</button>
   </div>
 </div>
 
@@ -640,6 +637,7 @@
     <div id="photo-tags" class="chips"></div>
     <div class="section-head"><h2 data-i18n="lib.pastWork">この写真で描いたもの</h2></div>
     <div id="photo-history" class="photo-history"></div>
+    <button id="photo-inactive" class="btn small" hidden>非アクティブにする</button>
     <button id="photo-delete" class="btn danger small" data-i18n="lib.deleteOne">この写真を消す</button>
   </div>
 </div>
@@ -714,7 +712,7 @@
   </section>
 </main>
 
-<main id="screen-admin" class="screen">
+<main id="screen-admin" class="screen admin-screen">
   <header class="topbar">
     <div class="topbar-start">
       <button class="icon-btn" data-nav="home" data-icon="back" data-i18n-title="common.back" title="もどる"></button>
@@ -727,7 +725,6 @@
     </div>
   </header>
 
-  
   <section class="card" id="admin-gate">
     <div class="section-head"><h2 data-i18n="admin.lock">パスワード</h2></div>
     <p id="admin-gate-note" class="muted small"></p>
@@ -739,106 +736,86 @@
     <p class="muted small" data-i18n="admin.passNote"></p>
   </section>
 
-  <div id="admin-body" hidden>
+  <div id="admin-body" class="admin-shell" hidden>
+    <nav class="admin-nav" aria-label="管理メニュー">
+      <button type="button" class="admin-nav-btn on" data-admin-panel="photos">お題写真</button>
+      <button type="button" class="admin-nav-btn" data-admin-panel="tags">タグ</button>
+      <button type="button" class="admin-nav-btn" data-admin-panel="analytics">利用解析</button>
+    </nav>
 
-    <section class="card">
-      <div class="section-head">
-        <h2 data-i18n="analytics.title">利用解析</h2>
-        <button id="admin-analytics-link" type="button" class="btn primary small" data-i18n="analytics.open">ひらく</button>
-      </div>
-      <p class="muted small" data-i18n="analytics.teaser">日ごとのモード別利用を確認できます。</p>
-    </section>
-    
-    <section class="card">
-      <div class="section-head">
-        <h2>Supabase の写真</h2>
-        <button id="sb-add-notag" class="btn ghost small">＋ タグなしで追加</button>
-      </div>
-      <div class="label" style="margin-top:8px">タグを選んでから追加</div>
-      <div id="sb-upload-tags" class="chips"></div>
-      <button id="sb-add" class="btn primary" style="margin-top:10px">選んだタグで写真を追加</button>
-      <input type="file" id="sb-input" accept="image/*" multiple hidden>
-      <p id="sb-status" class="muted small" style="margin-top:6px"></p>
-      <div id="sb-grid" class="lib-grid selectable-grid"></div>
-      <div id="sb-select-bar" class="select-bar" hidden>
-        <span id="sb-select-count">0枚選択中</span>
-        <button id="sb-select-all" class="btn ghost small">全選択</button>
-        <button id="sb-deselect" class="btn ghost small">解除</button>
-        <button id="sb-bulk-tag-btn" class="btn primary small">一括タグ付け</button>
-        <button id="sb-bulk-convert" class="btn small">WebP変換</button>
-        <button id="sb-bulk-delete" class="btn danger small">一括削除</button>
-      </div>
-    </section>
-
-    
-    <section class="card">
-      <div class="section-head"><h2>タグ管理</h2></div>
-      <p class="muted small">タグを追加・削除できます</p>
-      <div id="tag-manage-list" class="chips"></div>
-      <div class="row" style="margin-top:8px">
-        <input type="text" id="tag-new-input" class="input" placeholder="新しいタグ名" style="flex:1">
-        <button id="tag-add-btn" class="btn primary small">追加</button>
-      </div>
-    </section>
-
-    
-    <div id="bulk-tag-sheet" class="sheet" hidden>
-      <div class="sheet-inner">
-        <button id="bulk-tag-close" class="icon-btn sheet-close" data-icon="close"></button>
-        <div class="label">選択した写真にタグをつける</div>
-        <div id="bulk-tag-chips" class="chips"></div>
-        <div class="row" style="margin-top:12px">
-          <button id="bulk-tag-apply" class="btn primary big">適用する</button>
+    <div class="admin-panels">
+      <section class="admin-panel card on" data-admin-panel="photos" id="admin-panel-photos">
+        <div class="section-head">
+          <h2>お題写真</h2>
+          <button id="sb-add-notag" class="btn ghost small">＋ タグなしで追加</button>
         </div>
+        <p class="muted small">本番 Storage と共有。ここでの変更は本番にも反映されます。非アクティブにすると一覧には残りますが、お題には出ません。</p>
+        <div class="sb-tag-panel">
+          <button type="button" id="sb-upload-toggle" class="btn ghost small sb-tag-toggle" aria-expanded="false">
+            タグを選んで追加
+          </button>
+          <div id="sb-upload-panel" class="sb-tag-body" hidden>
+            <div id="sb-upload-tags" class="chips"></div>
+            <button id="sb-add" class="btn primary" style="margin-top:10px">選んだタグで写真を追加</button>
+          </div>
+        </div>
+        <input type="file" id="sb-input" accept="image/*" multiple hidden>
+        <div class="sb-tag-panel">
+          <button type="button" id="sb-filter-toggle" class="btn ghost small sb-tag-toggle" aria-expanded="false">
+            タグでしぼりこみ
+          </button>
+          <div id="sb-filter-panel" class="sb-tag-body" hidden>
+            <div id="sb-filter-tags" class="chips"></div>
+          </div>
+        </div>
+        <p id="sb-status" class="muted small" style="margin-top:6px"></p>
+        <div id="sb-grid" class="lib-grid selectable-grid"></div>
+        <div id="sb-select-bar" class="select-bar" hidden>
+          <span id="sb-select-count">0枚選択中</span>
+          <button id="sb-select-all" class="btn ghost small">全選択</button>
+          <button id="sb-deselect" class="btn ghost small">解除</button>
+          <button id="sb-bulk-tag-btn" class="btn primary small">一括タグ付け</button>
+          <button id="sb-bulk-inactive" class="btn small">非アクティブ</button>
+          <button id="sb-bulk-activate" class="btn ghost small">アクティブに戻す</button>
+          <button id="sb-bulk-convert" class="btn small">WebP変換</button>
+          <button id="sb-bulk-delete" class="btn danger small">一括削除</button>
+        </div>
+      </section>
+
+      <section class="admin-panel card" data-admin-panel="tags" id="admin-panel-tags" hidden>
+        <div class="section-head"><h2>タグ管理</h2></div>
+        <p class="muted small">× で同意すると一覧から消え、すべての写真からも外れます。また使うときは下で追加</p>
+        <div id="tag-manage-list" class="chips"></div>
         <div class="row" style="margin-top:8px">
-          <button id="bulk-tag-remove" class="btn danger small">選択したタグを外す</button>
+          <input type="text" id="tag-new-input" class="input" placeholder="新しいタグ名" style="flex:1">
+          <button id="tag-add-btn" class="btn primary small">追加</button>
         </div>
-      </div>
+      </section>
+
+      <section class="admin-panel card" data-admin-panel="analytics" id="admin-panel-analytics" hidden>
+        <div class="section-head">
+          <h2 data-i18n="analytics.title">利用解析</h2>
+        </div>
+        <p class="muted small" data-i18n="analytics.teaser">日ごとのモード別利用を確認できます。</p>
+        <button id="admin-analytics-link" type="button" class="btn primary" data-i18n="analytics.open">ひらく</button>
+      </section>
     </div>
-
-    
-    <section class="card">
-      <div class="section-head">
-        <h2 data-i18n="admin.localOnly">この端末だけにある写真</h2>
-        <button id="admin-add" class="btn ghost small">＋</button>
-      </div>
-      <input type="file" id="admin-input" accept="image/*" multiple hidden>
-      <p id="admin-untagged" class="muted small"></p>
-      <div id="admin-grid" class="lib-grid"></div>
-    </section>
-
-    <section class="card">
-      <div class="section-head"><h2 data-i18n="admin.repo">リポジトリに入れる</h2></div>
-      <p class="muted small" data-i18n="admin.repoNote"></p>
-
-      <label class="label" for="repo-path" data-i18n="admin.repoPath">owner/repo</label>
-      <input type="text" id="repo-path" class="input" placeholder="ssky1111/artclub" autocomplete="off">
-
-      <label class="label" for="repo-branch" data-i18n="admin.branch">ブランチ</label>
-      <input type="text" id="repo-branch" class="input" placeholder="main" autocomplete="off">
-
-      <label class="label" for="repo-token" data-i18n="admin.token">GitHub のトークン</label>
-      <input type="password" id="repo-token" class="input" placeholder="ghp_..." autocomplete="off">
-      <p class="muted small" data-i18n="admin.tokenNote"></p>
-
-      <div class="row">
-        <button id="repo-test" class="btn ghost small" data-i18n="set.keyTest">接続テスト</button>
-        <button id="repo-push" class="btn primary small">プッシュする</button>
-      </div>
-      <p id="repo-status" class="muted small"></p>
-
-      <div class="subcard">
-        <p class="muted small" data-i18n="admin.exportNote"></p>
-        <button id="repo-export" class="btn ghost small" data-i18n="admin.exportZip"></button>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="section-head"><h2 data-i18n="admin.published">リポジトリに入っている写真</h2></div>
-      <div id="admin-bundled" class="lib-grid"></div>
-    </section>
   </div>
 </main>
+
+<div id="bulk-tag-sheet" class="sheet" hidden>
+  <div class="sheet-inner">
+    <button id="bulk-tag-close" class="icon-btn sheet-close" data-icon="close"></button>
+    <div class="label">選択した写真にタグをつける</div>
+    <div id="bulk-tag-chips" class="chips"></div>
+    <div class="row" style="margin-top:12px">
+      <button id="bulk-tag-apply" class="btn primary big">適用する</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="bulk-tag-remove" class="btn danger small">選択したタグを外す</button>
+    </div>
+  </div>
+</div>
 
 <main id="screen-admin-analytics" class="screen">
   <header class="topbar">
@@ -960,10 +937,14 @@
 
   <section class="card" id="profile-card" hidden>
     <div class="section-head"><h2 data-i18n="auth.profile">プロフィール</h2></div>
-    <div class="row">
-      <input type="text" id="profile-username" class="input" maxlength="20" data-i18n-ph="auth.usernamePh" placeholder="ユーザーネーム" style="flex:1">
-      <button id="profile-save" class="btn primary small" data-i18n="common.save">保存</button>
+    <label class="label" for="profile-username" data-i18n="auth.usernamePh">ユーザーネーム</label>
+    <input type="text" id="profile-username" class="input" maxlength="20" data-i18n-ph="auth.usernamePh" placeholder="ユーザーネーム">
+    <label class="label" for="profile-handle" data-i18n="auth.handleLabel" style="margin-top:10px">ユーザーID</label>
+    <div class="row" style="align-items:center;gap:6px">
+      <span class="muted" style="font-weight:700">@</span>
+      <input type="text" id="profile-handle" class="input" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="auth.handlePh" placeholder="userid" style="flex:1">
     </div>
+    <button id="profile-save" class="btn primary small" data-i18n="common.save" style="margin-top:12px">保存</button>
   </section>
 
   <section class="card">
@@ -1077,7 +1058,7 @@
 
 <div id="week-review-dialog" class="confirm-dialog" hidden>
   <div class="confirm-dialog-inner week-review-inner">
-    <h2 id="week-review-title" class="week-review-title">直近1週間分の振り返りワード</h2>
+    <h2 id="week-review-title" class="week-review-title">直近1週間の振り返りメモ</h2>
     <ul id="week-review-list" class="week-review-list"></ul>
     <p id="week-review-empty" class="week-review-empty" hidden>
       振り返りはまだありません<br>終わった後に絵を見返して気付いたことをメモしてみましょう。練習効率がアップします

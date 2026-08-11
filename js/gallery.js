@@ -8,7 +8,7 @@
  */
 
 import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
-import { getSession, getUser, getUsername, ensureFreshSession } from './auth.js';
+import { getSession, getUser, getUsername, getHandle, ensureFreshSession } from './auth.js';
 import { brandForOgp } from './export.js';
 
 const BUCKET = 'artworks';
@@ -96,20 +96,59 @@ export function artworkDisplayName(work) {
   if (isMine) {
     return clean(getUsername()) || clean(work.username) || '';
   }
-  return clean(work.username) || 'anonymous';
+  return clean(work.username) || clean(work.profile_username) || 'anonymous';
 }
 
-/** プロフィールのユーザーネームを Auth ユーザーに同期する。 */
-export async function upsertProfile(username) {
+/** ユーザーID（@なし）。自分の作品はプロフィールを優先。 */
+export function artworkHandle(work) {
+  if (!work) return '';
+  const me = getUser();
+  const isMine = me?.id && work.user_id === me.id;
+  if (isMine) {
+    return getHandle() || normalizeHandle(work.handle) || '';
+  }
+  return normalizeHandle(work.handle) || '';
+}
+
+export function normalizeHandle(raw) {
+  return String(raw || '').trim().toLowerCase().replace(/^@+/, '');
+}
+
+const HANDLE_RE = /^[a-z][a-z0-9_]{2,19}$/;
+const RESERVED_HANDLES = new Set([
+  'admin', 'artclub', 'support', 'system', 'null', 'undefined', 'me', 'anonymous', 'user', 'root',
+]);
+
+export function isValidHandle(raw) {
+  const h = normalizeHandle(raw);
+  if (!HANDLE_RE.test(h)) return false;
+  if (RESERVED_HANDLES.has(h)) return false;
+  return true;
+}
+
+/**
+ * プロフィールを Auth ユーザーに同期する。
+ * @param {string|{ username?: string|null, handle?: string|null }} patch
+ * @returns {{ ok: true, row: object|null } | { ok: false, error: 'email'|'auth'|'taken'|'invalid'|'failed' }}
+ */
+export async function upsertProfile(patch) {
   const user = getUser();
-  if (!user) return null;
-  const cleaned = String(username || '').trim().slice(0, 32);
-  if (cleaned.includes('@')) return null;
+  if (!user) return { ok: false, error: 'auth' };
+  if (typeof patch === 'string') patch = { username: patch };
   const body = {
     id: user.id,
-    username: cleaned || null,
     updated_at: new Date().toISOString(),
   };
+  if (Object.prototype.hasOwnProperty.call(patch, 'username')) {
+    const cleaned = String(patch.username || '').trim().slice(0, 32);
+    if (cleaned.includes('@')) return { ok: false, error: 'email' };
+    body.username = cleaned || null;
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'handle')) {
+    const h = normalizeHandle(patch.handle);
+    if (h && !isValidHandle(h)) return { ok: false, error: 'invalid' };
+    body.handle = h || null;
+  }
   const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
     method: 'POST',
     headers: authHeaders({
@@ -118,17 +157,22 @@ export async function upsertProfile(username) {
     }),
     body: JSON.stringify(body),
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    const taken = res.status === 409
+      || /23505|duplicate|unique/i.test(detail);
+    return { ok: false, error: taken ? 'taken' : 'failed', status: res.status, detail };
+  }
   const rows = await res.json().catch(() => []);
-  return rows[0] || null;
+  return { ok: true, row: rows[0] || null };
 }
 
-/** 自分のプロフィールを DB から読む。別端末ログイン時のユーザーネーム復元用。 */
+/** 自分のプロフィールを DB から読む。別端末ログイン時の復元用。 */
 export async function fetchMyProfile() {
   const user = getUser();
   if (!user?.id) return null;
   const params = new URLSearchParams({
-    select: 'id,username,updated_at',
+    select: 'id,username,handle,updated_at',
     id: `eq.${user.id}`,
     limit: '1',
   });
@@ -305,13 +349,12 @@ export async function uploadArtwork(drawingBlob, promptId, {
 }
 
 async function attachLikeState(works) {
-  const user = getUser();
   if (!works.length) return works;
+  const user = getUser();
   const ids = works.map((w) => w.id).filter(Boolean);
-  if (!ids.length) return works;
 
   let liked = new Set();
-  if (user) {
+  if (user && ids.length) {
     const params = new URLSearchParams({
       select: 'artwork_id',
       user_id: `eq.${user.id}`,
@@ -326,10 +369,36 @@ async function attachLikeState(works) {
     }
   }
 
-  return works.map((w) => ({
+  const withLikes = works.map((w) => ({
     ...w,
     liked_by_me: liked.has(w.id),
   }));
+  return attachHandles(withLikes);
+}
+
+/** profiles から handle / 表示名を載せる（アトリエTLなど） */
+async function attachHandles(works) {
+  const userIds = [...new Set(works.map((w) => w.user_id).filter(Boolean))];
+  if (!userIds.length) return works;
+  const params = new URLSearchParams({
+    select: 'id,username,handle',
+    id: `in.(${userIds.join(',')})`,
+  });
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?${params}`, {
+      headers: authHeaders({ Accept: 'application/json' }),
+    });
+    if (!res.ok) return works;
+    const rows = await res.json().catch(() => []);
+    const map = new Map(rows.map((r) => [r.id, r]));
+    for (const w of works) {
+      const p = map.get(w.user_id);
+      if (!p) continue;
+      w.handle = p.handle || null;
+      if (p.username) w.profile_username = p.username;
+    }
+  } catch { /* オフライン等 */ }
+  return works;
 }
 
 /** 同じお題のスケッチ。新しい順。公開＋自分の非公開。 */

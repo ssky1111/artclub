@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "artclub-pages-dev",
+  "compatibility_date": "2026-08-11",
+  "assets": {
+    "directory": ".",
+    // /admin /daily /log などパス URL は実ファイルが無いので index.html を返す
+    "not_found_handling": "single-page-application"
+  },
+  "compatibility_flags": ["nodejs_compat"]
+}

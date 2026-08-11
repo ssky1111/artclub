@@ -21,7 +21,8 @@
 - DotGothic16フォント（日本語UI）、Special Gothic Expanded One（英語/ロゴ）
 
 ## Supabase スキーマ
-- `supabase/*.sql` は **Supabase SQL Editor で人が実行**する（エージェントは DDL を直接当てられない）
-- `artworks.kind`（drawing / sheet）が無いと利用解析などが落ちる → `supabase/artworks-kind.sql` を本番で実行
-- 同SQLで `short_id` / `og_image_url` も追加（未追加だと投稿が legacy に落ちて session_id が消える）
-- 管理者のきろく全件読み取り → `supabase/admin-analytics.sql`
+- 正本は `supabase/migrations/*.sql`（dev → main の順で適用）
+- 手順は `supabase/README.md`
+- プロジェクト: main=`clifnylwatvtrikrfpft` / dev=`fuggnreupdntutktient`
+- 旧手貼り SQL は `supabase/legacy/`（新規実行しない）
+- DDL は Supabase MCP `apply_migration` か SQL Editor で当てる

@@ -169,6 +169,42 @@ export const DRILLS = {
       cue: 'Size it so the whole figure fits. Detail only in the last thirty seconds.',
     },
   },
+  composePose: {
+    id: 'composePose',
+    name: '構図とポーズ',
+    short: '構図',
+    about:
+      '画面の中での置き方と、ポーズの捉え方を練習する3分。' +
+      '細部より、全体のバランス・シルエット・視線の流れを優先する。',
+    steps: [
+      '紙の中での大きさ・位置を決める',
+      'ポーズの大きな流れと重心を取る',
+      '要所だけ描き込み、余白も意識する',
+    ],
+    theory: '構図は「何を描くか」と同じくらい「どこに置くか」。' +
+            '3分でポーズの骨格と画面バランスだけを固める。',
+    cue: 'まず画面に収める。ポーズの流れを太く取り、細部は最後の少しだけ。',
+    hints: [
+      'イラストのヒントになるポーズや構図を練習して引き出しを増やしましょう',
+    ],
+    view: {},
+    en: {
+      name: 'Composition & pose',
+      short: 'Compose',
+      about:
+        'Three minutes on placement and pose. Favour balance, silhouette, and flow over detail.',
+      steps: [
+        'Decide size and position on the page',
+        'Take the big flow and weight of the pose',
+        'Render only key spots; keep the margins in mind',
+      ],
+      theory: 'Composition is as much about where as what. Lock pose and page balance in three minutes.',
+      cue: 'Fit it on the page first. Big pose flow, detail only at the end.',
+      hints: [
+        'Practice poses and compositions that spark illustration ideas, and grow your repertoire',
+      ],
+    },
+  },
   copy: {
     id: 'copy',
     name: '模写',
@@ -386,21 +422,105 @@ export function buildDaily(part) {
         label: `部位練習：${part.label}`,
         labelEn: `Body part: ${part.en}`,
       },
-      { drill: 'croquis', count: 2, seconds: 180, source: 'croquis' },
+      { drill: 'croquis', count: 1, seconds: 180, source: 'croquis' },
+      {
+        drill: 'composePose', count: 1, seconds: 180, source: 'composePose',
+        label: '構図とポーズ',
+        labelEn: 'Composition & pose',
+      },
     ],
     en: { title: 'DAILY' },
   };
 }
 
 /**
- * その日の部位。日付で決まるので、同じ日に何回やっても同じ部位。
- * 自分で選ばせないのは、選ぶ時間が始めない理由になるのと、
- * 放っておくと得意なところばかり選ぶため（1周すると全部位を通る）。
+ * カレンダー日付から部位を決める（履歴が無いときのフォールバック）。
+ * 同じ日は同じ部位になる。
  */
 export function partForDate(dateStr) {
   const days = Math.floor(new Date(`${dateStr}T00:00:00`).getTime() / 86400000);
   const list = ACTIVE_PARTS.length ? ACTIVE_PARTS : PARTS;
   return list[((days % list.length) + list.length) % list.length];
+}
+
+function activePartList() {
+  return ACTIVE_PARTS.length ? ACTIVE_PARTS : PARTS;
+}
+
+export function partById(partId) {
+  if (!partId) return null;
+  return activePartList().find((p) => p.id === partId) || null;
+}
+
+/** デイリー部位の目標比率（手 : 上半身 ≒ 7 : 3）。 */
+export const PART_TARGET_WEIGHTS = { hand: 7, upper: 3 };
+
+/**
+ * 履歴から部位の実施回数を数える。
+ * partId が無い古い DAILY は、メニュー id（part-hand 等）だけ拾う。
+ */
+export function countPartsInHistory(history = []) {
+  const counts = { hand: 0, upper: 0 };
+  for (const h of history || []) {
+    let id = h?.partId || null;
+    if (!id && typeof h?.menuId === 'string' && h.menuId.startsWith('part-')) {
+      id = h.menuId.slice('part-'.length);
+    }
+    if (id === 'hand' || id === 'upper') counts[id] += 1;
+  }
+  return counts;
+}
+
+/**
+ * 手7割・上半身3割に収束するよう、不足している側を重めに抽選する。
+ * （単純な固定重みではなく、その人の履歴比率を見て補正する）
+ */
+export function pickPartTowardTarget(history = [], weights = PART_TARGET_WEIGHTS) {
+  const list = activePartList();
+  if (!list.length) return PARTS[0];
+
+  const wHand = Math.max(0, Number(weights.hand) || 0);
+  const wUpper = Math.max(0, Number(weights.upper) || 0);
+  const wTotal = wHand + wUpper || 1;
+  const targetHand = wHand / wTotal;
+
+  const counts = countPartsInHistory(history);
+  // ACTIVE に無い部位は候補から外す
+  const candidates = list.filter((p) => p.id === 'hand' || p.id === 'upper');
+  if (!candidates.length) {
+    return list[Math.floor(Math.random() * list.length)];
+  }
+  if (candidates.length === 1) return candidates[0];
+
+  const handCount = counts.hand || 0;
+  const upperCount = counts.upper || 0;
+  const total = handCount + upperCount;
+  const nextTotal = total + 1;
+
+  // 「あと何回やると目標比率に近づくか」を重みにする
+  let handNeed = targetHand * nextTotal - handCount;
+  let upperNeed = (1 - targetHand) * nextTotal - upperCount;
+  // どちらも足りている／超えすぎのときは目標比率そのもので振る
+  if (handNeed <= 0 && upperNeed <= 0) {
+    handNeed = targetHand;
+    upperNeed = 1 - targetHand;
+  } else {
+    handNeed = Math.max(0.01, handNeed);
+    upperNeed = Math.max(0.01, upperNeed);
+  }
+
+  const r = Math.random() * (handNeed + upperNeed);
+  const pickId = r < handNeed ? 'hand' : 'upper';
+  return partById(pickId) || candidates[0];
+}
+
+/**
+ * デイリーの部位。履歴を見て手≈7割・上半身≈3割に収束するよう抽選する。
+ * today 引数は呼び出し互換のため残している（日付固定ローテはしない）。
+ */
+export function partForDaily(today, history = []) {
+  void today;
+  return pickPartTowardTarget(history);
 }
 
 /**
@@ -438,6 +558,17 @@ export const MODES = [
     en: {
       title: 'Croquis',
       subtitle: '3 min each. Choose how many',
+    },
+  },
+  {
+    id: 'composePoseMode',
+    title: '構図とポーズ',
+    subtitle: '3分/枚。「構図」タグから。枚数は自分で選ぶ',
+    picker: 'composePoseCount',
+    drillId: 'composePose',
+    en: {
+      title: 'Composition & pose',
+      subtitle: '3 min each from Composition tags. Choose how many',
     },
   },
   {
@@ -482,6 +613,22 @@ export function buildCroquisMenu(count = 2) {
     en: {
       title: 'Croquis',
       subtitle: `${n} × 3 min. Put the shape down properly`,
+    },
+  };
+}
+
+/** 構図とポーズ。1枚3分、「構図」タグから。枚数だけ選ぶ。 */
+export function buildComposePoseMenu(count = 1) {
+  const n = Math.max(1, Number(count) || 1);
+  return {
+    id: 'composePoseMode',
+    title: '構図とポーズ',
+    subtitle: `3分×${n}枚。置き方とポーズの流れ`,
+    drillId: 'composePose',
+    steps: [{ drill: 'composePose', count: n, seconds: 180, source: 'composePose' }],
+    en: {
+      title: 'Composition & pose',
+      subtitle: `${n} × 3 min. Placement and pose flow`,
     },
   };
 }
@@ -544,6 +691,7 @@ export function timeLabel(seconds) {
 export function buildCustomMenu({ drill, seconds, count }) {
   const source = drill === 'gesture' ? 'gesture'
     : drill === 'croquis' ? 'croquis'
+    : drill === 'composePose' ? 'composePose'
     : 'photo';
   return {
     id: 'custom',

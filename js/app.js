@@ -3,14 +3,14 @@
  */
 
 import {
-  buildDaily, partForDate, MODES, PARTS, ACTIVE_PARTS, DRILLS, PICKABLE_DRILLS,
-  TIME_CHOICES, COUNT_CHOICES, GESTURE_COUNT_CHOICES, ROUND_COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu, buildCopyMenu, buildGestureMenu, buildCroquisMenu,
+  buildDaily, partForDate, partForDaily, partById, MODES, PARTS, ACTIVE_PARTS, DRILLS, PICKABLE_DRILLS,
+  TIME_CHOICES, COUNT_CHOICES, GESTURE_COUNT_CHOICES, ROUND_COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu, buildCopyMenu, buildGestureMenu, buildCroquisMenu, buildComposePoseMenu,
   levelLabel, menuDuration,
 } from './theory.js';
 import {
   getSettings, saveSettings, getHistory, addSession, updateLastSession,
   dateKey, addDays, dailyTotals, drawingsByDay, totalDrawings, roundsToday, stats,
-  recentReviewNotes, hydrateUserData, resetUserCaches, syncSessionNow,
+  recentReviewNotes, hydrateUserData, resetUserCaches, syncSessionNow, seenPhotoIds,
 } from './storage.js';
 import { LESSONS, PD_BOOKS, lessonById } from './anatomy.js';
 import { createPhotoQueue } from './images.js';
@@ -21,18 +21,16 @@ import {
 } from './review.js';
 import { createSessionRunner } from './session.js';
 import {
-  TAG_GROUPS, ALL_TAGS, everyPhoto, bundledPhotos, photoUrl, setPhotoSrc,
+  ALL_TAGS, everyPhoto, bundledPhotos, photoUrl, setPhotoSrc,
   createLibraryQueue, createWeightedQueue,
-  refreshCustomTags, getCustomTags, getHiddenTags, allTagsWithCustom,
+  refreshCustomTags, getCustomTags, allTagsWithCustom, tagGroupsVisible,
 } from './library.js';
-import {
-  getRepoConfig, saveRepoConfig, testRepo,
-} from './repo.js';
 import {
   loadManifest as sbLoadManifest, pushToSupabase, testConnection as sbTest,
   supabasePhotos, updateTags as sbUpdateTags, bulkUpdateTags, bulkRemoveTags,
   removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
-  saveHiddenTags, invalidateTagConfig, convertToWebp, repairManifestExtensions,
+  invalidateTagConfig, convertToWebp, repairManifestExtensions,
+  deleteTagEverywhere, filterDuplicatePhotoNames, setPhotosInactive,
 } from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
 import { composeSheet, cropToInkVertical, downloadBlob, downloadEach, saveImageBlob, isAppleTouchDevice, shareToX } from './export.js';
@@ -42,10 +40,11 @@ import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, freePeri
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
-import { initAuth, loginWithProvider, logout, getUser, getUserEmail, onAuthChange, hasUsername, setUsername, getUsername, hydrateUsername } from './auth.js';
+import { initAuth, loginWithProvider, logout, getUser, getUserEmail, onAuthChange, hasUsername, setUsername, getUsername, hydrateUsername, hasHandle, setHandle, getHandle } from './auth.js';
 import {
   uploadArtwork, uploadShareImage, fetchArtworks, fetchArtwork, fetchPublicArtworks, fetchMyArtworks,
   fetchCopyableArtworksPage, deleteArtwork, updateArtwork, toggleLike, workPageUrl, upsertProfile, artworkDisplayName,
+  artworkHandle,
 } from './gallery.js';
 import { initFeedback } from './feedback.js';
 import {
@@ -60,7 +59,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '210';
+const BUILD = '220';
 const SITE_PASS_KEY = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 /** サイトパスワード解除の有効期限（約1週間） */
@@ -190,7 +189,7 @@ function renderWeekBars(history) {
 function renderDaily(history) {
   const loggedIn = !!getUser();
   const rounds = loggedIn ? roundsToday('daily', history) : 0;
-  const part = partForDate(dateKey());
+  const part = partForDaily(dateKey(), history);
   const daily = buildDaily(part);
 
   const top = $('#menu-primary');
@@ -229,7 +228,7 @@ function renderDaily(history) {
   top.append(hero);
 }
 
-/** モードは3つだけ。 */
+/** ホームのモードカード。 */
 function renderModes() {
   const wrap = $('#mode-cards');
   if (!wrap) return;
@@ -252,6 +251,7 @@ function renderModes() {
       if (mode.picker === 'copy') return openCopySheet();
       if (mode.picker === 'gestureCount') return openGestureSheet();
       if (mode.picker === 'croquisCount') return openCroquisSheet();
+      if (mode.picker === 'composePoseCount') return openComposePoseSheet();
       startSession(mode);
     });
     wrap.append(card);
@@ -370,6 +370,46 @@ function wireCroquisSheet() {
   $('#croquis-start').addEventListener('click', () => {
     $('#croquis-sheet').hidden = true;
     startSession(buildCroquisMenu(croquisCount));
+  });
+}
+
+/* ==================== 構図とポーズ ==================== */
+
+let composePoseCount = 1;
+
+function openComposePoseSheet() {
+  renderComposePoseChips();
+  $('#compose-pose-sheet').hidden = false;
+}
+
+function renderComposePoseChips() {
+  const wrap = $('#compose-pose-count-chips');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  for (const n of ROUND_COUNT_CHOICES) {
+    const chip = el('button', `chip${composePoseCount === n ? ' on' : ''}`,
+                    getLang() === 'ja' ? `${n}枚` : String(n));
+    chip.addEventListener('click', () => { composePoseCount = n; renderComposePoseChips(); });
+    wrap.append(chip);
+  }
+  const note = $('#compose-pose-note');
+  if (note) {
+    note.textContent = getLang() === 'ja'
+      ? `1枚3分 × ${composePoseCount}枚（合計 ${composePoseCount * 3}分）`
+      : `3 min each × ${composePoseCount} (total ${composePoseCount * 3} min)`;
+  }
+  const start = $('#compose-pose-start');
+  if (start) start.textContent = t('setup.start', { d: fmtDur(180 * composePoseCount) });
+}
+
+function wireComposePoseSheet() {
+  $('#compose-pose-close')?.addEventListener('click', () => { $('#compose-pose-sheet').hidden = true; });
+  $('#compose-pose-sheet')?.addEventListener('click', (e) => {
+    if (e.target.id === 'compose-pose-sheet') $('#compose-pose-sheet').hidden = true;
+  });
+  $('#compose-pose-start')?.addEventListener('click', () => {
+    $('#compose-pose-sheet').hidden = true;
+    startSession(buildComposePoseMenu(composePoseCount));
   });
 }
 
@@ -688,14 +728,17 @@ async function startDaily(daily, part) {
   }
   await maybeShowFreePeriodNotice(daily);
   await weekReviewDialog(recentReviewNotes(7));
-  startSession(daily, { part, skipFreePeriod: true });
+  // 開始直前に履歴を見て手7割へ収束するよう再抽選（画面表示時点の仮抽選は使わない）
+  const picked = partForDaily(dateKey(), getHistory());
+  startSession(buildDaily(picked), { part: picked, skipFreePeriod: true });
 }
 
 /* ==================== はじめる前の設定 ==================== */
 
 const setup = { tags: [], seconds: 60, count: 5, drill: 'gesture' };
 
-function openSetup() {
+async function openSetup() {
+  await refreshCustomTags().catch(() => {});
   renderSetupTags();
   renderSetupChips();
   $('#setup-sheet').hidden = false;
@@ -704,7 +747,7 @@ function openSetup() {
 function renderSetupTags() {
   const wrap = $('#setup-tags');
   wrap.innerHTML = '';
-  for (const tag of ALL_TAGS) {
+  for (const tag of allTagsWithCustom()) {
     const chip = el('button', `chip${setup.tags.includes(tag) ? ' on' : ''}`, tag);
     chip.addEventListener('click', () => {
       const next = new Set(setup.tags);
@@ -762,6 +805,7 @@ let libFilter = [];
 
 async function openLibrary() {
   showScreen('library');
+  await refreshCustomTags().catch(() => {});
   await renderLibrary();
 }
 
@@ -771,7 +815,7 @@ async function renderLibrary() {
 
   const filter = $('#lib-filter');
   filter.innerHTML = '';
-  for (const tag of ALL_TAGS) {
+  for (const tag of allTagsWithCustom()) {
     const chip = el('button', `chip${libFilter.includes(tag) ? ' on' : ''}`, tag);
     chip.addEventListener('click', () => {
       const next = new Set(libFilter);
@@ -792,12 +836,13 @@ async function renderLibrary() {
 function fillPhotoGrid(grid, photos, onPick) {
   grid.innerHTML = '';
   for (const photo of photos) {
-    const item = el('button', 'lib-item');
+    const item = el('button', `lib-item${photo.inactive ? ' is-inactive' : ''}`);
     const img = el('img');
     img.src = photoUrl(photo);
     img.loading = 'lazy';
     item.append(img);
     if (photo.bundled) item.append(el('span', 'lib-badge', t('lib.builtin')));
+    if (photo.inactive) item.append(el('span', 'lib-badge inactive', '非アクティブ'));
     if (photo.tags.length) item.append(el('div', 'lib-tags', photo.tags.join('・')));
     item.addEventListener('click', () => onPick(photo));
     grid.append(item);
@@ -810,7 +855,7 @@ function openPhoto(photo) {
 
   const tags = $('#photo-tags');
   tags.innerHTML = '';
-  for (const group of TAG_GROUPS) {
+  for (const group of tagGroupsVisible()) {
     tags.append(el('div', 'label', group.name));
     const row = el('div', 'chips');
     for (const tag of group.tags) {
@@ -825,6 +870,8 @@ function openPhoto(photo) {
 
   const del = $('#photo-delete');
   del.hidden = true;
+  const inactiveBtn = $('#photo-inactive');
+  if (inactiveBtn) inactiveBtn.hidden = true;
   $('#photo-sheet').hidden = false;
 }
 
@@ -909,66 +956,137 @@ async function openAdmin() {
 }
 
 async function renderAdmin() {
-  // 端末ローカルお題は廃止。管理は Supabase 側へ。
-  $('#admin-untagged').textContent = '';
-  fillPhotoGrid($('#admin-grid'), [], openPhoto);
-  fillPhotoGrid($('#admin-bundled'), await bundledPhotos(), openPhoto);
-
-  const cfg = getRepoConfig();
-  $('#repo-path').value = cfg.owner && cfg.repo ? `${cfg.owner}/${cfg.repo}` : '';
-  $('#repo-branch').value = cfg.branch || 'main';
-  $('#repo-token').value = cfg.token || '';
-  $('#repo-push').textContent = t('admin.push', { n: 0 });
-
   try {
     const fixed = await repairManifestExtensions();
     if (fixed) toast(`${fixed}件の写真URLをWebPに直しました`);
   } catch { /* */ }
 
+  showAdminPanel(currentAdminPanel);
   await renderSupabaseGrid();
   await renderTagManager();
+}
+
+let currentAdminPanel = 'photos';
+
+function showAdminPanel(name) {
+  currentAdminPanel = name || 'photos';
+  for (const btn of $$('.admin-nav-btn')) {
+    btn.classList.toggle('on', btn.dataset.adminPanel === currentAdminPanel);
+  }
+  for (const panel of $$('.admin-panel')) {
+    const on = panel.dataset.adminPanel === currentAdminPanel;
+    panel.hidden = !on;
+    panel.classList.toggle('on', on);
+  }
 }
 
 /* ---------- Supabase 写真グリッド ---------- */
 
 const sbSelected = new Set();
 const sbUploadTags = new Set();
+const sbFilterTags = new Set();
 let sbLastClickedIndex = -1;
+let sbPhotosCache = [];
+
+function syncSbTagToggle(btnId, tags, closedLabel) {
+  const btn = $(btnId);
+  if (!btn) return;
+  const list = [...tags];
+  btn.textContent = list.length
+    ? `${closedLabel}（${list.join('・')}）`
+    : closedLabel;
+}
+
+function setSbTagPanelOpen(toggleId, panelId, open) {
+  const toggle = $(toggleId);
+  const panel = $(panelId);
+  if (!toggle || !panel) return;
+  panel.hidden = !open;
+  toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  toggle.classList.toggle('is-open', open);
+}
 
 function renderUploadTagChips() {
   const wrap = $('#sb-upload-tags');
   wrap.innerHTML = '';
   const allT = allTagsWithCustom();
+  for (const tag of [...sbUploadTags]) {
+    if (!allT.includes(tag)) sbUploadTags.delete(tag);
+  }
   for (const tag of allT) {
     const chip = el('button', `chip${sbUploadTags.has(tag) ? ' on' : ''}`, tag);
     chip.addEventListener('click', () => {
       if (sbUploadTags.has(tag)) sbUploadTags.delete(tag); else sbUploadTags.add(tag);
       chip.classList.toggle('on');
+      syncSbTagToggle('#sb-upload-toggle', sbUploadTags, 'タグを選んで追加');
     });
     wrap.append(chip);
   }
+  syncSbTagToggle('#sb-upload-toggle', sbUploadTags, 'タグを選んで追加');
 }
 
-async function renderSupabaseGrid() {
+function renderFilterTagChips() {
+  const wrap = $('#sb-filter-tags');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const allT = allTagsWithCustom();
+  for (const tag of [...sbFilterTags]) {
+    if (!allT.includes(tag)) sbFilterTags.delete(tag);
+  }
+  for (const tag of allT) {
+    const chip = el('button', `chip${sbFilterTags.has(tag) ? ' on' : ''}`, tag);
+    chip.addEventListener('click', () => {
+      if (sbFilterTags.has(tag)) sbFilterTags.delete(tag); else sbFilterTags.add(tag);
+      chip.classList.toggle('on');
+      syncSbTagToggle('#sb-filter-toggle', sbFilterTags, 'タグでしぼりこみ');
+      renderSupabaseGrid({ keepCache: true });
+    });
+    wrap.append(chip);
+  }
+  syncSbTagToggle('#sb-filter-toggle', sbFilterTags, 'タグでしぼりこみ');
+}
+
+function filteredSbPhotos(photos) {
+  const filters = [...sbFilterTags];
+  if (!filters.length) return photos;
+  return photos.filter((p) => filters.every((tag) => (p.tags || []).includes(tag)));
+}
+
+async function renderSupabaseGrid({ keepCache = false } = {}) {
   const grid = $('#sb-grid');
   grid.innerHTML = '';
   sbSelected.clear();
   sbLastClickedIndex = -1;
   updateSelectBar();
   renderUploadTagChips();
+  renderFilterTagChips();
 
   try {
-    const photos = await supabasePhotos();
-    $('#sb-status').textContent = `${photos.length} 枚`;
+    if (!keepCache || !sbPhotosCache.length) {
+      sbPhotosCache = await supabasePhotos();
+    }
+    const photos = filteredSbPhotos(sbPhotosCache);
+    const inactiveN = photos.filter((p) => p.inactive).length;
+    const filterN = sbFilterTags.size;
+    const total = sbPhotosCache.length;
+    let status = filterN
+      ? `${photos.length} / ${total} 枚`
+      : `${photos.length} 枚`;
+    if (inactiveN) status += `（非アクティブ ${inactiveN}）`;
+    if (filterN) status += ` · タグ絞り込み中`;
+    $('#sb-status').textContent = status;
 
     for (const photo of photos) {
-      const btn = el('button', 'lib-item');
+      const btn = el('button', `lib-item${photo.inactive ? ' is-inactive' : ''}`);
       btn.dataset.file = photo.id.replace('sb:', '');
       const img = document.createElement('img');
       setPhotoSrc(img, photo);
       img.alt = photo.name || '';
       img.loading = 'lazy';
       btn.append(img);
+      if (photo.inactive) {
+        btn.append(el('span', 'lib-badge inactive', '非アクティブ'));
+      }
       if (photo.tags.length) {
         btn.append(el('div', 'lib-tags', photo.tags.join(' ')));
       }
@@ -1084,8 +1202,30 @@ function openSbPhoto(photo) {
       const file = photo.id.replace('sb:', '');
       await sbUpdateTags(file, current);
       photo.tags = current;
+      if (sbFilterTags.size) await renderSupabaseGrid({ keepCache: true });
     });
     tagsWrap.append(chip);
+  }
+
+  const inactiveBtn = $('#photo-inactive');
+  if (inactiveBtn) {
+    inactiveBtn.hidden = false;
+    const syncLabel = () => {
+      inactiveBtn.textContent = photo.inactive ? 'アクティブに戻す' : '非アクティブにする';
+      inactiveBtn.classList.toggle('ghost', !!photo.inactive);
+    };
+    syncLabel();
+    inactiveBtn.onclick = async () => {
+      const file = photo.id.replace('sb:', '');
+      const next = !photo.inactive;
+      await setPhotosInactive([file], next);
+      photo.inactive = next;
+      syncLabel();
+      toast(next
+        ? '非アクティブにしました（お題には出ません）'
+        : 'アクティブに戻しました');
+      await renderSupabaseGrid({ keepCache: true });
+    };
   }
 
   const delBtn = $('#photo-delete');
@@ -1106,49 +1246,27 @@ async function renderTagManager() {
   const wrap = $('#tag-manage-list');
   wrap.innerHTML = '';
 
-  const custom = getCustomTags();
-  const hidden = getHiddenTags();
-  const visible = allTagsWithCustom();
-
-  for (const tag of visible) {
+  for (const tag of allTagsWithCustom()) {
     const chip = el('button', 'chip on', `${tag} ×`);
     chip.addEventListener('click', async () => {
-      if (!(await confirmDialog(`「${tag}」を削除しますか？`))) return;
-      invalidateTagConfig();
-      if (custom.includes(tag)) {
-        await saveCustomTags(custom.filter((t2) => t2 !== tag));
-      } else {
-        await saveHiddenTags([...hidden, tag]);
+      if (!(await confirmDialog(
+        `「${tag}」を削除しますか？\nすべての写真のタグからも外し、一覧からも消えます。`,
+      ))) return;
+      try {
+        const { photos } = await deleteTagEverywhere(tag);
+        await refreshCustomTags();
+        await renderTagManager();
+        renderUploadTagChips();
+        await renderSupabaseGrid();
+        toast(photos
+          ? `「${tag}」を削除し、${photos}枚から外しました`
+          : `「${tag}」を削除しました`);
+      } catch (err) {
+        toast(`削除に失敗しました：${err.message || err}`);
       }
-      await renderTagManager();
-      renderUploadTagChips();
-      toast(`「${tag}」を削除しました`);
     });
     wrap.append(chip);
   }
-
-  if (hidden.length) {
-    const restore = el('button', 'btn ghost small', `非表示のタグを復元（${hidden.length}件）`);
-    restore.style.marginTop = '8px';
-    restore.addEventListener('click', async () => {
-      invalidateTagConfig();
-      await saveHiddenTags([]);
-      await renderTagManager();
-      renderUploadTagChips();
-      toast('すべてのタグを復元しました');
-    });
-    wrap.append(restore);
-  }
-}
-
-function readRepoForm() {
-  const [owner, repo] = ($('#repo-path').value || '').trim().split('/');
-  return saveRepoConfig({
-    owner: (owner || '').trim(),
-    repo: (repo || '').trim(),
-    branch: ($('#repo-branch').value || 'main').trim(),
-    token: ($('#repo-token').value || '').trim(),
-  });
 }
 
 function wireAdmin() {
@@ -1173,46 +1291,50 @@ function wireAdmin() {
   $('#admin-lock').addEventListener('click', () => { adminOpen = false; openAdmin(); });
   $('#admin-open')?.addEventListener('click', () => { navigateTo('admin'); });
 
-  $('#admin-add').addEventListener('click', () => {
-    toast('端末への写真追加はやめました。下の Supabase から上げてください');
-  });
-
-  $('#repo-test').addEventListener('click', async () => {
-    const cfg = readRepoForm();
-    const status = $('#repo-status');
-    status.textContent = '…';
-    try {
-      const info = await testRepo(cfg);
-      status.textContent = `OK — ${info.name}${info.canPush ? '' : '（書き込み権限なし）'}`;
-    } catch (err) {
-      status.textContent = `NG：${err.message}`;
-    }
-  });
-
-  $('#repo-push').addEventListener('click', () => {
-    $('#repo-status').textContent = '端末ローカル写真は廃止しました。Supabase を使ってください';
-  });
-
-  $('#repo-export').addEventListener('click', () => {
-    toast('端末ローカル写真は廃止しました');
-  });
+  for (const btn of $$('.admin-nav-btn')) {
+    btn.addEventListener('click', () => {
+      showAdminPanel(btn.dataset.adminPanel);
+      if (btn.dataset.adminPanel === 'tags') renderTagManager().catch(() => {});
+      if (btn.dataset.adminPanel === 'photos') renderSupabaseGrid().catch(() => {});
+    });
+  }
 
   /* ---------- Supabase ---------- */
 
   let sbUploadWithTags = true;
   $('#sb-add').addEventListener('click', () => { sbUploadWithTags = true; $('#sb-input').click(); });
   $('#sb-add-notag').addEventListener('click', () => { sbUploadWithTags = false; $('#sb-input').click(); });
+  $('#sb-upload-toggle')?.addEventListener('click', () => {
+    const open = $('#sb-upload-panel')?.hidden !== false;
+    setSbTagPanelOpen('#sb-upload-toggle', '#sb-upload-panel', open);
+  });
+  $('#sb-filter-toggle')?.addEventListener('click', () => {
+    const open = $('#sb-filter-panel')?.hidden !== false;
+    setSbTagPanelOpen('#sb-filter-toggle', '#sb-filter-panel', open);
+  });
   $('#sb-input').addEventListener('change', async (e) => {
-    const files = [...(e.target.files || [])];
+    const files = [...(e.target.files || [])].filter((f) => f.type.startsWith('image/'));
     if (!files.length) return;
     const tags = sbUploadWithTags ? [...sbUploadTags] : [];
     const status = $('#sb-status');
-    status.textContent = `${files.length} 枚を WebP 変換してアップロード中…`;
+    status.textContent = '既存写真とファイル名を照合中…';
     try {
+      const existing = await sbLoadManifest({ fresh: true });
+      const { unique: newFiles, skipped } = filterDuplicatePhotoNames(
+        files.map((f) => ({ file: f, name: f.name })),
+        existing.map((p) => p.name).filter(Boolean),
+      );
+      if (!newFiles.length) {
+        e.target.value = '';
+        status.textContent = `すべて既存と同一ファイル名のためスキップしました（${skipped.length} 枚）`;
+        toast(`${skipped.length} 枚を重複として除外しました`);
+        return;
+      }
+      status.textContent = `${newFiles.length} 枚を WebP 変換してアップロード中…` +
+        (skipped.length ? `（${skipped.length} 枚は重複スキップ）` : '');
       const { shrinkImage } = await import('./db.js');
       const photos = [];
-      for (const file of files) {
-        if (!file.type.startsWith('image/')) continue;
+      for (const { file } of newFiles) {
         // 長辺1000px・WebP。Storage / manifest とも .webp で揃える
         const blob = await shrinkImage(file);
         photos.push({
@@ -1223,12 +1345,16 @@ function wireAdmin() {
           addedAt: Date.now(),
         });
       }
-      await pushToSupabase(photos, (i, n) => {
+      const result = await pushToSupabase(photos, (i, n) => {
         status.textContent = `WebPアップロード中… ${i}/${n}`;
       });
       e.target.value = '';
+      const uploaded = result?.uploaded ?? photos.length;
+      const skipN = skipped.length + (result?.skipped?.length || 0);
       const tagMsg = tags.length ? `（${tags.join('・')}）` : '';
-      status.textContent = `${photos.length} 枚を WebP でアップロードしました${tagMsg}`;
+      const skipMsg = skipN ? `／${skipN} 枚はファイル名重複で除外` : '';
+      status.textContent = `${uploaded} 枚を WebP でアップロードしました${tagMsg}${skipMsg}`;
+      if (skipN) toast(`${skipN} 枚を重複ファイル名として除外しました`);
       await renderSupabaseGrid();
     } catch (err) {
       status.textContent = `エラー: ${err.message}`;
@@ -1328,23 +1454,46 @@ function wireAdmin() {
     await renderSupabaseGrid();
   });
 
+  const bulkInactive = async (inactive) => {
+    const n = sbSelected.size;
+    if (!n) return;
+    const files = [...sbSelected];
+    await setPhotosInactive(files, inactive);
+    sbSelected.clear();
+    toast(inactive
+      ? `${n}枚を非アクティブにしました`
+      : `${n}枚をアクティブに戻しました`);
+    await renderSupabaseGrid();
+  };
+  $('#sb-bulk-inactive')?.addEventListener('click', () => bulkInactive(true));
+  $('#sb-bulk-activate')?.addEventListener('click', () => bulkInactive(false));
+
   /* ---------- タグ管理 ---------- */
 
   $('#tag-add-btn').addEventListener('click', async () => {
     const input = $('#tag-new-input');
     const name = input.value.trim();
     if (!name) return;
-    const existing = [...ALL_TAGS, ...getCustomTags()];
-    if (existing.includes(name)) return toast('そのタグはすでにあります');
-    const next = [...getCustomTags(), name];
-    await saveCustomTags(next);
+    if (allTagsWithCustom().includes(name)) return toast('そのタグはすでにあります');
+    // 組み込みを削除済みなら復活。新規なら custom に追加。
+    if (ALL_TAGS.includes(name)) {
+      await saveCustomTags(getCustomTags(), { revive: [name] });
+    } else {
+      await saveCustomTags([...getCustomTags(), name]);
+    }
     input.value = '';
+    await refreshCustomTags();
     await renderTagManager();
+    renderUploadTagChips();
     toast(`「${name}」を追加しました`);
   });
 
+  // IME 変換確定の Enter では追加しない（追加ボタンか、変換確定後の Enter のみ）
   $('#tag-new-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') $('#tag-add-btn').click();
+    if (e.key !== 'Enter') return;
+    if (e.isComposing || e.keyCode === 229) return;
+    e.preventDefault();
+    $('#tag-add-btn').click();
   });
 }
 
@@ -1590,18 +1739,41 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
   }
   // 他ダイアログより先に出す（呼び出し側で先出し済みなら skip）
   if (!skipFreePeriod) await maybeShowFreePeriodNotice(menu);
+  // 部位ステップがあるのに part が無いと全写真キューに落ちるので、menu.partId から補完する
+  if (!part) part = partById(menu?.partId) || null;
+  if (!part && (menu?.steps || []).some((s) => s.source === 'part')) {
+    part = partForDaily(dateKey(), getHistory());
+  }
+  if (part && menu) {
+    menu = {
+      ...menu,
+      partId: part.id,
+      steps: (menu.steps || []).map((step) => {
+        if (step.source !== 'part') return step;
+        return {
+          ...step,
+          label: `部位練習：${part.label}`,
+          labelEn: `Body part: ${part.en}`,
+        };
+      }),
+    };
+  }
   lastStart = () => startSession(menu, { tags, part, skipFreePeriod: true });
   settings = getSettings();
   const weak = weakestLesson();
 
   // お題は管理画面（Supabase）に上げた写真だけから出す。外部検索には落とさない。
-  const own = await supabasePhotos().catch(() => []);
-  const fromAdmin = { photos: own };
+  // 非アクティブはお題キューから除外（一覧・履歴には残る）。
+  // 描いたことのある photoId は後回しにして、未実施を優先する。
+  const own = (await supabasePhotos().catch(() => [])).filter((p) => !p.inactive);
+  const seenIds = seenPhotoIds();
+  const fromAdmin = { photos: own, seenIds };
   const silent = () => {};   // 使わないキューの空通知は出さない
   const needed = new Set(
     (menu.steps || []).map((s) => s.source
       || (s.drill === 'gesture' ? 'gesture'
         : s.drill === 'croquis' ? 'croquis'
+        : s.drill === 'composePose' ? 'composePose'
         : 'photo')),
   );
   if (weak) needed.add(`weak:${weak.id}`);
@@ -1624,7 +1796,8 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
   }
 
   // 部位練習 / デイリーの部位ステップ：選んだ部位タグの写真だけ（フォールバックなし）
-  if (needed.has('part') && part) {
+  if (needed.has('part')) {
+    if (!part) part = partForDaily(dateKey(), getHistory());
     const tagged = own.filter((p) => part.tags.every((tag) => p.tags.includes(tag)));
     queues.part = tagged.length
       ? createLibraryQueue(part.tags, silent, null, fromAdmin)
@@ -1639,16 +1812,16 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
       ? createWeightedQueue([
         { tags: ['手'], weight: 7 },
         { tags: ['上半身'], weight: 3 },
-      ], silent, { photos: partPhotos })
+      ], silent, { photos: partPhotos, seenIds })
       : createLibraryQueue(['手'], notice, '手・上半身の写真がありません', fromAdmin);
   }
 
-  // ジェスチャードローイング → 必ず『動き』タグから
+  // ジェスチャードローイング → 必ず『ジェスチャー』タグから
   if (needed.has('gesture')) {
-    const gesturePhotos = own.filter((p) => p.tags.includes('動き'));
+    const gesturePhotos = own.filter((p) => p.tags.includes('ジェスチャー'));
     queues.gesture = gesturePhotos.length
-      ? createLibraryQueue(['動き'], silent, null, fromAdmin)
-      : createLibraryQueue([], notice, '『動き』タグの写真がありません', fromAdmin);
+      ? createLibraryQueue(['ジェスチャー'], silent, null, fromAdmin)
+      : createLibraryQueue([], notice, '『ジェスチャー』タグの写真がありません', fromAdmin);
   }
 
   // クロッキー → 全身タグ（無ければ管理写真全体。エラーにはしない）
@@ -1657,6 +1830,14 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
     queues.croquis = croquisPhotos.length
       ? createLibraryQueue(['全身'], silent, null, fromAdmin)
       : createLibraryQueue([], silent, null, fromAdmin);
+  }
+
+  // 構図とポーズ → 『構図』タグ
+  if (needed.has('composePose')) {
+    const composePhotos = own.filter((p) => p.tags.includes('構図'));
+    queues.composePose = composePhotos.length
+      ? createLibraryQueue(['構図'], silent, null, fromAdmin)
+      : createLibraryQueue(['構図'], notice, '『構図』タグの写真がありません', fromAdmin);
   }
 
   if (weak) {
@@ -1732,9 +1913,10 @@ function sessionModeFrom(entry) {
   if (entry.menuId === 'daily') return 'Daily';
   if (entry.menuId === 'copyMode') return 'Copy';
   if (entry.menuId?.startsWith('part-')) return 'Part';
-  if (entry.menuId === 'gestureMode' || (entry.byDrill?.gesture && !entry.byDrill?.croquis)) {
+  if (entry.menuId === 'gestureMode' || (entry.byDrill?.gesture && !entry.byDrill?.croquis && !entry.byDrill?.composePose)) {
     return 'Gesture';
   }
+  if (entry.menuId === 'composePoseMode' || entry.byDrill?.composePose) return 'ComposePose';
   if (entry.menuId === 'croquisMode' || entry.byDrill?.croquis) return 'Croquis';
   return entry.menuTitle || 'Practice';
 }
@@ -1747,6 +1929,8 @@ function shotModeFrom(shot, sessionMode = null) {
   if (source === 'copy' || drill === 'copy') return 'Copy';
   if (source === 'gesture' || drill === 'gesture') return 'Gesture';
   if (source === 'part' || label.includes('部位') || /^Body part/i.test(label)) return 'Part';
+  if (source === 'composePose' || drill === 'composePose'
+      || label.includes('構図') || /composition/i.test(label)) return 'ComposePose';
   if (source === 'croquis' || drill === 'croquis') return 'Croquis';
   return sessionMode || 'Practice';
 }
@@ -1761,6 +1945,10 @@ function artworkModeLabel(work) {
   }
   if (key === 'part' || key === 'partmode' || key.startsWith('part-') || raw.includes('部位') || /body\s*part/i.test(raw)) {
     return t('atelier.modePart');
+  }
+  if (key === 'composepose' || key === 'composepodemode'
+      || raw.includes('構図') || /composition\s*&?\s*pose/i.test(raw)) {
+    return t('atelier.modeComposePose');
   }
   if (key === 'croquis' || key === 'croquismode' || raw.includes('クロッキー') || /croquis/i.test(raw)) {
     return t('atelier.modeCroquis');
@@ -2392,7 +2580,11 @@ function renderGalleryCard(work, userId) {
   thumb.addEventListener('click', () => openWorkPage(work));
 
   const meta = el('div', 'gallery-item-meta');
-  meta.append(el('span', 'gallery-username', artworkDisplayName(work)));
+  const author = el('span', 'gallery-author');
+  author.append(el('span', 'gallery-username', artworkDisplayName(work)));
+  const handle = artworkHandle(work);
+  if (handle) author.append(el('span', 'gallery-handle', `@${handle}`));
+  meta.append(author);
 
   const likeBtn = el('button', `gallery-like-btn${work.liked_by_me ? ' on' : ''}`);
   likeBtn.type = 'button';
@@ -2468,10 +2660,10 @@ function updateWorkAuthUI(u = getUser()) {
 function renderWorkCtr() {
   const list = $('#work-ctr-steps');
   if (!list) return;
-  const part = partForDate(dateKey());
-  const partLabel = getLang() === 'en' ? part.en : part.label;
+  // 部位は開始時に履歴から抽選するので、ここでは手・上半身の併記にする
+  const partLabel = getLang() === 'en' ? 'hands / upper body' : '手・上半身';
   list.innerHTML = '';
-  for (const key of ['work.ctrStepGesture', 'work.ctrStepPart', 'work.ctrStepCroquis']) {
+  for (const key of ['work.ctrStepGesture', 'work.ctrStepPart', 'work.ctrStepCroquis', 'work.ctrStepComposePose']) {
     const li = el('li');
     li.textContent = key === 'work.ctrStepPart'
       ? t('work.ctrStepPart', { part: partLabel })
@@ -2489,7 +2681,11 @@ function fillWorkPage(work, userId = getUser()?.id) {
     img.alt = work.username || '';
   }
   const userEl = $('#work-user');
-  if (userEl) userEl.textContent = artworkDisplayName(work);
+  if (userEl) {
+    const name = artworkDisplayName(work);
+    const handle = artworkHandle(work);
+    userEl.textContent = handle ? `${name} @${handle}` : name;
+  }
 
   const delBtn = $('#work-delete');
   if (delBtn) delBtn.hidden = work.user_id !== userId;
@@ -2634,7 +2830,7 @@ function wireGallery() {
 }
 
 function startDailyFromCtr() {
-  const part = partForDate(dateKey());
+  const part = partForDaily(dateKey(), getHistory());
   const daily = buildDaily(part);
   startDaily(daily, part);
 }
@@ -2678,12 +2874,19 @@ function menuStepsForEntry(entry) {
     const n = Math.max(1, (entry.shots || []).length || Math.round((entry.seconds || 360) / 180));
     return buildCroquisMenu(n).steps;
   }
+  if (entry.menuId === 'composePoseMode') {
+    const n = Math.max(1, (entry.shots || []).length || Math.round((entry.seconds || 180) / 180));
+    return buildComposePoseMenu(n).steps;
+  }
   if (entry.menuId === 'gestureMode') {
     // 体数は可変。履歴の枚数から復元（1体1分）
     const n = Math.max(1, (entry.shots || []).length || Math.round((entry.seconds || 600) / 60));
     return buildGestureMenu(n).steps;
   }
-  if (entry.menuId === 'daily') return buildDaily(partForDate(entry.date)).steps;
+  if (entry.menuId === 'daily') {
+    const part = partById(entry.partId) || partForDate(entry.date);
+    return buildDaily(part).steps;
+  }
   if (entry.menuId.startsWith('part-')) {
     const part = PARTS.find((p) => entry.menuId === `part-${p.id}`);
     if (!part) return null;
@@ -2698,15 +2901,16 @@ function croquisShotIndices(steps) {
   let i = 0;
   for (const step of steps || []) {
     for (let c = 0; c < (step.count || 0); c++) {
-      // DAILY 3枚目など drill=croquis でも source=part は部位練習
-      if (step.drill === 'croquis' && step.source !== 'part') indices.push(i);
+      // DAILY の表紙候補: クロッキー本体 + 構図とポーズ（部位は除く）
+      if (step.drill === 'composePose') indices.push(i);
+      else if (step.drill === 'croquis' && step.source !== 'part') indices.push(i);
       i++;
     }
   }
   return indices;
 }
 
-/** その回の croquis 分だけ artwork ID を返す（ジェスチャー等は除く）。 */
+/** その回の croquis / 構図ポーズ分だけ artwork ID を返す（ジェスチャー等は除く）。 */
 function croquisArtworkIdsFromEntry(entry) {
   const shots = entry?.shots || [];
   const steps = menuStepsForEntry(entry);
@@ -2715,10 +2919,10 @@ function croquisArtworkIdsFromEntry(entry) {
       .map((idx) => shots[idx]?.artworkId || shots[idx]?.shortId)
       .filter(Boolean);
   }
-  if (entry.menuId === 'croquisMode') {
+  if (entry.menuId === 'croquisMode' || entry.menuId === 'composePoseMode') {
     return shots.map((s) => s.artworkId || s.shortId).filter(Boolean);
   }
-  if (entry.byDrill?.croquis && !entry.byDrill?.gesture) {
+  if ((entry.byDrill?.croquis || entry.byDrill?.composePose) && !entry.byDrill?.gesture) {
     return shots.map((s) => s.artworkId || s.shortId).filter(Boolean);
   }
   return [];
@@ -3020,6 +3224,8 @@ function renderSettings() {
   profileCard.hidden = !u;
   if (u) {
     $('#profile-username').value = getUsername();
+    const handleInput = $('#profile-handle');
+    if (handleInput) handleInput.value = getHandle();
   }
   $('#opt-theme').value = settings.theme || 'light';
   const skin = settings.skin === 'pastel-rpg' ? 'pastel-rpg' : 'default';
@@ -3052,16 +3258,34 @@ function switchLang(code) {
 
 
 function wireSettings() {
-  $('#profile-save').addEventListener('click', () => {
+  $('#profile-save').addEventListener('click', async () => {
     const name = $('#profile-username').value.trim();
+    const handleRaw = ($('#profile-handle')?.value || '').trim();
     if (!name) return;
     if (name.includes('@')) {
-      toast(t('auth.usernameNoEmail'));
+      usernameSaveToast('email');
       return;
     }
-    setUsername(name);
-    updateAuthUI(getUser());
-    toast(t('auth.saved'));
+    const btn = $('#profile-save');
+    if (btn) btn.disabled = true;
+    try {
+      const nameResult = await setUsername(name);
+      if (!nameResult.ok) {
+        usernameSaveToast(nameResult.error);
+        return;
+      }
+      if (handleRaw) {
+        const handleResult = await setHandle(handleRaw);
+        if (!handleResult.ok) {
+          handleSaveToast(handleResult.error);
+          return;
+        }
+      }
+      updateAuthUI(getUser());
+      toast(t('auth.saved'));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   });
 
   const bind = (sel, key) => $(sel).addEventListener('change', (e) => {
@@ -3120,6 +3344,8 @@ function renderArtworkTlPost(work, { mine = false } = {}) {
 
   const meta = el('header', 'tl-meta');
   meta.append(el('span', 'tl-name', name));
+  const handle = artworkHandle(work);
+  if (handle) meta.append(el('span', 'tl-handle', `@${handle}`));
   meta.append(el('span', 'tl-dot', '·'));
   const posted = el('time', 'tl-time', formatArtworkTime(work));
   if (work.created_at) posted.setAttribute('datetime', work.created_at);
@@ -3598,33 +3824,137 @@ function updateAuthUI(u) {
   if (logTab) logTab.hidden = !loggedIn;
 }
 
+function usernameSaveToast(error) {
+  if (error === 'email') {
+    toast(t('auth.usernameNoEmail') === 'auth.usernameNoEmail'
+      ? 'メールアドレスは使えません'
+      : t('auth.usernameNoEmail'));
+    return;
+  }
+  if (error === 'taken') {
+    toast(t('auth.usernameTaken') === 'auth.usernameTaken'
+      ? 'その名前は使われています'
+      : t('auth.usernameTaken'));
+    return;
+  }
+  toast(t('auth.usernameSaveFail') === 'auth.usernameSaveFail'
+    ? '保存に失敗しました。もう一度試してください'
+    : t('auth.usernameSaveFail'));
+}
+
+function handleSaveToast(error) {
+  if (error === 'taken') {
+    toast(t('auth.handleTaken') === 'auth.handleTaken'
+      ? 'そのユーザーIDは使われています'
+      : t('auth.handleTaken'));
+    return;
+  }
+  if (error === 'invalid') {
+    toast(t('auth.handleInvalid') === 'auth.handleInvalid'
+      ? '半角英字で始め、英数字と _ のみ（3〜20文字）'
+      : t('auth.handleInvalid'));
+    return;
+  }
+  toast(t('auth.usernameSaveFail') === 'auth.usernameSaveFail'
+    ? '保存に失敗しました。もう一度試してください'
+    : t('auth.usernameSaveFail'));
+}
+
+/** 表示名のあと、ユーザーID未設定ならダイアログを出す */
+function afterProfileReady(onDone) {
+  if (!hasHandle()) {
+    showHandleSheet(onDone);
+    return;
+  }
+  if (onDone) onDone();
+}
+
 function showUsernameSheet(onDone) {
   const sheet = $('#username-sheet');
   const input = $('#username-input');
+  const okBtn = $('#username-ok');
   const existing = getUsername();
   input.value = existing || '';
   sheet.hidden = false;
   input.focus();
+  let saving = false;
 
-  function submit() {
+  async function submit() {
+    if (saving) return;
     const name = input.value.trim();
     if (!name) return;
     if (name.includes('@')) {
-      toast(t('auth.usernameNoEmail') === 'auth.usernameNoEmail'
-        ? 'メールアドレスは使えません'
-        : t('auth.usernameNoEmail'));
+      usernameSaveToast('email');
       return;
     }
-    setUsername(name);
-    sheet.hidden = true;
-    updateAuthUI(getUser());
-    if (onDone) onDone();
+    saving = true;
+    if (okBtn) okBtn.disabled = true;
+    try {
+      const result = await setUsername(name);
+      if (!result.ok) {
+        usernameSaveToast(result.error);
+        return;
+      }
+      sheet.hidden = true;
+      updateAuthUI(getUser());
+      afterProfileReady(onDone);
+    } finally {
+      saving = false;
+      if (okBtn) okBtn.disabled = false;
+    }
   }
 
-  function close() { sheet.hidden = true; }
+  function close() {
+    if (saving) return;
+    sheet.hidden = true;
+  }
 
-  $('#username-ok').onclick = submit;
+  okBtn.onclick = submit;
   $('#username-close').onclick = close;
+  input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
+}
+
+function showHandleSheet(onDone) {
+  const sheet = $('#handle-sheet');
+  if (!sheet) {
+    if (onDone) onDone();
+    return;
+  }
+  const input = $('#handle-input');
+  const okBtn = $('#handle-ok');
+  input.value = getHandle() || '';
+  sheet.hidden = false;
+  input.focus();
+  let saving = false;
+
+  async function submit() {
+    if (saving) return;
+    const raw = input.value.trim();
+    if (!raw) return;
+    saving = true;
+    if (okBtn) okBtn.disabled = true;
+    try {
+      const result = await setHandle(raw);
+      if (!result.ok) {
+        handleSaveToast(result.error);
+        return;
+      }
+      sheet.hidden = true;
+      updateAuthUI(getUser());
+      if (onDone) onDone();
+    } finally {
+      saving = false;
+      if (okBtn) okBtn.disabled = false;
+    }
+  }
+
+  function close() {
+    if (saving) return;
+    sheet.hidden = true;
+  }
+
+  okBtn.onclick = submit;
+  $('#handle-close').onclick = close;
   input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
 }
 
@@ -3685,7 +4015,11 @@ function wireAuth() {
 
   $('#auth-change-username').addEventListener('click', () => {
     sheet.hidden = true;
-    showUsernameSheet();
+    showUsernameSheet(() => afterProfileReady());
+  });
+  $('#auth-change-handle')?.addEventListener('click', () => {
+    sheet.hidden = true;
+    showHandleSheet();
   });
 
   $('#auth-logout').addEventListener('click', async () => {
@@ -3721,7 +4055,7 @@ function wireAuth() {
     authHandledUserId = uid;
     // 端末に名前が無くても、DB にあれば復元してからユーザーネーム入力を出すか決める
     Promise.all([hydrateUsername(), hydrateUserData()])
-      .then(([name, data]) => {
+      .then(([profile, data]) => {
         if (data?.lang) {
           applyLang(data.lang);
           applyI18n();
@@ -3730,29 +4064,30 @@ function wireAuth() {
         settings = getSettings();
         applyTheme();
         updateAuthUI(getUser());
-        if (!name && !hasUsername()) {
+        const finish = () => {
           sheet.hidden = true;
           restorePageScroll();
-          showUsernameSheet(() => {
-            applyRoute(routeFromLocation());
-            repaintAfterHydrate();
-            if (pendingStart) {
-              const fn = pendingStart;
-              pendingStart = null;
-              fn();
-            }
-          });
+          applyRoute(routeFromLocation());
+          repaintAfterHydrate();
+          if (pendingStart) {
+            const fn = pendingStart;
+            pendingStart = null;
+            fn();
+          }
+        };
+        if (!hasUsername()) {
+          sheet.hidden = true;
+          restorePageScroll();
+          showUsernameSheet(finish);
           return;
         }
-        sheet.hidden = true;
-        restorePageScroll();
-        applyRoute(routeFromLocation());
-        repaintAfterHydrate();
-        if (pendingStart) {
-          const fn = pendingStart;
-          pendingStart = null;
-          fn();
+        if (!hasHandle()) {
+          sheet.hidden = true;
+          restorePageScroll();
+          showHandleSheet(finish);
+          return;
         }
+        finish();
       })
       .catch((err) => {
         console.error('[auth hydrate]', err);
@@ -3772,10 +4107,11 @@ function openAuthSheet() {
 /** 起動時: 認証 → クラウド復元 → 初回描画（空の 0 表示を防ぐ） */
 async function bootstrapApp() {
   try {
+    await refreshCustomTags().catch(() => {});
     const u = await initAuth();
     if (u) {
       window.__setAuthHandledUserId?.(u.id);
-      const [name, data] = await Promise.all([hydrateUsername(), hydrateUserData()]);
+      const [profile, data] = await Promise.all([hydrateUsername(), hydrateUserData()]);
       if (data?.lang) {
         applyLang(data.lang);
         applyI18n();
@@ -3784,8 +4120,15 @@ async function bootstrapApp() {
       settings = getSettings();
       applyTheme();
       updateAuthUI(u);
-      if (!name && !hasUsername()) {
+      if (!hasUsername()) {
         showUsernameSheet(() => {
+          applyRoute(routeFromLocation());
+          repaintAfterHydrate();
+        });
+        return;
+      }
+      if (!hasHandle()) {
+        showHandleSheet(() => {
           applyRoute(routeFromLocation());
           repaintAfterHydrate();
         });
@@ -3944,6 +4287,7 @@ function init() {
   wirePartSheet();
   wireGestureSheet();
   wireCroquisSheet();
+  wireComposePoseSheet();
   wireCopySheet();
   wireLibrary();
   wireCalendar();

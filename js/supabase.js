@@ -2,24 +2,53 @@
  * supabase.js — Supabase Storage でお題写真を管理する。
  *
  * 写真は Supabase Storage の "photos" バケットに置く。
- * メタデータ（タグ・名前など）は同バケット内の manifest.json に保存。
+ * メタデータ（タグ・名前など）は同バケット内の manifest.json / custom-tags.json に保存。
  * SDK は使わず REST API を直接叩く。
+ *
+ * Auth / DB はホストごとに切替。お題写真の photos・manifest・タグは常に本番 Storage を共有する
+ *（dev / localhost でも二重管理しない）。
  */
 
-export const SUPABASE_URL = 'https://clifnylwatvtrikrfpft.supabase.co';
-export const SUPABASE_KEY = 'sb_publishable_kzKAxV0nVjU4ts-ewGHgRg_HmaQPFRj';
+const PROD = {
+  url: 'https://clifnylwatvtrikrfpft.supabase.co',
+  key: 'sb_publishable_kzKAxV0nVjU4ts-ewGHgRg_HmaQPFRj',
+};
+const DEV = {
+  url: 'https://fuggnreupdntutktient.supabase.co',
+  key: 'sb_publishable_vs2GFcc2mV1yjGCZkRIyNA_YP0ocE_l',
+};
+
+const ENV_MAP = {
+  'artclub.space':     PROD,
+  'dev.artclub.space': DEV,
+  'localhost':         DEV,
+};
+const env = ENV_MAP[location.hostname];
+if (!env) throw new Error(`Unknown host: ${location.hostname} — Supabase 接続を拒否しました`);
+
+/** Auth / REST（環境ごと） */
+export const SUPABASE_URL = env.url;
+export const SUPABASE_KEY = env.key;
+
+/** お題写真 photos / manifest / タグ（常に本番） */
+export const PHOTOS_URL = PROD.url;
+export const PHOTOS_KEY = PROD.key;
+
 const BUCKET = 'photos';
 
 function hdrs(extra = {}) {
   return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
+    apikey: PHOTOS_KEY,
+    Authorization: `Bearer ${PHOTOS_KEY}`,
     ...extra,
   };
 }
 
-const storageUrl = (path) => `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`;
-const publicUrl  = (path) => `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+const storageUrl = (path) => `${PHOTOS_URL}/storage/v1/object/${BUCKET}/${path}`;
+const publicUrl  = (path) => `${PHOTOS_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+
+/** アップロード時に CDN が長くキャッシュしないよう指示する */
+const WRITE_CACHE_HDRS = { cacheControl: '0' };
 
 let manifestCache = null;
 
@@ -28,6 +57,36 @@ let manifestCache = null;
 /** WebP 変換後の対になるパス（pxxx.jpg → pxxx.webp）。 */
 export function webpTwin(file) {
   return typeof file === 'string' ? file.replace(/\.(jpe?g|png)$/i, '.webp') : file;
+}
+
+/**
+ * manifest / タグ JSON は公開 CDN 経由だと upsert 直後に古い内容が返り、
+ * リロードで写真が消えたように見える。認証付き object API + no-store で読む。
+ */
+async function fetchStorageJson(path) {
+  const res = await fetch(storageUrl(path), {
+    headers: hdrs(),
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(String(res.status));
+  return res.json();
+}
+
+async function putStorageJson(path, data) {
+  const res = await fetch(storageUrl(path), {
+    method: 'POST',
+    headers: hdrs({
+      'Content-Type': 'application/json',
+      'x-upsert': 'true',
+      ...WRITE_CACHE_HDRS,
+    }),
+    body: JSON.stringify(data, null, 2),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${path} save failed: ${res.status} ${text}`);
+  }
+  return data;
 }
 
 /**
@@ -55,13 +114,38 @@ export async function repairManifestExtensions() {
   return changed;
 }
 
+/** 旧タグ名の読み替え（Storage 上の過去データ互換）。 */
+const TAG_ALIASES = {
+  動き: 'ジェスチャー',
+};
+
+export function normalizeTagName(tag) {
+  if (typeof tag !== 'string') return tag;
+  return TAG_ALIASES[tag] || tag;
+}
+
+export function normalizeTagList(tags) {
+  if (!Array.isArray(tags)) return [];
+  const out = [];
+  const seen = new Set();
+  for (const raw of tags) {
+    const tag = normalizeTagName(raw);
+    if (!tag || seen.has(tag)) continue;
+    seen.add(tag);
+    out.push(tag);
+  }
+  return out;
+}
+
 export async function loadManifest({ fresh = false } = {}) {
   if (manifestCache && !fresh) return manifestCache;
   try {
-    const res = await fetch(publicUrl('manifest.json'), { cache: fresh ? 'reload' : 'default' });
-    if (!res.ok) throw new Error(String(res.status));
-    const data = await res.json();
-    manifestCache = Array.isArray(data?.photos) ? data.photos : [];
+    const data = await fetchStorageJson('manifest.json');
+    const photos = Array.isArray(data?.photos) ? data.photos : [];
+    for (const entry of photos) {
+      if (Array.isArray(entry.tags)) entry.tags = normalizeTagList(entry.tags);
+    }
+    manifestCache = photos;
   } catch {
     manifestCache = [];
   }
@@ -69,26 +153,17 @@ export async function loadManifest({ fresh = false } = {}) {
 }
 
 async function saveManifest(entries) {
-  const body = JSON.stringify({
+  const photos = (entries || []).map((entry) => ({
+    ...entry,
+    tags: normalizeTagList(entry.tags),
+  }));
+  await putStorageJson('manifest.json', {
     version: 1,
     updatedAt: new Date().toISOString(),
-    photos: entries,
-  }, null, 2);
-
-  const res = await fetch(storageUrl('manifest.json'), {
-    method: 'POST',
-    headers: hdrs({
-      'Content-Type': 'application/json',
-      'x-upsert': 'true',
-    }),
-    body,
+    photos,
   });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`manifest save failed: ${res.status} ${text}`);
-  }
-  manifestCache = entries;
-  return entries;
+  manifestCache = photos;
+  return photos;
 }
 
 /* ---------- カスタムタグ ---------- */
@@ -97,32 +172,37 @@ const TAGS_FILE = 'custom-tags.json';
 
 let tagConfig = null;
 
+function normalizeTagConfig(data) {
+  if (Array.isArray(data)) return { custom: data, removed: [] };
+  const custom = Array.isArray(data?.custom) ? data.custom : [];
+  // 旧 hidden は「削除済み」として引き継ぐ（復元UIは出さない）
+  const removed = [...new Set([
+    ...(Array.isArray(data?.removed) ? data.removed : []),
+    ...(Array.isArray(data?.hidden) ? data.hidden : []),
+  ])].filter((t) => t && !custom.includes(t));
+  return { custom, removed };
+}
+
 export async function loadTagConfig() {
   if (tagConfig) return tagConfig;
   try {
-    const res = await fetch(publicUrl(TAGS_FILE), { cache: 'reload' });
-    if (!res.ok) return { custom: [], hidden: [] };
-    const data = await res.json();
-    if (Array.isArray(data)) return { custom: data, hidden: [] };
-    return { custom: data.custom || [], hidden: data.hidden || [] };
+    const data = await fetchStorageJson(TAGS_FILE);
+    tagConfig = normalizeTagConfig(data);
+    return tagConfig;
   } catch {
-    return { custom: [], hidden: [] };
+    tagConfig = { custom: [], removed: [] };
+    return tagConfig;
   }
 }
 
 async function saveTagConfig(cfg) {
-  tagConfig = cfg;
-  const body = JSON.stringify(cfg);
-  const res = await fetch(storageUrl(TAGS_FILE), {
-    method: 'POST',
-    headers: hdrs({
-      'Content-Type': 'application/json',
-      'x-upsert': 'true',
-    }),
-    body,
-  });
-  if (!res.ok) throw new Error(`tags save failed: ${res.status}`);
-  return cfg;
+  const next = {
+    custom: Array.isArray(cfg.custom) ? cfg.custom : [],
+    removed: Array.isArray(cfg.removed) ? cfg.removed : [],
+  };
+  await putStorageJson(TAGS_FILE, next);
+  tagConfig = next;
+  return tagConfig;
 }
 
 export async function loadCustomTags() {
@@ -130,24 +210,49 @@ export async function loadCustomTags() {
   return cfg.custom;
 }
 
-export async function loadHiddenTags() {
+export async function loadRemovedTags() {
   const cfg = await loadTagConfig();
-  return cfg.hidden;
+  return cfg.removed || [];
 }
 
-export async function saveCustomTags(tags) {
+export async function saveCustomTags(tags, { revive = [] } = {}) {
   const cfg = await loadTagConfig();
-  cfg.custom = tags;
-  return saveTagConfig(cfg);
-}
-
-export async function saveHiddenTags(hidden) {
-  const cfg = await loadTagConfig();
-  cfg.hidden = hidden;
-  return saveTagConfig(cfg);
+  const custom = tags || [];
+  const reviveSet = new Set(revive);
+  const removed = (cfg.removed || []).filter((t) => !custom.includes(t) && !reviveSet.has(t));
+  return saveTagConfig({ custom, removed });
 }
 
 export function invalidateTagConfig() { tagConfig = null; }
+
+/**
+ * タグを Storage から本削除する。
+ * - 全写真の manifest.tags から外す
+ * - カスタム一覧から外す
+ * - 組み込みタグも一覧に出さないよう removed に入れる
+ * @returns {{ photos: number }}
+ */
+export async function deleteTagEverywhere(tag) {
+  const name = String(tag || '').trim();
+  if (!name) return { photos: 0 };
+
+  const entries = await loadManifest({ fresh: true });
+  let photos = 0;
+  for (const entry of entries) {
+    if (!Array.isArray(entry.tags) || !entry.tags.includes(name)) continue;
+    entry.tags = entry.tags.filter((t) => t !== name);
+    photos++;
+  }
+  if (photos) await saveManifest(entries);
+
+  invalidateTagConfig();
+  const cfg = await loadTagConfig();
+  const nextCustom = (cfg.custom || []).filter((t) => t !== name);
+  const nextRemoved = [...new Set([...(cfg.removed || []), name])];
+  await saveTagConfig({ custom: nextCustom, removed: nextRemoved });
+
+  return { photos };
+}
 
 /* ---------- 写真のアップロード ---------- */
 
@@ -170,6 +275,7 @@ export async function uploadPhoto(blob, id) {
     headers: hdrs({
       'Content-Type': contentType,
       'x-upsert': 'true',
+      ...WRITE_CACHE_HDRS,
     }),
     body: blob,
   });
@@ -181,7 +287,7 @@ export async function uploadPhoto(blob, id) {
 }
 
 export async function deletePhotoFromStorage(path) {
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}`, {
+  const res = await fetch(`${PHOTOS_URL}/storage/v1/object/${BUCKET}`, {
     method: 'DELETE',
     headers: hdrs({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ prefixes: [path] }),
@@ -192,15 +298,76 @@ export async function deletePhotoFromStorage(path) {
   }
 }
 
+/* ---------- ファイル名の同一判定（Unsplash 再DL の -2 など） ---------- */
+
+/**
+ * 比較用にファイル名を正規化する。
+ * 拡張子・パスを落とし、末尾の -2 / (2) / _copy などを繰り返し除去する。
+ * 例: "foo-unsplash-2.jpg" / "foo-unsplash (2).webp" → "foo-unsplash"
+ */
+export function photoNameKey(name) {
+  if (!name) return '';
+  let s = String(name).trim().toLowerCase().replace(/^.*[/\\]/, '');
+  s = s.replace(/\.[^.]+$/, '');
+  let prev;
+  do {
+    prev = s;
+    s = s
+      .replace(/[_\s-]+(?:copy|副本|コピー)$/i, '')
+      .replace(/[_\s-]*\(\d+\)$/, '')
+      .replace(/[_\s-]+\d+$/, '');
+  } while (s !== prev && s.length > 0);
+  return s;
+}
+
+/**
+ * 既存の name 一覧と突き合わせて重複を除く。
+ * バッチ内の重複も最初の1件だけ残す。
+ * @returns {{ unique: any[], skipped: { name: string, reason: 'existing'|'batch' }[] }}
+ */
+export function filterDuplicatePhotoNames(items, existingNames = []) {
+  const existingKeys = new Set();
+  for (const n of existingNames) {
+    const key = photoNameKey(n);
+    if (key) existingKeys.add(key);
+  }
+  const seen = new Set(existingKeys);
+  const unique = [];
+  const skipped = [];
+  for (const item of items) {
+    const name = typeof item === 'string' ? item : item?.name;
+    const key = photoNameKey(name);
+    if (!key) {
+      unique.push(item);
+      continue;
+    }
+    if (seen.has(key)) {
+      skipped.push({
+        name: name || '(無名)',
+        reason: existingKeys.has(key) ? 'existing' : 'batch',
+      });
+      continue;
+    }
+    seen.add(key);
+    unique.push(item);
+  }
+  return { unique, skipped };
+}
+
 /* ---------- まとめて操作 ---------- */
 
 export async function pushToSupabase(photos, onProgress = () => {}) {
   const existing = await loadManifest({ fresh: true });
   const byFile = new Map(existing.map((e) => [e.file, e]));
 
+  const { unique, skipped } = filterDuplicatePhotoNames(
+    photos,
+    existing.map((e) => e.name).filter(Boolean),
+  );
+
   let done = 0;
-  for (const photo of photos) {
-    onProgress(++done, photos.length, photo);
+  for (const photo of unique) {
+    onProgress(++done, unique.length, photo);
     // shrinkImage 済みの WebP を上げ、manifest も必ず .webp で書く
     const { path: file } = await uploadPhoto(photo.blob, photo.id);
     const stem = photo.id;
@@ -212,12 +379,13 @@ export async function pushToSupabase(photos, onProgress = () => {}) {
       tags: photo.tags || [],
       name: photo.name || null,
       addedAt: photo.addedAt || Date.now(),
+      ...(photo.inactive ? { inactive: true } : {}),
     });
   }
 
   const entries = [...byFile.values()];
-  await saveManifest(entries);
-  return entries;
+  if (unique.length) await saveManifest(entries);
+  return { entries, uploaded: unique.length, skipped };
 }
 
 export async function updateTags(file, tags) {
@@ -227,6 +395,21 @@ export async function updateTags(file, tags) {
     entry.tags = tags;
     await saveManifest(entries);
   }
+  return entries;
+}
+
+/** お題としては出さないが、一覧・履歴には残す。 */
+export async function setPhotosInactive(files, inactive) {
+  const list = Array.isArray(files) ? files : [files];
+  if (!list.length) return loadManifest({ fresh: true });
+  const entries = await loadManifest({ fresh: true });
+  const want = new Set(list);
+  for (const entry of entries) {
+    if (!want.has(entry.file)) continue;
+    if (inactive) entry.inactive = true;
+    else delete entry.inactive;
+  }
+  await saveManifest(entries);
   return entries;
 }
 
@@ -262,8 +445,8 @@ export function supabasePhotoUrl(entry) {
   return publicUrl(entry.file);
 }
 
-export async function supabasePhotos() {
-  const entries = await loadManifest();
+export async function supabasePhotos({ fresh = true } = {}) {
+  const entries = await loadManifest({ fresh });
   return entries.map((entry) => {
     const file = entry.file;
     const twin = webpTwin(file);
@@ -278,6 +461,7 @@ export async function supabasePhotos() {
       bundled: true,
       supabase: true,
       addedAt: entry.addedAt || 0,
+      inactive: !!entry.inactive,
       file,
     };
   });
@@ -326,7 +510,11 @@ export async function convertToWebp(entry, maxSide = 1000, quality = 0.82) {
   if (!(alreadyWebp && oldPath === newPath)) {
     const up = await fetch(storageUrl(newPath), {
       method: 'POST',
-      headers: hdrs({ 'Content-Type': 'image/webp', 'x-upsert': 'true' }),
+      headers: hdrs({
+        'Content-Type': 'image/webp',
+        'x-upsert': 'true',
+        ...WRITE_CACHE_HDRS,
+      }),
       body: webpBlob,
     });
     if (!up.ok) {
@@ -355,7 +543,7 @@ export async function convertToWebp(entry, maxSide = 1000, quality = 0.82) {
   }
 
   if (newPath !== oldPath) {
-    await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}`, {
+    await fetch(`${PHOTOS_URL}/storage/v1/object/${BUCKET}`, {
       method: 'DELETE',
       headers: hdrs({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ prefixes: [oldPath] }),
@@ -366,7 +554,7 @@ export async function convertToWebp(entry, maxSide = 1000, quality = 0.82) {
 }
 
 export async function testConnection() {
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/bucket/${BUCKET}`, {
+  const res = await fetch(`${PHOTOS_URL}/storage/v1/bucket/${BUCKET}`, {
     headers: hdrs(),
   });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
