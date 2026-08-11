@@ -198,7 +198,16 @@ export function createSessionRunner({ onFinish, onQuit }) {
     const showHints = isGesture || isComposePose;
     dom.bridgeDesc.hidden = !showHints;
     if (showHints) {
-      dom.bridgeDesc.replaceChildren(hintList(tr(drill, 'hints'), 'bridge-hints'));
+      const hints = tr(drill, 'hints');
+      // 構図とポーズは一文のリード文なので箇条書きにしない
+      if (isComposePose) {
+        const p = document.createElement('p');
+        p.className = 'bridge-lead';
+        p.textContent = Array.isArray(hints) ? (hints[0] || '') : String(hints || '');
+        dom.bridgeDesc.replaceChildren(p);
+      } else {
+        dom.bridgeDesc.replaceChildren(hintList(hints, 'bridge-hints'));
+      }
     }
     dom.bridgeMeta.textContent = item.unlimited
       ? (getLang() === 'en' ? `${item.countInStep} · no time limit` : `${item.countInStep}枚 · 時間無制限`)

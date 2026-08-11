@@ -185,9 +185,7 @@ export const DRILLS = {
             '3分でポーズの骨格と画面バランスだけを固める。',
     cue: 'まず画面に収める。ポーズの流れを太く取り、細部は最後の少しだけ。',
     hints: [
-      '紙の中での大きさ・位置を先に決める',
-      'ポーズの流れと重心を太く取る',
-      '余白も構図のうち',
+      'イラストのヒントになるポーズや構図を練習して引き出しを増やしましょう',
     ],
     view: {},
     en: {
@@ -203,9 +201,7 @@ export const DRILLS = {
       theory: 'Composition is as much about where as what. Lock pose and page balance in three minutes.',
       cue: 'Fit it on the page first. Big pose flow, detail only at the end.',
       hints: [
-        'Size and place on the page first',
-        'Take pose flow and weight boldly',
-        'Negative space is part of the composition',
+        'Practice poses and compositions that spark illustration ideas, and grow your repertoire',
       ],
     },
   },
