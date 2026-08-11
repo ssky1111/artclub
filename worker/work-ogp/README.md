@@ -1,35 +1,43 @@
-# artclub-work-ogp
+# artclub Worker（OGP + 作品ページ）
 
-`https://artclub.space/work/{id}` 向け Cloudflare Worker。
+`/work/{id}` 向け Cloudflare Worker。
 
 ## 役割
 
 - 作品ごとの OGP（X カード用）
-- 作品の公開ページ（ヘッダー付き・インラインCSS。SPA を /work に出すと CSS が壊れる）
-- 通常の ARTCLUB UI は GitHub Pages のまま
+- 作品の公開ページ（ヘッダー付き・インラインCSS）
 - `{id}` は **short_id（8桁）** または従来の uuid
 
-## デプロイ
+## 環境
+
+| 環境 | Worker 名 | URL | Supabase |
+|------|-----------|-----|----------|
+| Production | `artclub` | `artclub.space/work/*` | artclub main |
+| Development | `artclub-dev` | `dev.artclub.space/work/*` | ArtClub Dev |
+
+## 自動デプロイ（GitHub Actions）
+
+`worker/work-ogp/` 以下を変更して push すると自動デプロイされる。
+
+- `main` ブランチ → Production Worker
+- `dev` ブランチ → Development Worker
+
+### GitHub Secrets（要設定）
+
+| Secret 名 | 説明 |
+|-----------|------|
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API トークン（Workers 編集権限） |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare アカウント ID |
+
+## 手動デプロイ
 
 ```bash
 cd worker/work-ogp
-npx wrangler login
-npx wrangler deploy
+npx wrangler deploy            # Production
+npx wrangler deploy --env dev  # Development
 ```
 
-Cloudflare Dashboard で Routes を追加:
+## 初回セットアップ（Cloudflare Dashboard）
 
-- `artclub.space/work/*` → この Worker
-
-**重要:** `/work/*` を Pages の `index.html` に Rewrite しないこと。  
-相対パス `./css/styles.css` が `/work/css/styles.css` になり画面が壊れる。
-
-DNS は既存の artclub.space（Pages / カスタムドメイン）を維持し、`/work/*` だけ Worker に振る。
-
-## Supabase
-
-先にリポジトリ直下の `supabase/artworks.sql` を SQL Editor で実行する。
-
-テーブル（`artworks` / `profiles` / `artwork_likes`）に加え、
-**Storage の `artworks` バケットと RLS ポリシー**もこの SQL に含まれている。
-`short_id` 列もここで追加される。
+- `dev.artclub.space` の DNS レコード追加（CNAME → Workers プロキシ）
+- Routes は `wrangler.toml` で管理済み
