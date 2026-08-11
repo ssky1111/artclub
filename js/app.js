@@ -941,7 +941,9 @@ function showAdminPanel(name) {
 
 const sbSelected = new Set();
 const sbUploadTags = new Set();
+const sbFilterTags = new Set();
 let sbLastClickedIndex = -1;
+let sbPhotosCache = [];
 
 function renderUploadTagChips() {
   const wrap = $('#sb-upload-tags');
@@ -960,20 +962,54 @@ function renderUploadTagChips() {
   }
 }
 
-async function renderSupabaseGrid() {
+function renderFilterTagChips() {
+  const wrap = $('#sb-filter-tags');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const allT = allTagsWithCustom();
+  for (const tag of [...sbFilterTags]) {
+    if (!allT.includes(tag)) sbFilterTags.delete(tag);
+  }
+  for (const tag of allT) {
+    const chip = el('button', `chip${sbFilterTags.has(tag) ? ' on' : ''}`, tag);
+    chip.addEventListener('click', () => {
+      if (sbFilterTags.has(tag)) sbFilterTags.delete(tag); else sbFilterTags.add(tag);
+      chip.classList.toggle('on');
+      renderSupabaseGrid({ keepCache: true });
+    });
+    wrap.append(chip);
+  }
+}
+
+function filteredSbPhotos(photos) {
+  const filters = [...sbFilterTags];
+  if (!filters.length) return photos;
+  return photos.filter((p) => filters.every((tag) => (p.tags || []).includes(tag)));
+}
+
+async function renderSupabaseGrid({ keepCache = false } = {}) {
   const grid = $('#sb-grid');
   grid.innerHTML = '';
   sbSelected.clear();
   sbLastClickedIndex = -1;
   updateSelectBar();
   renderUploadTagChips();
+  renderFilterTagChips();
 
   try {
-    const photos = await supabasePhotos();
+    if (!keepCache || !sbPhotosCache.length) {
+      sbPhotosCache = await supabasePhotos();
+    }
+    const photos = filteredSbPhotos(sbPhotosCache);
     const inactiveN = photos.filter((p) => p.inactive).length;
-    $('#sb-status').textContent = inactiveN
-      ? `${photos.length} 枚（非アクティブ ${inactiveN}）`
+    const filterN = sbFilterTags.size;
+    const total = sbPhotosCache.length;
+    let status = filterN
+      ? `${photos.length} / ${total} 枚`
       : `${photos.length} 枚`;
+    if (inactiveN) status += `（非アクティブ ${inactiveN}）`;
+    if (filterN) status += ` · タグ絞り込み中`;
+    $('#sb-status').textContent = status;
 
     for (const photo of photos) {
       const btn = el('button', `lib-item${photo.inactive ? ' is-inactive' : ''}`);
