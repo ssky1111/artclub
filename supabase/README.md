@@ -31,6 +31,7 @@
 4. `user_prefs_sessions`
 5. `admin_analytics`（`is_artclub_admin` + sessions 管理者読み取り）
 6. `feedback`
+7. `profiles_username_not_unique`（表示名の重複許可）
 
 ## フロントの接続先
 

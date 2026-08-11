@@ -1,0 +1,6 @@
+# Cloudflare — リダイレクトのみ
+# SPA（/admin など）は wrangler.jsonc の not_found_handling で処理する。
+# /* → /index.html は Workers で Infinite loop になるので書かない。
+
+/privacy.html /privacy/ 301
+/terms.html /terms/ 301

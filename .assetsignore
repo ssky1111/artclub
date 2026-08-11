@@ -1,12 +1,12 @@
 # wrangler deploy で静的配信しないもの
-.git
-.wrangler
-.cursor
-.github
-node_modules
-artifacts
-worker
-supabase
+.git/
+.git/**
+.wrangler/
+.wrangler/**
+.cursor/
+.github/
+node_modules/
+artifacts/
+worker/
+supabase/
 **/.DS_Store
-**/node_modules
-**/.git
