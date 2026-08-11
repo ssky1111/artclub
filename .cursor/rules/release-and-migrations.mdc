@@ -1,0 +1,25 @@
+---
+description: リリース作業トリガーと DB マイグレーション必須ルール
+alwaysApply: true
+---
+
+# リリースとマイグレーション
+
+## 「リリース作業を行って」と言われたら
+
+コードの `dev`→`main` と、本番 DB への未適用マイグレーション apply を **必ずセットで**行う。コードだけ出さない。
+
+手順:
+1. `origin/dev` と `origin/main` の差分を確認
+2. `supabase/migrations/` と MCP `list_migrations`（本番 `clifnylwatvtrikrfpft`）で未適用を特定し、順に `apply_migration`
+3. `dev`→`main` をマージ（このトリガー時のみ main マージ可）
+4. 適用した migration とマージ結果を短く報告
+
+同義トリガー: 「リリースして」「本番に出して」
+
+## DB を変えるとき
+
+- 必ず `supabase/migrations/YYYYMMDDHHMMSS_snake_name.sql` を新規追加
+- 先に dev（`fuggnreupdntutktient`）へ apply → 確認
+- 本番 apply はリリース作業と同時（または明示指示時）
+- `supabase/legacy/` や本番だけの手貼り SQL は禁止
