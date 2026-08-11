@@ -317,14 +317,23 @@ export async function hydrateUsername() {
   return getUsername();
 }
 
-export function setUsername(name) {
-  if (looksLikeEmail(name)) return getUsername();
-  cacheUsername(name);
-  // 他ユーザーのスケッチカードに出す名前
-  import('./gallery.js')
-    .then((m) => m.upsertProfile(name))
-    .catch(() => {});
-  return getUsername();
+/**
+ * DB に保存できてからだけメモリに載せる。失敗時は名前を確定しない。
+ * @returns {Promise<{ ok: true, username: string } | { ok: false, error: string }>}
+ */
+export async function setUsername(name) {
+  if (looksLikeEmail(name)) return { ok: false, error: 'email' };
+  const trimmed = String(name || '').trim().slice(0, 32);
+  if (!trimmed) return { ok: false, error: 'failed' };
+  try {
+    const { upsertProfile } = await import('./gallery.js');
+    const result = await upsertProfile(trimmed);
+    if (!result.ok) return { ok: false, error: result.error || 'failed' };
+    cacheUsername(trimmed);
+    return { ok: true, username: getUsername() };
+  } catch {
+    return { ok: false, error: 'failed' };
+  }
 }
 
 export function hasUsername() {

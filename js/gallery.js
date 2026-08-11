@@ -99,12 +99,15 @@ export function artworkDisplayName(work) {
   return clean(work.username) || 'anonymous';
 }
 
-/** プロフィールのユーザーネームを Auth ユーザーに同期する。 */
+/**
+ * プロフィールのユーザーネームを Auth ユーザーに同期する。
+ * @returns {{ ok: true, row: object|null } | { ok: false, error: 'email'|'auth'|'taken'|'failed' }}
+ */
 export async function upsertProfile(username) {
   const user = getUser();
-  if (!user) return null;
+  if (!user) return { ok: false, error: 'auth' };
   const cleaned = String(username || '').trim().slice(0, 32);
-  if (cleaned.includes('@')) return null;
+  if (cleaned.includes('@')) return { ok: false, error: 'email' };
   const body = {
     id: user.id,
     username: cleaned || null,
@@ -118,9 +121,14 @@ export async function upsertProfile(username) {
     }),
     body: JSON.stringify(body),
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    const taken = res.status === 409
+      || /23505|duplicate|unique/i.test(detail);
+    return { ok: false, error: taken ? 'taken' : 'failed', status: res.status, detail };
+  }
   const rows = await res.json().catch(() => []);
-  return rows[0] || null;
+  return { ok: true, row: rows[0] || null };
 }
 
 /** 自分のプロフィールを DB から読む。別端末ログイン時のユーザーネーム復元用。 */

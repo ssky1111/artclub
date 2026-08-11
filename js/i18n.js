@@ -69,6 +69,9 @@ const DICT = {
   'auth.changeUsername':   { ja: 'ユーザーネームを変更',  en: 'Change username' },
   'auth.saved':            { ja: '保存しました',          en: 'Saved' },
   'auth.usernameNoEmail':  { ja: 'メールアドレスは使えません', en: 'Email addresses can’t be used' },
+  'auth.usernameTaken':    { ja: 'その名前は使われています', en: 'That username is taken' },
+  'auth.usernameSaveFail': { ja: '保存に失敗しました。もう一度試してください', en: 'Couldn’t save. Please try again' },
+  'auth.usernameSaving':   { ja: '保存中…',               en: 'Saving…' },
 
   /* ---------- サイト入室 ---------- */
   'siteGate.note':        { ja: 'テスト公開中です。パスワードを入力してください。',

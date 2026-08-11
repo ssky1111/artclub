@@ -60,7 +60,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '210';
+const BUILD = '212';
 const SITE_PASS_KEY = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 /** サイトパスワード解除の有効期限（約1週間） */
@@ -3052,16 +3052,26 @@ function switchLang(code) {
 
 
 function wireSettings() {
-  $('#profile-save').addEventListener('click', () => {
+  $('#profile-save').addEventListener('click', async () => {
     const name = $('#profile-username').value.trim();
     if (!name) return;
     if (name.includes('@')) {
-      toast(t('auth.usernameNoEmail'));
+      usernameSaveToast('email');
       return;
     }
-    setUsername(name);
-    updateAuthUI(getUser());
-    toast(t('auth.saved'));
+    const btn = $('#profile-save');
+    if (btn) btn.disabled = true;
+    try {
+      const result = await setUsername(name);
+      if (!result.ok) {
+        usernameSaveToast(result.error);
+        return;
+      }
+      updateAuthUI(getUser());
+      toast(t('auth.saved'));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   });
 
   const bind = (sel, key) => $(sel).addEventListener('change', (e) => {
@@ -3598,32 +3608,65 @@ function updateAuthUI(u) {
   if (logTab) logTab.hidden = !loggedIn;
 }
 
+function usernameSaveToast(error) {
+  if (error === 'email') {
+    toast(t('auth.usernameNoEmail') === 'auth.usernameNoEmail'
+      ? 'メールアドレスは使えません'
+      : t('auth.usernameNoEmail'));
+    return;
+  }
+  if (error === 'taken') {
+    toast(t('auth.usernameTaken') === 'auth.usernameTaken'
+      ? 'その名前は使われています'
+      : t('auth.usernameTaken'));
+    return;
+  }
+  toast(t('auth.usernameSaveFail') === 'auth.usernameSaveFail'
+    ? '保存に失敗しました。もう一度試してください'
+    : t('auth.usernameSaveFail'));
+}
+
 function showUsernameSheet(onDone) {
   const sheet = $('#username-sheet');
   const input = $('#username-input');
+  const okBtn = $('#username-ok');
   const existing = getUsername();
   input.value = existing || '';
   sheet.hidden = false;
   input.focus();
+  let saving = false;
 
-  function submit() {
+  async function submit() {
+    if (saving) return;
     const name = input.value.trim();
     if (!name) return;
     if (name.includes('@')) {
-      toast(t('auth.usernameNoEmail') === 'auth.usernameNoEmail'
-        ? 'メールアドレスは使えません'
-        : t('auth.usernameNoEmail'));
+      usernameSaveToast('email');
       return;
     }
-    setUsername(name);
-    sheet.hidden = true;
-    updateAuthUI(getUser());
-    if (onDone) onDone();
+    saving = true;
+    if (okBtn) okBtn.disabled = true;
+    try {
+      const result = await setUsername(name);
+      if (!result.ok) {
+        usernameSaveToast(result.error);
+        return;
+      }
+      sheet.hidden = true;
+      updateAuthUI(getUser());
+      if (onDone) onDone();
+    } finally {
+      saving = false;
+      if (okBtn) okBtn.disabled = false;
+    }
   }
 
-  function close() { sheet.hidden = true; }
+  function close() {
+    if (saving) return;
+    sheet.hidden = true;
+  }
 
-  $('#username-ok').onclick = submit;
+  okBtn.onclick = submit;
   $('#username-close').onclick = close;
   input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
 }
