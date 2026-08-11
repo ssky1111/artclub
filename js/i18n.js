@@ -128,7 +128,12 @@ const DICT = {
   'work.ctrLead':         { ja: 'ブラウザ内で完結。気軽なドローイング練習', en: 'All in your browser. Easy drawing practice' },
   'work.ctrStepGesture':  { ja: 'ジェスチャードローイング', en: 'Gesture drawing' },
   'work.ctrStepPart':     { ja: '部位練習（{part}）', en: 'Body part ({part})' },
-  'work.ctrStepCroquis':  { ja: 'クロッキー', en: 'Croquis' },
+  'work.ctrStepCroquis':  { ja: '構図とポーズ', en: 'Composition & pose' },
+  'setup.composePoseCount': { ja: '何枚やる？', en: 'How many drawings?' },
+  'setup.composePoseNote': {
+    ja: '1枚あたり3分。「構図」タグの写真から出します。',
+    en: '3 minutes each. Photos tagged Composition.',
+  },
 
   /* ---------- アトリエ ---------- */
   'atelier.title':        { ja: 'アトリエ',               en: 'Atelier' },
@@ -148,6 +153,7 @@ const DICT = {
   'atelier.modeGesture':  { ja: 'ジェスチャードローイング', en: 'Gesture drawing' },
   'atelier.modePart':     { ja: '部位練習',               en: 'Body part' },
   'atelier.modeCroquis':  { ja: 'クロッキー',             en: 'Croquis' },
+  'atelier.modeComposePose': { ja: '構図とポーズ',        en: 'Composition & pose' },
   'atelier.modeDaily':    { ja: 'デイリー',               en: 'Daily' },
   'atelier.modeCopy':     { ja: '模写',                   en: 'Copy' },
   'atelier.modeOther':    { ja: '練習',                   en: 'Practice' },
@@ -349,6 +355,7 @@ const DICT = {
   'analytics.modeGesture': { ja: 'ジェスチャー',       en: 'Gesture' },
   'analytics.modePart':  { ja: '部位',                 en: 'Part' },
   'analytics.modeCroquis': { ja: 'クロッキー',         en: 'Croquis' },
+  'analytics.modeComposePose': { ja: '構図とポーズ',   en: 'Composition & pose' },
   'analytics.modeCopy':  { ja: '模写',                 en: 'Copy' },
   'analytics.modeOther': { ja: 'その他',               en: 'Other' },
   'analytics.noData':    { ja: 'この日のデータはありません', en: 'No data for this day' },

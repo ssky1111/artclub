@@ -169,6 +169,46 @@ export const DRILLS = {
       cue: 'Size it so the whole figure fits. Detail only in the last thirty seconds.',
     },
   },
+  composePose: {
+    id: 'composePose',
+    name: '構図とポーズ',
+    short: '構図',
+    about:
+      '画面の中での置き方と、ポーズの捉え方を練習する3分。' +
+      '細部より、全体のバランス・シルエット・視線の流れを優先する。',
+    steps: [
+      '紙の中での大きさ・位置を決める',
+      'ポーズの大きな流れと重心を取る',
+      '要所だけ描き込み、余白も意識する',
+    ],
+    theory: '構図は「何を描くか」と同じくらい「どこに置くか」。' +
+            '3分でポーズの骨格と画面バランスだけを固める。',
+    cue: 'まず画面に収める。ポーズの流れを太く取り、細部は最後の少しだけ。',
+    hints: [
+      '紙の中での大きさ・位置を先に決める',
+      'ポーズの流れと重心を太く取る',
+      '余白も構図のうち',
+    ],
+    view: {},
+    en: {
+      name: 'Composition & pose',
+      short: 'Compose',
+      about:
+        'Three minutes on placement and pose. Favour balance, silhouette, and flow over detail.',
+      steps: [
+        'Decide size and position on the page',
+        'Take the big flow and weight of the pose',
+        'Render only key spots; keep the margins in mind',
+      ],
+      theory: 'Composition is as much about where as what. Lock pose and page balance in three minutes.',
+      cue: 'Fit it on the page first. Big pose flow, detail only at the end.',
+      hints: [
+        'Size and place on the page first',
+        'Take pose flow and weight boldly',
+        'Negative space is part of the composition',
+      ],
+    },
+  },
   copy: {
     id: 'copy',
     name: '模写',
@@ -386,7 +426,11 @@ export function buildDaily(part) {
         label: `部位練習：${part.label}`,
         labelEn: `Body part: ${part.en}`,
       },
-      { drill: 'croquis', count: 2, seconds: 180, source: 'croquis' },
+      {
+        drill: 'composePose', count: 1, seconds: 180, source: 'composePose',
+        label: '構図とポーズ',
+        labelEn: 'Composition & pose',
+      },
     ],
     en: { title: 'DAILY' },
   };
@@ -441,6 +485,17 @@ export const MODES = [
     },
   },
   {
+    id: 'composePoseMode',
+    title: '構図とポーズ',
+    subtitle: '3分/枚。「構図」タグから。枚数は自分で選ぶ',
+    picker: 'composePoseCount',
+    drillId: 'composePose',
+    en: {
+      title: 'Composition & pose',
+      subtitle: '3 min each from Composition tags. Choose how many',
+    },
+  },
+  {
     id: 'copyMode',
     title: '模写',
     subtitle: '人気のスケッチを選んで、時間無制限で描く',
@@ -482,6 +537,22 @@ export function buildCroquisMenu(count = 2) {
     en: {
       title: 'Croquis',
       subtitle: `${n} × 3 min. Put the shape down properly`,
+    },
+  };
+}
+
+/** 構図とポーズ。1枚3分、「構図」タグから。枚数だけ選ぶ。 */
+export function buildComposePoseMenu(count = 1) {
+  const n = Math.max(1, Number(count) || 1);
+  return {
+    id: 'composePoseMode',
+    title: '構図とポーズ',
+    subtitle: `3分×${n}枚。置き方とポーズの流れ`,
+    drillId: 'composePose',
+    steps: [{ drill: 'composePose', count: n, seconds: 180, source: 'composePose' }],
+    en: {
+      title: 'Composition & pose',
+      subtitle: `${n} × 3 min. Placement and pose flow`,
     },
   };
 }
@@ -544,6 +615,7 @@ export function timeLabel(seconds) {
 export function buildCustomMenu({ drill, seconds, count }) {
   const source = drill === 'gesture' ? 'gesture'
     : drill === 'croquis' ? 'croquis'
+    : drill === 'composePose' ? 'composePose'
     : 'photo';
   return {
     id: 'custom',

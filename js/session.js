@@ -146,6 +146,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
           source: step.source
             || (step.drill === 'gesture' ? 'gesture'
               : step.drill === 'croquis' ? 'croquis'
+              : step.drill === 'composePose' ? 'composePose'
               : step.drill === 'copy' ? 'copy'
               : 'photo'),
           // 同じドリルでも、その回が何のためのものかは名前を変えて示す（部位練習など）
@@ -199,8 +200,10 @@ export function createSessionRunner({ onFinish, onQuit }) {
 
 
     const isGesture = item.drillId === 'gesture';
-    dom.bridgeDesc.hidden = !isGesture;
-    if (isGesture) {
+    const isComposePose = item.drillId === 'composePose';
+    const showHints = isGesture || isComposePose;
+    dom.bridgeDesc.hidden = !showHints;
+    if (showHints) {
       dom.bridgeDesc.replaceChildren(hintList(tr(drill, 'hints'), 'bridge-hints'));
     }
     dom.bridgeMeta.textContent = item.unlimited

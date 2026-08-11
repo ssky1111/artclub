@@ -4,7 +4,7 @@
 
 import {
   buildDaily, partForDate, MODES, PARTS, ACTIVE_PARTS, DRILLS, PICKABLE_DRILLS,
-  TIME_CHOICES, COUNT_CHOICES, GESTURE_COUNT_CHOICES, ROUND_COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu, buildCopyMenu, buildGestureMenu, buildCroquisMenu,
+  TIME_CHOICES, COUNT_CHOICES, GESTURE_COUNT_CHOICES, ROUND_COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu, buildCopyMenu, buildGestureMenu, buildCroquisMenu, buildComposePoseMenu,
   levelLabel, menuDuration,
 } from './theory.js';
 import {
@@ -228,7 +228,7 @@ function renderDaily(history) {
   top.append(hero);
 }
 
-/** モードは3つだけ。 */
+/** ホームのモードカード。 */
 function renderModes() {
   const wrap = $('#mode-cards');
   if (!wrap) return;
@@ -251,6 +251,7 @@ function renderModes() {
       if (mode.picker === 'copy') return openCopySheet();
       if (mode.picker === 'gestureCount') return openGestureSheet();
       if (mode.picker === 'croquisCount') return openCroquisSheet();
+      if (mode.picker === 'composePoseCount') return openComposePoseSheet();
       startSession(mode);
     });
     wrap.append(card);
@@ -369,6 +370,46 @@ function wireCroquisSheet() {
   $('#croquis-start').addEventListener('click', () => {
     $('#croquis-sheet').hidden = true;
     startSession(buildCroquisMenu(croquisCount));
+  });
+}
+
+/* ==================== 構図とポーズ ==================== */
+
+let composePoseCount = 1;
+
+function openComposePoseSheet() {
+  renderComposePoseChips();
+  $('#compose-pose-sheet').hidden = false;
+}
+
+function renderComposePoseChips() {
+  const wrap = $('#compose-pose-count-chips');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  for (const n of ROUND_COUNT_CHOICES) {
+    const chip = el('button', `chip${composePoseCount === n ? ' on' : ''}`,
+                    getLang() === 'ja' ? `${n}枚` : String(n));
+    chip.addEventListener('click', () => { composePoseCount = n; renderComposePoseChips(); });
+    wrap.append(chip);
+  }
+  const note = $('#compose-pose-note');
+  if (note) {
+    note.textContent = getLang() === 'ja'
+      ? `1枚3分 × ${composePoseCount}枚（合計 ${composePoseCount * 3}分）`
+      : `3 min each × ${composePoseCount} (total ${composePoseCount * 3} min)`;
+  }
+  const start = $('#compose-pose-start');
+  if (start) start.textContent = t('setup.start', { d: fmtDur(180 * composePoseCount) });
+}
+
+function wireComposePoseSheet() {
+  $('#compose-pose-close')?.addEventListener('click', () => { $('#compose-pose-sheet').hidden = true; });
+  $('#compose-pose-sheet')?.addEventListener('click', (e) => {
+    if (e.target.id === 'compose-pose-sheet') $('#compose-pose-sheet').hidden = true;
+  });
+  $('#compose-pose-start')?.addEventListener('click', () => {
+    $('#compose-pose-sheet').hidden = true;
+    startSession(buildComposePoseMenu(composePoseCount));
   });
 }
 
@@ -1709,6 +1750,7 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
     (menu.steps || []).map((s) => s.source
       || (s.drill === 'gesture' ? 'gesture'
         : s.drill === 'croquis' ? 'croquis'
+        : s.drill === 'composePose' ? 'composePose'
         : 'photo')),
   );
   if (weak) needed.add(`weak:${weak.id}`);
@@ -1764,6 +1806,14 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
     queues.croquis = croquisPhotos.length
       ? createLibraryQueue(['全身'], silent, null, fromAdmin)
       : createLibraryQueue([], silent, null, fromAdmin);
+  }
+
+  // 構図とポーズ → 『構図』タグ
+  if (needed.has('composePose')) {
+    const composePhotos = own.filter((p) => p.tags.includes('構図'));
+    queues.composePose = composePhotos.length
+      ? createLibraryQueue(['構図'], silent, null, fromAdmin)
+      : createLibraryQueue(['構図'], notice, '『構図』タグの写真がありません', fromAdmin);
   }
 
   if (weak) {
@@ -1839,9 +1889,10 @@ function sessionModeFrom(entry) {
   if (entry.menuId === 'daily') return 'Daily';
   if (entry.menuId === 'copyMode') return 'Copy';
   if (entry.menuId?.startsWith('part-')) return 'Part';
-  if (entry.menuId === 'gestureMode' || (entry.byDrill?.gesture && !entry.byDrill?.croquis)) {
+  if (entry.menuId === 'gestureMode' || (entry.byDrill?.gesture && !entry.byDrill?.croquis && !entry.byDrill?.composePose)) {
     return 'Gesture';
   }
+  if (entry.menuId === 'composePoseMode' || entry.byDrill?.composePose) return 'ComposePose';
   if (entry.menuId === 'croquisMode' || entry.byDrill?.croquis) return 'Croquis';
   return entry.menuTitle || 'Practice';
 }
@@ -1854,6 +1905,8 @@ function shotModeFrom(shot, sessionMode = null) {
   if (source === 'copy' || drill === 'copy') return 'Copy';
   if (source === 'gesture' || drill === 'gesture') return 'Gesture';
   if (source === 'part' || label.includes('部位') || /^Body part/i.test(label)) return 'Part';
+  if (source === 'composePose' || drill === 'composePose'
+      || label.includes('構図') || /composition/i.test(label)) return 'ComposePose';
   if (source === 'croquis' || drill === 'croquis') return 'Croquis';
   return sessionMode || 'Practice';
 }
@@ -1868,6 +1921,10 @@ function artworkModeLabel(work) {
   }
   if (key === 'part' || key === 'partmode' || key.startsWith('part-') || raw.includes('部位') || /body\s*part/i.test(raw)) {
     return t('atelier.modePart');
+  }
+  if (key === 'composepose' || key === 'composepodemode'
+      || raw.includes('構図') || /composition\s*&?\s*pose/i.test(raw)) {
+    return t('atelier.modeComposePose');
   }
   if (key === 'croquis' || key === 'croquismode' || raw.includes('クロッキー') || /croquis/i.test(raw)) {
     return t('atelier.modeCroquis');
@@ -2793,6 +2850,10 @@ function menuStepsForEntry(entry) {
     const n = Math.max(1, (entry.shots || []).length || Math.round((entry.seconds || 360) / 180));
     return buildCroquisMenu(n).steps;
   }
+  if (entry.menuId === 'composePoseMode') {
+    const n = Math.max(1, (entry.shots || []).length || Math.round((entry.seconds || 180) / 180));
+    return buildComposePoseMenu(n).steps;
+  }
   if (entry.menuId === 'gestureMode') {
     // 体数は可変。履歴の枚数から復元（1体1分）
     const n = Math.max(1, (entry.shots || []).length || Math.round((entry.seconds || 600) / 60));
@@ -2813,15 +2874,16 @@ function croquisShotIndices(steps) {
   let i = 0;
   for (const step of steps || []) {
     for (let c = 0; c < (step.count || 0); c++) {
-      // DAILY 3枚目など drill=croquis でも source=part は部位練習
-      if (step.drill === 'croquis' && step.source !== 'part') indices.push(i);
+      // DAILY の表紙候補: クロッキー本体 + 構図とポーズ（部位は除く）
+      if (step.drill === 'composePose') indices.push(i);
+      else if (step.drill === 'croquis' && step.source !== 'part') indices.push(i);
       i++;
     }
   }
   return indices;
 }
 
-/** その回の croquis 分だけ artwork ID を返す（ジェスチャー等は除く）。 */
+/** その回の croquis / 構図ポーズ分だけ artwork ID を返す（ジェスチャー等は除く）。 */
 function croquisArtworkIdsFromEntry(entry) {
   const shots = entry?.shots || [];
   const steps = menuStepsForEntry(entry);
@@ -2830,10 +2892,10 @@ function croquisArtworkIdsFromEntry(entry) {
       .map((idx) => shots[idx]?.artworkId || shots[idx]?.shortId)
       .filter(Boolean);
   }
-  if (entry.menuId === 'croquisMode') {
+  if (entry.menuId === 'croquisMode' || entry.menuId === 'composePoseMode') {
     return shots.map((s) => s.artworkId || s.shortId).filter(Boolean);
   }
-  if (entry.byDrill?.croquis && !entry.byDrill?.gesture) {
+  if ((entry.byDrill?.croquis || entry.byDrill?.composePose) && !entry.byDrill?.gesture) {
     return shots.map((s) => s.artworkId || s.shortId).filter(Boolean);
   }
   return [];
@@ -4198,6 +4260,7 @@ function init() {
   wirePartSheet();
   wireGestureSheet();
   wireCroquisSheet();
+  wireComposePoseSheet();
   wireCopySheet();
   wireLibrary();
   wireCalendar();
