@@ -1425,6 +1425,7 @@ html[data-site-unlocked] .site-gate-dialog,
   font-size: 13px; line-height: 1.3;
 }
 .tl-name { font-weight: 800; color: var(--text); }
+.tl-handle { color: var(--muted); font-size: 12px; font-weight: 600; }
 .tl-dot, .tl-time, .tl-menu { color: var(--muted); font-size: 12px; }
 .tl-menu {
   width: 100%; margin-top: 1px; font-weight: 600;
@@ -2026,6 +2027,15 @@ body[data-theme='dark'] .google-btn {
 .gallery-username {
   font-size: 12px; font-weight: 700; color: var(--text-soft);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.gallery-author {
+  display: flex; align-items: baseline; gap: 6px;
+  min-width: 0; overflow: hidden;
+}
+.gallery-handle {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ---------- いいね（全体統一） ---------- */

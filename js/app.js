@@ -42,10 +42,11 @@ import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, freePeri
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
-import { initAuth, loginWithProvider, logout, getUser, getUserEmail, onAuthChange, hasUsername, setUsername, getUsername, hydrateUsername } from './auth.js';
+import { initAuth, loginWithProvider, logout, getUser, getUserEmail, onAuthChange, hasUsername, setUsername, getUsername, hydrateUsername, hasHandle, setHandle, getHandle } from './auth.js';
 import {
   uploadArtwork, uploadShareImage, fetchArtworks, fetchArtwork, fetchPublicArtworks, fetchMyArtworks,
   fetchCopyableArtworksPage, deleteArtwork, updateArtwork, toggleLike, workPageUrl, upsertProfile, artworkDisplayName,
+  artworkHandle,
 } from './gallery.js';
 import { initFeedback } from './feedback.js';
 import {
@@ -60,7 +61,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '213';
+const BUILD = '214';
 const SITE_PASS_KEY = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 /** サイトパスワード解除の有効期限（約1週間） */
@@ -2392,7 +2393,11 @@ function renderGalleryCard(work, userId) {
   thumb.addEventListener('click', () => openWorkPage(work));
 
   const meta = el('div', 'gallery-item-meta');
-  meta.append(el('span', 'gallery-username', artworkDisplayName(work)));
+  const author = el('span', 'gallery-author');
+  author.append(el('span', 'gallery-username', artworkDisplayName(work)));
+  const handle = artworkHandle(work);
+  if (handle) author.append(el('span', 'gallery-handle', `@${handle}`));
+  meta.append(author);
 
   const likeBtn = el('button', `gallery-like-btn${work.liked_by_me ? ' on' : ''}`);
   likeBtn.type = 'button';
@@ -2489,7 +2494,11 @@ function fillWorkPage(work, userId = getUser()?.id) {
     img.alt = work.username || '';
   }
   const userEl = $('#work-user');
-  if (userEl) userEl.textContent = artworkDisplayName(work);
+  if (userEl) {
+    const name = artworkDisplayName(work);
+    const handle = artworkHandle(work);
+    userEl.textContent = handle ? `${name} @${handle}` : name;
+  }
 
   const delBtn = $('#work-delete');
   if (delBtn) delBtn.hidden = work.user_id !== userId;
@@ -3020,6 +3029,8 @@ function renderSettings() {
   profileCard.hidden = !u;
   if (u) {
     $('#profile-username').value = getUsername();
+    const handleInput = $('#profile-handle');
+    if (handleInput) handleInput.value = getHandle();
   }
   $('#opt-theme').value = settings.theme || 'light';
   const skin = settings.skin === 'pastel-rpg' ? 'pastel-rpg' : 'default';
@@ -3054,6 +3065,7 @@ function switchLang(code) {
 function wireSettings() {
   $('#profile-save').addEventListener('click', async () => {
     const name = $('#profile-username').value.trim();
+    const handleRaw = ($('#profile-handle')?.value || '').trim();
     if (!name) return;
     if (name.includes('@')) {
       usernameSaveToast('email');
@@ -3062,10 +3074,17 @@ function wireSettings() {
     const btn = $('#profile-save');
     if (btn) btn.disabled = true;
     try {
-      const result = await setUsername(name);
-      if (!result.ok) {
-        usernameSaveToast(result.error);
+      const nameResult = await setUsername(name);
+      if (!nameResult.ok) {
+        usernameSaveToast(nameResult.error);
         return;
+      }
+      if (handleRaw) {
+        const handleResult = await setHandle(handleRaw);
+        if (!handleResult.ok) {
+          handleSaveToast(handleResult.error);
+          return;
+        }
       }
       updateAuthUI(getUser());
       toast(t('auth.saved'));
@@ -3130,6 +3149,8 @@ function renderArtworkTlPost(work, { mine = false } = {}) {
 
   const meta = el('header', 'tl-meta');
   meta.append(el('span', 'tl-name', name));
+  const handle = artworkHandle(work);
+  if (handle) meta.append(el('span', 'tl-handle', `@${handle}`));
   meta.append(el('span', 'tl-dot', '·'));
   const posted = el('time', 'tl-time', formatArtworkTime(work));
   if (work.created_at) posted.setAttribute('datetime', work.created_at);
@@ -3626,6 +3647,33 @@ function usernameSaveToast(error) {
     : t('auth.usernameSaveFail'));
 }
 
+function handleSaveToast(error) {
+  if (error === 'taken') {
+    toast(t('auth.handleTaken') === 'auth.handleTaken'
+      ? 'そのユーザーIDは使われています'
+      : t('auth.handleTaken'));
+    return;
+  }
+  if (error === 'invalid') {
+    toast(t('auth.handleInvalid') === 'auth.handleInvalid'
+      ? '半角英字で始め、英数字と _ のみ（3〜20文字）'
+      : t('auth.handleInvalid'));
+    return;
+  }
+  toast(t('auth.usernameSaveFail') === 'auth.usernameSaveFail'
+    ? '保存に失敗しました。もう一度試してください'
+    : t('auth.usernameSaveFail'));
+}
+
+/** 表示名のあと、ユーザーID未設定ならダイアログを出す */
+function afterProfileReady(onDone) {
+  if (!hasHandle()) {
+    showHandleSheet(onDone);
+    return;
+  }
+  if (onDone) onDone();
+}
+
 function showUsernameSheet(onDone) {
   const sheet = $('#username-sheet');
   const input = $('#username-input');
@@ -3654,7 +3702,7 @@ function showUsernameSheet(onDone) {
       }
       sheet.hidden = true;
       updateAuthUI(getUser());
-      if (onDone) onDone();
+      afterProfileReady(onDone);
     } finally {
       saving = false;
       if (okBtn) okBtn.disabled = false;
@@ -3668,6 +3716,50 @@ function showUsernameSheet(onDone) {
 
   okBtn.onclick = submit;
   $('#username-close').onclick = close;
+  input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
+}
+
+function showHandleSheet(onDone) {
+  const sheet = $('#handle-sheet');
+  if (!sheet) {
+    if (onDone) onDone();
+    return;
+  }
+  const input = $('#handle-input');
+  const okBtn = $('#handle-ok');
+  input.value = getHandle() || '';
+  sheet.hidden = false;
+  input.focus();
+  let saving = false;
+
+  async function submit() {
+    if (saving) return;
+    const raw = input.value.trim();
+    if (!raw) return;
+    saving = true;
+    if (okBtn) okBtn.disabled = true;
+    try {
+      const result = await setHandle(raw);
+      if (!result.ok) {
+        handleSaveToast(result.error);
+        return;
+      }
+      sheet.hidden = true;
+      updateAuthUI(getUser());
+      if (onDone) onDone();
+    } finally {
+      saving = false;
+      if (okBtn) okBtn.disabled = false;
+    }
+  }
+
+  function close() {
+    if (saving) return;
+    sheet.hidden = true;
+  }
+
+  okBtn.onclick = submit;
+  $('#handle-close').onclick = close;
   input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
 }
 
@@ -3728,7 +3820,11 @@ function wireAuth() {
 
   $('#auth-change-username').addEventListener('click', () => {
     sheet.hidden = true;
-    showUsernameSheet();
+    showUsernameSheet(() => afterProfileReady());
+  });
+  $('#auth-change-handle')?.addEventListener('click', () => {
+    sheet.hidden = true;
+    showHandleSheet();
   });
 
   $('#auth-logout').addEventListener('click', async () => {
@@ -3764,7 +3860,7 @@ function wireAuth() {
     authHandledUserId = uid;
     // 端末に名前が無くても、DB にあれば復元してからユーザーネーム入力を出すか決める
     Promise.all([hydrateUsername(), hydrateUserData()])
-      .then(([name, data]) => {
+      .then(([profile, data]) => {
         if (data?.lang) {
           applyLang(data.lang);
           applyI18n();
@@ -3773,29 +3869,30 @@ function wireAuth() {
         settings = getSettings();
         applyTheme();
         updateAuthUI(getUser());
-        if (!name && !hasUsername()) {
+        const finish = () => {
           sheet.hidden = true;
           restorePageScroll();
-          showUsernameSheet(() => {
-            applyRoute(routeFromLocation());
-            repaintAfterHydrate();
-            if (pendingStart) {
-              const fn = pendingStart;
-              pendingStart = null;
-              fn();
-            }
-          });
+          applyRoute(routeFromLocation());
+          repaintAfterHydrate();
+          if (pendingStart) {
+            const fn = pendingStart;
+            pendingStart = null;
+            fn();
+          }
+        };
+        if (!hasUsername()) {
+          sheet.hidden = true;
+          restorePageScroll();
+          showUsernameSheet(finish);
           return;
         }
-        sheet.hidden = true;
-        restorePageScroll();
-        applyRoute(routeFromLocation());
-        repaintAfterHydrate();
-        if (pendingStart) {
-          const fn = pendingStart;
-          pendingStart = null;
-          fn();
+        if (!hasHandle()) {
+          sheet.hidden = true;
+          restorePageScroll();
+          showHandleSheet(finish);
+          return;
         }
+        finish();
       })
       .catch((err) => {
         console.error('[auth hydrate]', err);
@@ -3818,7 +3915,7 @@ async function bootstrapApp() {
     const u = await initAuth();
     if (u) {
       window.__setAuthHandledUserId?.(u.id);
-      const [name, data] = await Promise.all([hydrateUsername(), hydrateUserData()]);
+      const [profile, data] = await Promise.all([hydrateUsername(), hydrateUserData()]);
       if (data?.lang) {
         applyLang(data.lang);
         applyI18n();
@@ -3827,8 +3924,15 @@ async function bootstrapApp() {
       settings = getSettings();
       applyTheme();
       updateAuthUI(u);
-      if (!name && !hasUsername()) {
+      if (!hasUsername()) {
         showUsernameSheet(() => {
+          applyRoute(routeFromLocation());
+          repaintAfterHydrate();
+        });
+        return;
+      }
+      if (!hasHandle()) {
+        showHandleSheet(() => {
           applyRoute(routeFromLocation());
           repaintAfterHydrate();
         });

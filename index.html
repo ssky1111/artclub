@@ -39,7 +39,7 @@
 </script>
 </head>
 
-<body data-build="210" data-theme="light">
+<body data-build="214" data-theme="light">
 <script>
 /* 古い SW / Cache Storage / HTTP キャッシュを強制破棄して1回だけ読み直す */
 (function () {
@@ -593,6 +593,7 @@
         </div>
       </div>
       <button id="auth-change-username" class="btn ghost small" data-i18n="auth.changeUsername">ユーザーネームを変更</button>
+      <button id="auth-change-handle" class="btn ghost small" data-i18n="auth.changeHandle">ユーザーIDを変更</button>
       <button id="auth-logout" class="btn ghost small" data-i18n="auth.logout">ログアウト</button>
     </div>
   </div>
@@ -604,6 +605,19 @@
     <h2 data-i18n="auth.setUsername">ユーザーネームを決めてください</h2>
     <input type="text" id="username-input" class="input" maxlength="20" data-i18n-ph="auth.usernamePh" placeholder="ユーザーネーム" style="margin:16px 0;text-align:center;font-size:18px">
     <button id="username-ok" class="btn primary big" data-i18n="auth.usernameOk">決定</button>
+  </div>
+</div>
+
+<div id="handle-sheet" class="sheet" hidden>
+  <div class="sheet-inner" style="text-align:center">
+    <button id="handle-close" class="icon-btn sheet-close" data-icon="close" data-i18n-title="common.close"></button>
+    <h2 data-i18n="auth.setHandle">ユーザーIDを決めてください</h2>
+    <p class="muted small" data-i18n="auth.handleNote" style="margin:8px 0 0">半角英字で始め、英数字と _ のみ（3〜20文字）。あとから変えられます。</p>
+    <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin:16px 0">
+      <span class="muted" style="font-size:18px;font-weight:700">@</span>
+      <input type="text" id="handle-input" class="input" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="auth.handlePh" placeholder="userid" style="text-align:center;font-size:18px;max-width:220px">
+    </div>
+    <button id="handle-ok" class="btn primary big" data-i18n="auth.handleOk">決定</button>
   </div>
 </div>
 
@@ -960,10 +974,14 @@
 
   <section class="card" id="profile-card" hidden>
     <div class="section-head"><h2 data-i18n="auth.profile">プロフィール</h2></div>
-    <div class="row">
-      <input type="text" id="profile-username" class="input" maxlength="20" data-i18n-ph="auth.usernamePh" placeholder="ユーザーネーム" style="flex:1">
-      <button id="profile-save" class="btn primary small" data-i18n="common.save">保存</button>
+    <label class="label" for="profile-username" data-i18n="auth.usernamePh">ユーザーネーム</label>
+    <input type="text" id="profile-username" class="input" maxlength="20" data-i18n-ph="auth.usernamePh" placeholder="ユーザーネーム">
+    <label class="label" for="profile-handle" data-i18n="auth.handleLabel" style="margin-top:10px">ユーザーID</label>
+    <div class="row" style="align-items:center;gap:6px">
+      <span class="muted" style="font-weight:700">@</span>
+      <input type="text" id="profile-handle" class="input" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="auth.handlePh" placeholder="userid" style="flex:1">
     </div>
+    <button id="profile-save" class="btn primary small" data-i18n="common.save" style="margin-top:12px">保存</button>
   </section>
 
   <section class="card">

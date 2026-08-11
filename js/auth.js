@@ -14,6 +14,7 @@ const REDIRECT_URL = location.origin;
 let session = null;
 let user = null;
 let usernameMem = '';
+let handleMem = '';
 let refreshTimer = 0;
 const listeners = [];
 
@@ -41,6 +42,7 @@ function clear() {
 
 function clearUsernameCache() {
   usernameMem = '';
+  handleMem = '';
 }
 
 function looksLikeEmail(name) {
@@ -53,6 +55,12 @@ function cacheUsername(name) {
   // メールアドレスは表示名に使わない（過去に混入した分も捨てる）
   usernameMem = looksLikeEmail(trimmed) ? '' : trimmed;
   return usernameMem;
+}
+
+function cacheHandle(handle) {
+  const cleaned = String(handle || '').trim().toLowerCase().replace(/^@/, '');
+  handleMem = cleaned;
+  return handleMem;
 }
 
 /** ログイン状態の変化だけ UI に伝える。トークン更新で毎回 notify しない。 */
@@ -297,24 +305,25 @@ export function getUsername() {
 }
 
 /**
- * DB の profiles からユーザーネームを読む。
+ * DB の profiles から表示名・ユーザーID を読む。
  * 新しい端末でも再入力を求めないための入口。
+ * @returns {Promise<{ username: string, handle: string }>}
  */
 export async function hydrateUsername() {
-  if (!user) return '';
+  if (!user) return { username: '', handle: '' };
   try {
     const { fetchMyProfile } = await import('./gallery.js');
     const profile = await fetchMyProfile();
+    if (profile?.handle) cacheHandle(profile.handle);
     if (profile?.username) {
       const name = cacheUsername(profile.username);
       // メールが保存されていた場合はプロフィールから消す
       if (!name && looksLikeEmail(profile.username)) {
-        import('./gallery.js').then((m) => m.upsertProfile('')).catch(() => {});
+        import('./gallery.js').then((m) => m.upsertProfile({ username: '' })).catch(() => {});
       }
-      return name;
     }
   } catch { /* オフライン等 */ }
-  return getUsername();
+  return { username: getUsername(), handle: getHandle() };
 }
 
 /**
@@ -327,7 +336,7 @@ export async function setUsername(name) {
   if (!trimmed) return { ok: false, error: 'failed' };
   try {
     const { upsertProfile } = await import('./gallery.js');
-    const result = await upsertProfile(trimmed);
+    const result = await upsertProfile({ username: trimmed });
     if (!result.ok) return { ok: false, error: result.error || 'failed' };
     cacheUsername(trimmed);
     return { ok: true, username: getUsername() };
@@ -338,4 +347,32 @@ export async function setUsername(name) {
 
 export function hasUsername() {
   return !!getUsername();
+}
+
+export function getHandle() {
+  return handleMem || '';
+}
+
+export function hasHandle() {
+  return !!getHandle();
+}
+
+/**
+ * ユーザーID（handle）を DB 保存後にメモリへ。
+ * @returns {Promise<{ ok: true, handle: string } | { ok: false, error: string }>}
+ */
+export async function setHandle(raw) {
+  const { normalizeHandle, isValidHandle } = await import('./gallery.js');
+  const cleaned = normalizeHandle(raw);
+  if (!cleaned) return { ok: false, error: 'invalid' };
+  if (!isValidHandle(cleaned)) return { ok: false, error: 'invalid' };
+  try {
+    const { upsertProfile } = await import('./gallery.js');
+    const result = await upsertProfile({ handle: cleaned });
+    if (!result.ok) return { ok: false, error: result.error || 'failed' };
+    cacheHandle(cleaned);
+    return { ok: true, handle: getHandle() };
+  } catch {
+    return { ok: false, error: 'failed' };
+  }
 }
