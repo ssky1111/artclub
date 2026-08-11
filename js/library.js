@@ -11,7 +11,7 @@ import { supabasePhotos, loadCustomTags, loadRemovedTags } from './supabase.js';
 export const TAG_GROUPS = [
   { name: '範囲',   tags: ['全身', '半身', '顔', '手', '足'] },
   { name: '性別',   tags: ['女性', '男性', 'どちらでも'] },
-  { name: '姿勢',   tags: ['立ち', '座り', '寝', '動き'] },
+  { name: '姿勢',   tags: ['立ち', '座り', '寝', 'ジェスチャー'] },
   { name: 'その他', tags: ['服のしわ', '筋肉が見える', '逆光', '難しい'] },
 ];
 

@@ -1794,12 +1794,12 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
       : createLibraryQueue(['手'], notice, '手・上半身の写真がありません', fromAdmin);
   }
 
-  // ジェスチャードローイング → 必ず『動き』タグから
+  // ジェスチャードローイング → 必ず『ジェスチャー』タグから
   if (needed.has('gesture')) {
-    const gesturePhotos = own.filter((p) => p.tags.includes('動き'));
+    const gesturePhotos = own.filter((p) => p.tags.includes('ジェスチャー'));
     queues.gesture = gesturePhotos.length
-      ? createLibraryQueue(['動き'], silent, null, fromAdmin)
-      : createLibraryQueue([], notice, '『動き』タグの写真がありません', fromAdmin);
+      ? createLibraryQueue(['ジェスチャー'], silent, null, fromAdmin)
+      : createLibraryQueue([], notice, '『ジェスチャー』タグの写真がありません', fromAdmin);
   }
 
   // クロッキー → 全身タグ（無ければ管理写真全体。エラーにはしない）

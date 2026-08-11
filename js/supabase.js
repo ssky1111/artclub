@@ -114,11 +114,38 @@ export async function repairManifestExtensions() {
   return changed;
 }
 
+/** 旧タグ名の読み替え（Storage 上の過去データ互換）。 */
+const TAG_ALIASES = {
+  動き: 'ジェスチャー',
+};
+
+export function normalizeTagName(tag) {
+  if (typeof tag !== 'string') return tag;
+  return TAG_ALIASES[tag] || tag;
+}
+
+export function normalizeTagList(tags) {
+  if (!Array.isArray(tags)) return [];
+  const out = [];
+  const seen = new Set();
+  for (const raw of tags) {
+    const tag = normalizeTagName(raw);
+    if (!tag || seen.has(tag)) continue;
+    seen.add(tag);
+    out.push(tag);
+  }
+  return out;
+}
+
 export async function loadManifest({ fresh = false } = {}) {
   if (manifestCache && !fresh) return manifestCache;
   try {
     const data = await fetchStorageJson('manifest.json');
-    manifestCache = Array.isArray(data?.photos) ? data.photos : [];
+    const photos = Array.isArray(data?.photos) ? data.photos : [];
+    for (const entry of photos) {
+      if (Array.isArray(entry.tags)) entry.tags = normalizeTagList(entry.tags);
+    }
+    manifestCache = photos;
   } catch {
     manifestCache = [];
   }
@@ -126,13 +153,17 @@ export async function loadManifest({ fresh = false } = {}) {
 }
 
 async function saveManifest(entries) {
+  const photos = (entries || []).map((entry) => ({
+    ...entry,
+    tags: normalizeTagList(entry.tags),
+  }));
   await putStorageJson('manifest.json', {
     version: 1,
     updatedAt: new Date().toISOString(),
-    photos: entries,
+    photos,
   });
-  manifestCache = entries;
-  return entries;
+  manifestCache = photos;
+  return photos;
 }
 
 /* ---------- カスタムタグ ---------- */

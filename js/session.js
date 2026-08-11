@@ -136,7 +136,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
           drillId: step.drill,
           seconds: step.unlimited ? 0 : step.seconds,
           unlimited: !!step.unlimited,
-          // source 未指定ならドリル名に合わせる（ジェスチャー→動きタグ用キュー）
+          // source 未指定ならドリル名に合わせる（ジェスチャー→ジェスチャータグ用キュー）
           source: step.source
             || (step.drill === 'gesture' ? 'gesture'
               : step.drill === 'croquis' ? 'croquis'
