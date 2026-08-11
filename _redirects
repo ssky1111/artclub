@@ -1,7 +1,0 @@
-# Cloudflare Pages — SPA フォールバック
-# /admin /daily などパス URL 用。実ファイル・ディレクトリは先にマッチする。
-
-/privacy.html /privacy/ 301
-/terms.html /terms/ 301
-
-/* /index.html 200
