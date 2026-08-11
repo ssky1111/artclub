@@ -23,7 +23,7 @@ import { createSessionRunner } from './session.js';
 import {
   TAG_GROUPS, ALL_TAGS, everyPhoto, bundledPhotos, photoUrl, setPhotoSrc,
   createLibraryQueue, createWeightedQueue,
-  refreshCustomTags, getCustomTags, getHiddenTags, allTagsWithCustom,
+  refreshCustomTags, getCustomTags, allTagsWithCustom,
 } from './library.js';
 import {
   getRepoConfig, saveRepoConfig, testRepo,
@@ -32,7 +32,7 @@ import {
   loadManifest as sbLoadManifest, pushToSupabase, testConnection as sbTest,
   supabasePhotos, updateTags as sbUpdateTags, bulkUpdateTags, bulkRemoveTags,
   removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
-  saveHiddenTags, invalidateTagConfig, convertToWebp, repairManifestExtensions,
+  invalidateTagConfig, convertToWebp, repairManifestExtensions,
   deleteTagEverywhere,
 } from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
@@ -62,7 +62,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '216';
+const BUILD = '217';
 const SITE_PASS_KEY = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 /** サイトパスワード解除の有効期限（約1週間） */
@@ -1108,10 +1108,8 @@ async function renderTagManager() {
   const wrap = $('#tag-manage-list');
   wrap.innerHTML = '';
 
-  const hidden = getHiddenTags();
-  const visible = allTagsWithCustom();
-
-  for (const tag of visible) {
+  // 追加したカスタムタグだけ。組み込みタグはコード側の固定一覧。
+  for (const tag of getCustomTags()) {
     const chip = el('button', 'chip on', `${tag} ×`);
     chip.addEventListener('click', async () => {
       if (!(await confirmDialog(
@@ -1131,30 +1129,6 @@ async function renderTagManager() {
       }
     });
     wrap.append(chip);
-  }
-
-  // 旧仕様で残った「非表示」リストの掃除用
-  if (hidden.length) {
-    const purge = el('button', 'btn ghost small', `非表示リストを削除（${hidden.length}件）`);
-    purge.style.marginTop = '8px';
-    purge.addEventListener('click', async () => {
-      if (!(await confirmDialog(
-        `非表示の ${hidden.length} 件を、写真のデータからも消しますか？`,
-      ))) return;
-      try {
-        for (const tag of [...hidden]) {
-          await deleteTagEverywhere(tag);
-        }
-        await refreshCustomTags();
-        await renderTagManager();
-        renderUploadTagChips();
-        await renderSupabaseGrid();
-        toast('非表示タグをデータから削除しました');
-      } catch (err) {
-        toast(`削除に失敗しました：${err.message || err}`);
-      }
-    });
-    wrap.append(purge);
   }
 }
 
@@ -1356,12 +1330,18 @@ function wireAdmin() {
     const next = [...getCustomTags(), name];
     await saveCustomTags(next);
     input.value = '';
+    await refreshCustomTags();
     await renderTagManager();
+    renderUploadTagChips();
     toast(`「${name}」を追加しました`);
   });
 
+  // IME 変換確定の Enter では追加しない（追加ボタンか、変換確定後の Enter のみ）
   $('#tag-new-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') $('#tag-add-btn').click();
+    if (e.key !== 'Enter') return;
+    if (e.isComposing || e.keyCode === 229) return;
+    e.preventDefault();
+    $('#tag-add-btn').click();
   });
 }
 
