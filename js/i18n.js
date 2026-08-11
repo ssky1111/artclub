@@ -240,6 +240,7 @@ const DICT = {
 
   /* ---------- ふりかえり ---------- */
   'rev.title':           { ja: 'おつかれさま',         en: 'Nice work' },
+  'rev.noteTitle':       { ja: '振り返りメモ',         en: 'Reflection notes' },
   'rev.selfCheck':       { ja: 'セルフチェック',       en: 'Self-check' },
   'rev.selfCheckNote':   { ja: '描いたものを見ながら、できているものだけ押してください。',
                            en: 'Look at what you drew and tap only the ones you managed.' },

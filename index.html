@@ -364,8 +364,9 @@
     <p id="gallery-loading" class="muted small" hidden data-i18n="gal.loading"></p>
   </section>
 
-  <section class="card">
-    <div class="label" data-i18n="rev.howWas">終わった後に絵を見返して気付いたことをメモしてみましょう。練習効率がアップします</div>
+  <section class="card" id="review-note-card">
+    <h2 class="review-note-title" data-i18n="rev.noteTitle">振り返りメモ</h2>
+    <p class="muted small" data-i18n="rev.howWas">終わった後に絵を見返して気付いたことをメモしてみましょう。練習効率がアップします</p>
     <textarea id="review-note" class="note" rows="3" data-i18n-ph="rev.notePh"></textarea>
   </section>
 
@@ -1086,7 +1087,7 @@
 
 <div id="week-review-dialog" class="confirm-dialog" hidden>
   <div class="confirm-dialog-inner week-review-inner">
-    <h2 id="week-review-title" class="week-review-title">直近1週間分の振り返りワード</h2>
+    <h2 id="week-review-title" class="week-review-title">直近1週間の振り返りメモ</h2>
     <ul id="week-review-list" class="week-review-list"></ul>
     <p id="week-review-empty" class="week-review-empty" hidden>
       振り返りはまだありません<br>終わった後に絵を見返して気付いたことをメモしてみましょう。練習効率がアップします

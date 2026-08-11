@@ -135,7 +135,7 @@ export function weekReviewDialog(notes = []) {
   const title = $('#week-review-title');
   const hasNotes = notes.length > 0;
 
-  title.textContent = '直近1週間分の振り返りワード';
+  title.textContent = '直近1週間の振り返りメモ';
   list.innerHTML = '';
   list.hidden = !hasNotes;
   empty.hidden = hasNotes;
