@@ -175,6 +175,39 @@ export async function saveHiddenTags(hidden) {
 
 export function invalidateTagConfig() { tagConfig = null; }
 
+/**
+ * タグを Storage から本削除する。
+ * - 全写真の manifest.tags から外す
+ * - カスタム一覧から外す
+ * - 旧「非表示」リストからも外す
+ * @returns {{ photos: number, customRemoved: boolean }}
+ */
+export async function deleteTagEverywhere(tag) {
+  const name = String(tag || '').trim();
+  if (!name) return { photos: 0, customRemoved: false };
+
+  const entries = await loadManifest({ fresh: true });
+  let photos = 0;
+  for (const entry of entries) {
+    if (!Array.isArray(entry.tags) || !entry.tags.includes(name)) continue;
+    entry.tags = entry.tags.filter((t) => t !== name);
+    photos++;
+  }
+  if (photos) await saveManifest(entries);
+
+  invalidateTagConfig();
+  const cfg = await loadTagConfig();
+  const customRemoved = (cfg.custom || []).includes(name);
+  const nextCustom = (cfg.custom || []).filter((t) => t !== name);
+  const nextHidden = (cfg.hidden || []).filter((t) => t !== name);
+  await saveTagConfig({
+    custom: nextCustom,
+    hidden: nextHidden,
+  });
+
+  return { photos, customRemoved };
+}
+
 /* ---------- 写真のアップロード ---------- */
 
 /** アップロードは WebP 前提。旧データ互換で type を見る。 */

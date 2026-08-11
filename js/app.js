@@ -33,6 +33,7 @@ import {
   supabasePhotos, updateTags as sbUpdateTags, bulkUpdateTags, bulkRemoveTags,
   removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
   saveHiddenTags, invalidateTagConfig, convertToWebp, repairManifestExtensions,
+  deleteTagEverywhere,
 } from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
 import { composeSheet, cropToInkVertical, downloadBlob, downloadEach, saveImageBlob, isAppleTouchDevice, shareToX } from './export.js';
@@ -61,7 +62,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '215';
+const BUILD = '216';
 const SITE_PASS_KEY = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 /** サイトパスワード解除の有効期限（約1週間） */
@@ -1107,38 +1108,53 @@ async function renderTagManager() {
   const wrap = $('#tag-manage-list');
   wrap.innerHTML = '';
 
-  const custom = getCustomTags();
   const hidden = getHiddenTags();
   const visible = allTagsWithCustom();
 
   for (const tag of visible) {
     const chip = el('button', 'chip on', `${tag} ×`);
     chip.addEventListener('click', async () => {
-      if (!(await confirmDialog(`「${tag}」を削除しますか？`))) return;
-      invalidateTagConfig();
-      if (custom.includes(tag)) {
-        await saveCustomTags(custom.filter((t2) => t2 !== tag));
-      } else {
-        await saveHiddenTags([...hidden, tag]);
+      if (!(await confirmDialog(
+        `「${tag}」を削除しますか？\nすべての写真のタグからも外します。`,
+      ))) return;
+      try {
+        const { photos } = await deleteTagEverywhere(tag);
+        await refreshCustomTags();
+        await renderTagManager();
+        renderUploadTagChips();
+        await renderSupabaseGrid();
+        toast(photos
+          ? `「${tag}」を削除し、${photos}枚から外しました`
+          : `「${tag}」を削除しました`);
+      } catch (err) {
+        toast(`削除に失敗しました：${err.message || err}`);
       }
-      await renderTagManager();
-      renderUploadTagChips();
-      toast(`「${tag}」を削除しました`);
     });
     wrap.append(chip);
   }
 
+  // 旧仕様で残った「非表示」リストの掃除用
   if (hidden.length) {
-    const restore = el('button', 'btn ghost small', `非表示のタグを復元（${hidden.length}件）`);
-    restore.style.marginTop = '8px';
-    restore.addEventListener('click', async () => {
-      invalidateTagConfig();
-      await saveHiddenTags([]);
-      await renderTagManager();
-      renderUploadTagChips();
-      toast('すべてのタグを復元しました');
+    const purge = el('button', 'btn ghost small', `非表示リストを削除（${hidden.length}件）`);
+    purge.style.marginTop = '8px';
+    purge.addEventListener('click', async () => {
+      if (!(await confirmDialog(
+        `非表示の ${hidden.length} 件を、写真のデータからも消しますか？`,
+      ))) return;
+      try {
+        for (const tag of [...hidden]) {
+          await deleteTagEverywhere(tag);
+        }
+        await refreshCustomTags();
+        await renderTagManager();
+        renderUploadTagChips();
+        await renderSupabaseGrid();
+        toast('非表示タグをデータから削除しました');
+      } catch (err) {
+        toast(`削除に失敗しました：${err.message || err}`);
+      }
     });
-    wrap.append(restore);
+    wrap.append(purge);
   }
 }
 
