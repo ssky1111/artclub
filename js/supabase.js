@@ -261,15 +261,76 @@ export async function deletePhotoFromStorage(path) {
   }
 }
 
+/* ---------- ファイル名の同一判定（Unsplash 再DL の -2 など） ---------- */
+
+/**
+ * 比較用にファイル名を正規化する。
+ * 拡張子・パスを落とし、末尾の -2 / (2) / _copy などを繰り返し除去する。
+ * 例: "foo-unsplash-2.jpg" / "foo-unsplash (2).webp" → "foo-unsplash"
+ */
+export function photoNameKey(name) {
+  if (!name) return '';
+  let s = String(name).trim().toLowerCase().replace(/^.*[/\\]/, '');
+  s = s.replace(/\.[^.]+$/, '');
+  let prev;
+  do {
+    prev = s;
+    s = s
+      .replace(/[_\s-]+(?:copy|副本|コピー)$/i, '')
+      .replace(/[_\s-]*\(\d+\)$/, '')
+      .replace(/[_\s-]+\d+$/, '');
+  } while (s !== prev && s.length > 0);
+  return s;
+}
+
+/**
+ * 既存の name 一覧と突き合わせて重複を除く。
+ * バッチ内の重複も最初の1件だけ残す。
+ * @returns {{ unique: any[], skipped: { name: string, reason: 'existing'|'batch' }[] }}
+ */
+export function filterDuplicatePhotoNames(items, existingNames = []) {
+  const existingKeys = new Set();
+  for (const n of existingNames) {
+    const key = photoNameKey(n);
+    if (key) existingKeys.add(key);
+  }
+  const seen = new Set(existingKeys);
+  const unique = [];
+  const skipped = [];
+  for (const item of items) {
+    const name = typeof item === 'string' ? item : item?.name;
+    const key = photoNameKey(name);
+    if (!key) {
+      unique.push(item);
+      continue;
+    }
+    if (seen.has(key)) {
+      skipped.push({
+        name: name || '(無名)',
+        reason: existingKeys.has(key) ? 'existing' : 'batch',
+      });
+      continue;
+    }
+    seen.add(key);
+    unique.push(item);
+  }
+  return { unique, skipped };
+}
+
 /* ---------- まとめて操作 ---------- */
 
 export async function pushToSupabase(photos, onProgress = () => {}) {
   const existing = await loadManifest({ fresh: true });
   const byFile = new Map(existing.map((e) => [e.file, e]));
 
+  const { unique, skipped } = filterDuplicatePhotoNames(
+    photos,
+    existing.map((e) => e.name).filter(Boolean),
+  );
+
   let done = 0;
-  for (const photo of photos) {
-    onProgress(++done, photos.length, photo);
+  for (const photo of unique) {
+    onProgress(++done, unique.length, photo);
     // shrinkImage 済みの WebP を上げ、manifest も必ず .webp で書く
     const { path: file } = await uploadPhoto(photo.blob, photo.id);
     const stem = photo.id;
@@ -285,8 +346,8 @@ export async function pushToSupabase(photos, onProgress = () => {}) {
   }
 
   const entries = [...byFile.values()];
-  await saveManifest(entries);
-  return entries;
+  if (unique.length) await saveManifest(entries);
+  return { entries, uploaded: unique.length, skipped };
 }
 
 export async function updateTags(file, tags) {

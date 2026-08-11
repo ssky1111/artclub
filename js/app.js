@@ -30,7 +30,7 @@ import {
   supabasePhotos, updateTags as sbUpdateTags, bulkUpdateTags, bulkRemoveTags,
   removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
   invalidateTagConfig, convertToWebp, repairManifestExtensions,
-  deleteTagEverywhere,
+  deleteTagEverywhere, filterDuplicatePhotoNames,
 } from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
 import { composeSheet, cropToInkVertical, downloadBlob, downloadEach, saveImageBlob, isAppleTouchDevice, shareToX } from './export.js';
@@ -1168,16 +1168,28 @@ function wireAdmin() {
   $('#sb-add').addEventListener('click', () => { sbUploadWithTags = true; $('#sb-input').click(); });
   $('#sb-add-notag').addEventListener('click', () => { sbUploadWithTags = false; $('#sb-input').click(); });
   $('#sb-input').addEventListener('change', async (e) => {
-    const files = [...(e.target.files || [])];
+    const files = [...(e.target.files || [])].filter((f) => f.type.startsWith('image/'));
     if (!files.length) return;
     const tags = sbUploadWithTags ? [...sbUploadTags] : [];
     const status = $('#sb-status');
-    status.textContent = `${files.length} 枚を WebP 変換してアップロード中…`;
+    status.textContent = '既存写真とファイル名を照合中…';
     try {
+      const existing = await sbLoadManifest({ fresh: true });
+      const { unique: newFiles, skipped } = filterDuplicatePhotoNames(
+        files.map((f) => ({ file: f, name: f.name })),
+        existing.map((p) => p.name).filter(Boolean),
+      );
+      if (!newFiles.length) {
+        e.target.value = '';
+        status.textContent = `すべて既存と同一ファイル名のためスキップしました（${skipped.length} 枚）`;
+        toast(`${skipped.length} 枚を重複として除外しました`);
+        return;
+      }
+      status.textContent = `${newFiles.length} 枚を WebP 変換してアップロード中…` +
+        (skipped.length ? `（${skipped.length} 枚は重複スキップ）` : '');
       const { shrinkImage } = await import('./db.js');
       const photos = [];
-      for (const file of files) {
-        if (!file.type.startsWith('image/')) continue;
+      for (const { file } of newFiles) {
         // 長辺1000px・WebP。Storage / manifest とも .webp で揃える
         const blob = await shrinkImage(file);
         photos.push({
@@ -1188,12 +1200,16 @@ function wireAdmin() {
           addedAt: Date.now(),
         });
       }
-      await pushToSupabase(photos, (i, n) => {
+      const result = await pushToSupabase(photos, (i, n) => {
         status.textContent = `WebPアップロード中… ${i}/${n}`;
       });
       e.target.value = '';
+      const uploaded = result?.uploaded ?? photos.length;
+      const skipN = skipped.length + (result?.skipped?.length || 0);
       const tagMsg = tags.length ? `（${tags.join('・')}）` : '';
-      status.textContent = `${photos.length} 枚を WebP でアップロードしました${tagMsg}`;
+      const skipMsg = skipN ? `／${skipN} 枚はファイル名重複で除外` : '';
+      status.textContent = `${uploaded} 枚を WebP でアップロードしました${tagMsg}${skipMsg}`;
+      if (skipN) toast(`${skipN} 枚を重複ファイル名として除外しました`);
       await renderSupabaseGrid();
     } catch (err) {
       status.textContent = `エラー: ${err.message}`;
