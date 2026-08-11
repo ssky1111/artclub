@@ -21,9 +21,9 @@ import {
 } from './review.js';
 import { createSessionRunner } from './session.js';
 import {
-  TAG_GROUPS, ALL_TAGS, everyPhoto, bundledPhotos, photoUrl, setPhotoSrc,
+  ALL_TAGS, everyPhoto, bundledPhotos, photoUrl, setPhotoSrc,
   createLibraryQueue, createWeightedQueue,
-  refreshCustomTags, getCustomTags, allTagsWithCustom,
+  refreshCustomTags, getCustomTags, allTagsWithCustom, tagGroupsVisible,
 } from './library.js';
 import {
   loadManifest as sbLoadManifest, pushToSupabase, testConnection as sbTest,
@@ -694,7 +694,8 @@ async function startDaily(daily, part) {
 
 const setup = { tags: [], seconds: 60, count: 5, drill: 'gesture' };
 
-function openSetup() {
+async function openSetup() {
+  await refreshCustomTags().catch(() => {});
   renderSetupTags();
   renderSetupChips();
   $('#setup-sheet').hidden = false;
@@ -761,6 +762,7 @@ let libFilter = [];
 
 async function openLibrary() {
   showScreen('library');
+  await refreshCustomTags().catch(() => {});
   await renderLibrary();
 }
 
@@ -809,7 +811,7 @@ function openPhoto(photo) {
 
   const tags = $('#photo-tags');
   tags.innerHTML = '';
-  for (const group of TAG_GROUPS) {
+  for (const group of tagGroupsVisible()) {
     tags.append(el('div', 'label', group.name));
     const row = el('div', 'chips');
     for (const tag of group.tags) {
@@ -942,6 +944,9 @@ function renderUploadTagChips() {
   const wrap = $('#sb-upload-tags');
   wrap.innerHTML = '';
   const allT = allTagsWithCustom();
+  for (const tag of [...sbUploadTags]) {
+    if (!allT.includes(tag)) sbUploadTags.delete(tag);
+  }
   for (const tag of allT) {
     const chip = el('button', `chip${sbUploadTags.has(tag) ? ' on' : ''}`, tag);
     chip.addEventListener('click', () => {
@@ -3901,6 +3906,7 @@ function openAuthSheet() {
 /** 起動時: 認証 → クラウド復元 → 初回描画（空の 0 表示を防ぐ） */
 async function bootstrapApp() {
   try {
+    await refreshCustomTags().catch(() => {});
     const u = await initAuth();
     if (u) {
       window.__setAuthHandledUserId?.(u.id);

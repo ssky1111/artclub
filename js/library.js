@@ -41,6 +41,24 @@ export function allTagsWithCustom() {
   return [...base, ...extra];
 }
 
+/**
+ * グループ付きの表示用タグ一覧。
+ * 本タグから削除済みのものは出さない。カスタムは「その他」に足す。
+ */
+export function tagGroupsVisible() {
+  const removed = new Set(removedTags);
+  const customOnly = customTags.filter((t) => !ALL_TAGS.includes(t) && !removed.has(t));
+  const groups = TAG_GROUPS
+    .map((g) => ({ name: g.name, tags: g.tags.filter((t) => !removed.has(t)) }))
+    .filter((g) => g.tags.length);
+  if (customOnly.length) {
+    const other = groups.find((g) => g.name === 'その他');
+    if (other) other.tags = [...other.tags, ...customOnly];
+    else groups.push({ name: 'その他', tags: customOnly });
+  }
+  return groups;
+}
+
 /** 端末ローカルのお題は持たない（互換のため空配列）。 */
 export async function allPhotos() {
   return [];

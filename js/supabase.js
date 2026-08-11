@@ -5,7 +5,7 @@
  * メタデータ（タグ・名前など）は同バケット内の manifest.json / custom-tags.json に保存。
  * SDK は使わず REST API を直接叩く。
  *
- * Auth / DB はホストごとに切替。教材の photos・manifest・タグは常に本番 Storage を共有する
+ * Auth / DB はホストごとに切替。お題写真の photos・manifest・タグは常に本番 Storage を共有する
  *（dev / localhost でも二重管理しない）。
  */
 
@@ -30,7 +30,7 @@ if (!env) throw new Error(`Unknown host: ${location.hostname} — Supabase 接�
 export const SUPABASE_URL = env.url;
 export const SUPABASE_KEY = env.key;
 
-/** 教材 photos / manifest / タグ（常に本番） */
+/** お題写真 photos / manifest / タグ（常に本番） */
 export const PHOTOS_URL = PROD.url;
 export const PHOTOS_KEY = PROD.key;
 
