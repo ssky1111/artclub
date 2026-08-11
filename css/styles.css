@@ -1806,6 +1806,10 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
   position: absolute; left: 4px; top: 4px; font-size: 9px; font-weight: 700;
   background: rgba(0,0,0,.6); color: #fff; border-radius: 999px; padding: 1px 7px;
 }
+.lib-badge.inactive {
+  left: auto; right: 4px; background: rgba(80,80,80,.85);
+}
+.lib-item.is-inactive img { opacity: .45; filter: grayscale(.35); }
 .range { width: 100%; accent-color: var(--accent); margin: 6px 0 2px; }
 #screen-admin .input { margin-bottom: 6px; }
 

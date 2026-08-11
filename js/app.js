@@ -30,7 +30,7 @@ import {
   supabasePhotos, updateTags as sbUpdateTags, bulkUpdateTags, bulkRemoveTags,
   removeFromSupabase, loadCustomTags, saveCustomTags, supabasePhotoUrl,
   invalidateTagConfig, convertToWebp, repairManifestExtensions,
-  deleteTagEverywhere, filterDuplicatePhotoNames,
+  deleteTagEverywhere, filterDuplicatePhotoNames, setPhotosInactive,
 } from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
 import { composeSheet, cropToInkVertical, downloadBlob, downloadEach, saveImageBlob, isAppleTouchDevice, shareToX } from './export.js';
@@ -793,12 +793,13 @@ async function renderLibrary() {
 function fillPhotoGrid(grid, photos, onPick) {
   grid.innerHTML = '';
   for (const photo of photos) {
-    const item = el('button', 'lib-item');
+    const item = el('button', `lib-item${photo.inactive ? ' is-inactive' : ''}`);
     const img = el('img');
     img.src = photoUrl(photo);
     img.loading = 'lazy';
     item.append(img);
     if (photo.bundled) item.append(el('span', 'lib-badge', t('lib.builtin')));
+    if (photo.inactive) item.append(el('span', 'lib-badge inactive', '非アクティブ'));
     if (photo.tags.length) item.append(el('div', 'lib-tags', photo.tags.join('・')));
     item.addEventListener('click', () => onPick(photo));
     grid.append(item);
@@ -826,6 +827,8 @@ function openPhoto(photo) {
 
   const del = $('#photo-delete');
   del.hidden = true;
+  const inactiveBtn = $('#photo-inactive');
+  if (inactiveBtn) inactiveBtn.hidden = true;
   $('#photo-sheet').hidden = false;
 }
 
@@ -967,16 +970,22 @@ async function renderSupabaseGrid() {
 
   try {
     const photos = await supabasePhotos();
-    $('#sb-status').textContent = `${photos.length} 枚`;
+    const inactiveN = photos.filter((p) => p.inactive).length;
+    $('#sb-status').textContent = inactiveN
+      ? `${photos.length} 枚（非アクティブ ${inactiveN}）`
+      : `${photos.length} 枚`;
 
     for (const photo of photos) {
-      const btn = el('button', 'lib-item');
+      const btn = el('button', `lib-item${photo.inactive ? ' is-inactive' : ''}`);
       btn.dataset.file = photo.id.replace('sb:', '');
       const img = document.createElement('img');
       setPhotoSrc(img, photo);
       img.alt = photo.name || '';
       img.loading = 'lazy';
       btn.append(img);
+      if (photo.inactive) {
+        btn.append(el('span', 'lib-badge inactive', '非アクティブ'));
+      }
       if (photo.tags.length) {
         btn.append(el('div', 'lib-tags', photo.tags.join(' ')));
       }
@@ -1094,6 +1103,27 @@ function openSbPhoto(photo) {
       photo.tags = current;
     });
     tagsWrap.append(chip);
+  }
+
+  const inactiveBtn = $('#photo-inactive');
+  if (inactiveBtn) {
+    inactiveBtn.hidden = false;
+    const syncLabel = () => {
+      inactiveBtn.textContent = photo.inactive ? 'アクティブに戻す' : '非アクティブにする';
+      inactiveBtn.classList.toggle('ghost', !!photo.inactive);
+    };
+    syncLabel();
+    inactiveBtn.onclick = async () => {
+      const file = photo.id.replace('sb:', '');
+      const next = !photo.inactive;
+      await setPhotosInactive([file], next);
+      photo.inactive = next;
+      syncLabel();
+      toast(next
+        ? '非アクティブにしました（お題には出ません）'
+        : 'アクティブに戻しました');
+      await renderSupabaseGrid();
+    };
   }
 
   const delBtn = $('#photo-delete');
@@ -1313,6 +1343,20 @@ function wireAdmin() {
     status.textContent = `${n}枚を削除しました`;
     await renderSupabaseGrid();
   });
+
+  const bulkInactive = async (inactive) => {
+    const n = sbSelected.size;
+    if (!n) return;
+    const files = [...sbSelected];
+    await setPhotosInactive(files, inactive);
+    sbSelected.clear();
+    toast(inactive
+      ? `${n}枚を非アクティブにしました`
+      : `${n}枚をアクティブに戻しました`);
+    await renderSupabaseGrid();
+  };
+  $('#sb-bulk-inactive')?.addEventListener('click', () => bulkInactive(true));
+  $('#sb-bulk-activate')?.addEventListener('click', () => bulkInactive(false));
 
   /* ---------- タグ管理 ---------- */
 
@@ -1590,7 +1634,8 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
   const weak = weakestLesson();
 
   // お題は管理画面（Supabase）に上げた写真だけから出す。外部検索には落とさない。
-  const own = await supabasePhotos().catch(() => []);
+  // 非アクティブはお題キューから除外（一覧・履歴には残る）。
+  const own = (await supabasePhotos().catch(() => [])).filter((p) => !p.inactive);
   const fromAdmin = { photos: own };
   const silent = () => {};   // 使わないキューの空通知は出さない
   const needed = new Set(

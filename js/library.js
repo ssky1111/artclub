@@ -98,18 +98,24 @@ export async function bundledPhotos() {
   }));
 }
 
-/** 同梱の写真＋Supabaseの写真。お題を出すときはこちらを使う。 */
-export async function everyPhoto() {
+/** お題キューに出してよい写真か（非アクティブは一覧専用）。 */
+export function isPromptActive(photo) {
+  return !!photo && !photo.inactive;
+}
+
+/** 同梱の写真＋Supabaseの写真。一覧表示は非アクティブも含む。 */
+export async function everyPhoto({ includeInactive = true } = {}) {
   const [bundled, sb] = await Promise.all([
     bundledPhotos(),
     supabasePhotos().catch(() => []),
   ]);
-  return [...bundled, ...sb];
+  const all = [...bundled, ...sb];
+  return includeInactive ? all : all.filter(isPromptActive);
 }
 
-/** タグでしぼる。タグを1つも選んでいなければ全部。 */
+/** タグでしぼる（お題用なので非アクティブは除外）。タグを1つも選んでいなければ全部。 */
 export async function photosWithTags(tags = []) {
-  const photos = await everyPhoto();
+  const photos = await everyPhoto({ includeInactive: false });
   if (!tags.length) return photos;
   return photos.filter((p) => tags.every((t) => p.tags.includes(t)));
 }
@@ -149,7 +155,8 @@ export function createWeightedQueue(weights, onNotice = () => {}, { photos = nul
   const urls = [];
 
   async function load() {
-    const all = photos || await everyPhoto();
+    const all = (photos || await everyPhoto({ includeInactive: false }))
+      .filter(isPromptActive);
     pools = weights.map(({ tags, weight }) => {
       const matched = all.filter((p) => tags.every((t) => p.tags.includes(t)));
       matched.sort(() => Math.random() - 0.5);
@@ -214,9 +221,10 @@ export function createLibraryQueue(tags, onNotice = () => {}, noticeText = null,
 
   async function load() {
     if (photos) {
+      const poolSource = photos.filter(isPromptActive);
       pool = tags?.length
-        ? photos.filter((p) => tags.every((t) => p.tags.includes(t)))
-        : [...photos];
+        ? poolSource.filter((p) => tags.every((t) => p.tags.includes(t)))
+        : [...poolSource];
     } else {
       pool = await photosWithTags(tags);
     }

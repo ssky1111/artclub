@@ -348,6 +348,7 @@ export async function pushToSupabase(photos, onProgress = () => {}) {
       tags: photo.tags || [],
       name: photo.name || null,
       addedAt: photo.addedAt || Date.now(),
+      ...(photo.inactive ? { inactive: true } : {}),
     });
   }
 
@@ -363,6 +364,21 @@ export async function updateTags(file, tags) {
     entry.tags = tags;
     await saveManifest(entries);
   }
+  return entries;
+}
+
+/** お題としては出さないが、一覧・履歴には残す。 */
+export async function setPhotosInactive(files, inactive) {
+  const list = Array.isArray(files) ? files : [files];
+  if (!list.length) return loadManifest({ fresh: true });
+  const entries = await loadManifest({ fresh: true });
+  const want = new Set(list);
+  for (const entry of entries) {
+    if (!want.has(entry.file)) continue;
+    if (inactive) entry.inactive = true;
+    else delete entry.inactive;
+  }
+  await saveManifest(entries);
   return entries;
 }
 
@@ -414,6 +430,7 @@ export async function supabasePhotos({ fresh = true } = {}) {
       bundled: true,
       supabase: true,
       addedAt: entry.addedAt || 0,
+      inactive: !!entry.inactive,
       file,
     };
   });

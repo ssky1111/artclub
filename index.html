@@ -654,6 +654,7 @@
     <div id="photo-tags" class="chips"></div>
     <div class="section-head"><h2 data-i18n="lib.pastWork">この写真で描いたもの</h2></div>
     <div id="photo-history" class="photo-history"></div>
+    <button id="photo-inactive" class="btn small" hidden>非アクティブにする</button>
     <button id="photo-delete" class="btn danger small" data-i18n="lib.deleteOne">この写真を消す</button>
   </div>
 </div>
@@ -765,7 +766,7 @@
           <h2>お題写真</h2>
           <button id="sb-add-notag" class="btn ghost small">＋ タグなしで追加</button>
         </div>
-        <p class="muted small">本番 Storage と共有。ここでの変更は本番にも反映されます。</p>
+        <p class="muted small">本番 Storage と共有。ここでの変更は本番にも反映されます。非アクティブにすると一覧には残りますが、お題には出ません。</p>
         <div class="label" style="margin-top:8px">タグを選んでから追加</div>
         <div id="sb-upload-tags" class="chips"></div>
         <button id="sb-add" class="btn primary" style="margin-top:10px">選んだタグで写真を追加</button>
@@ -777,6 +778,8 @@
           <button id="sb-select-all" class="btn ghost small">全選択</button>
           <button id="sb-deselect" class="btn ghost small">解除</button>
           <button id="sb-bulk-tag-btn" class="btn primary small">一括タグ付け</button>
+          <button id="sb-bulk-inactive" class="btn small">非アクティブ</button>
+          <button id="sb-bulk-activate" class="btn ghost small">アクティブに戻す</button>
           <button id="sb-bulk-convert" class="btn small">WebP変換</button>
           <button id="sb-bulk-delete" class="btn danger small">一括削除</button>
         </div>
