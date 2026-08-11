@@ -132,8 +132,8 @@ const DICT = {
   'work.ctrStepComposePose': { ja: '構図とポーズ', en: 'Composition & pose' },
   'setup.composePoseCount': { ja: '何枚やる？', en: 'How many drawings?' },
   'setup.composePoseNote': {
-    ja: '1枚あたり3分。「構図」タグの写真から出します。',
-    en: '3 minutes each. Photos tagged Composition.',
+    ja: '1枚あたり3分。枚数は自分で選びます。',
+    en: '3 minutes each. Choose how many.',
   },
 
   /* ---------- アトリエ ---------- */

@@ -563,12 +563,12 @@ export const MODES = [
   {
     id: 'composePoseMode',
     title: '構図とポーズ',
-    subtitle: '3分/枚。「構図」タグから。枚数は自分で選ぶ',
+    subtitle: '3分/枚。何枚やるかは自分で選ぶ',
     picker: 'composePoseCount',
     drillId: 'composePose',
     en: {
       title: 'Composition & pose',
-      subtitle: '3 min each from Composition tags. Choose how many',
+      subtitle: '3 min each. Choose how many',
     },
   },
   {
@@ -617,7 +617,7 @@ export function buildCroquisMenu(count = 2) {
   };
 }
 
-/** 構図とポーズ。1枚3分、「構図」タグから。枚数だけ選ぶ。 */
+/** 構図とポーズ。1枚3分、枚数だけ選ぶ。 */
 export function buildComposePoseMenu(count = 1) {
   const n = Math.max(1, Number(count) || 1);
   return {
