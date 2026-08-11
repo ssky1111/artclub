@@ -238,6 +238,36 @@ export async function logout() {
 export function getUser() { return user; }
 export function getSession() { return session; }
 
+/**
+ * 管理者判定用。X など email が user.email に乗らない OAuth でも拾う。
+ * UI には出さない。
+ */
+export function getUserEmail(u = user) {
+  if (!u) return '';
+  const direct = String(u.email || '').trim();
+  if (direct && direct.includes('@')) return direct.toLowerCase();
+
+  const meta = u.user_metadata || {};
+  for (const key of ['email', 'email_address']) {
+    const v = String(meta[key] || '').trim();
+    if (v.includes('@')) return v.toLowerCase();
+  }
+
+  const identities = Array.isArray(u.identities) ? u.identities : [];
+  for (const id of identities) {
+    const data = id?.identity_data || {};
+    for (const key of ['email', 'email_address']) {
+      const v = String(data[key] || '').trim();
+      if (v.includes('@')) return v.toLowerCase();
+    }
+  }
+
+  const claim = decodeJwt(session?.access_token)?.email;
+  const fromJwt = String(claim || '').trim();
+  if (fromJwt.includes('@')) return fromJwt.toLowerCase();
+  return '';
+}
+
 /** 投稿の直前に呼ぶ。期限が近い（or force）ときだけ更新する。 */
 export async function ensureFreshSession({ force = false } = {}) {
   if (!session?.refresh_token) return session;

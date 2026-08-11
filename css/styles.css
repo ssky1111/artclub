@@ -2214,13 +2214,37 @@ body[data-theme='dark'] .google-btn {
   box-shadow: 0 2px 0 color-mix(in srgb, var(--accent) 55%, #000);
 }
 
+.copy-sheet-inner {
+  display: flex;
+  flex-direction: column;
+  max-height: min(85dvh, 720px);
+  overflow: hidden;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.copy-sheet-inner h2,
+.copy-sheet-inner #copy-status,
+.copy-sheet-inner #copy-start {
+  flex: none;
+}
 .copy-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 10px;
-  margin: 14px 0 18px;
-  max-height: 48vh;
+  margin: 10px 0 14px;
+  flex: 1 1 auto;
+  min-height: 180px;
+  max-height: none;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  align-content: start;
+}
+.copy-grid-sentinel {
+  grid-column: 1 / -1;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
 }
 .copy-pick {
   appearance: none;
@@ -2415,12 +2439,32 @@ body[data-skin='pastel-rpg'] .atelier-tabs button.on {
   background: color-mix(in srgb, var(--brand) 22%, transparent); color: var(--brand-ink);
 }
 .atelier-badge.copy { background: color-mix(in srgb, var(--mint) 35%, transparent); color: var(--accent-ink); }
+.atelier-badge.mode {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text-soft);
+}
 /* 非公開は文字ではなく鍵マークだけ。箱を正方形に寄せて名前の横で浮かないようにする */
 .atelier-badge.private {
   background: var(--surface-2); color: var(--muted);
   display: inline-flex; align-items: center; padding: 2px 4px;
 }
 .tl-post .atelier-badge { margin-left: 4px; }
+.tl-copy {
+  appearance: none;
+  margin-left: auto;
+  border: 1px solid var(--line);
+  background: var(--text);
+  color: var(--surface);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.tl-copy:active {
+  transform: translateY(1px);
+}
 button.tl-media {
   display: block; width: 100%; border: none; padding: 0;
   background: transparent; cursor: pointer; text-align: left;

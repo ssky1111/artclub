@@ -6,12 +6,15 @@
  */
 
 import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
-import { getSession, getUser, ensureFreshSession } from './auth.js';
+import { getSession, getUser, getUserEmail, getUsername, ensureFreshSession } from './auth.js';
 import { $, el } from './ui.js';
 import { dateKey, addDays } from './storage.js';
 import { t } from './i18n.js';
 
-const ADMIN_EMAILS = ['yuisskweb@gmail.com', 'sayu.u.u.u.u@gmail.com'];
+const ADMIN_EMAILS = new Set(['yuisskweb@gmail.com', 'sayu.u.u.u.u@gmail.com']);
+/** email が取れない OAuth 向け（profiles / 表示名） */
+const ADMIN_USERNAMES = new Set(['しゃお']);
+const ADMIN_PASS_SESSION_KEY = 'drawpamine.admin.session';
 
 /** 解析から外すユーザーネーム（自分） */
 const EXCLUDED_USERNAMES = new Set(['しゃお']);
@@ -57,9 +60,18 @@ function authHeaders(extra = {}) {
   };
 }
 
+function hasAdminPassSession() {
+  try { return sessionStorage.getItem(ADMIN_PASS_SESSION_KEY) === '1'; } catch { return false; }
+}
+
 export function isAdminAnalyticsUser() {
-  const u = getUser();
-  return !!(u?.email && ADMIN_EMAILS.includes(u.email));
+  // /admin をパス解除済みなら解析も開ける（Xログインで email が欠ける対策）
+  if (hasAdminPassSession()) return true;
+  const email = getUserEmail();
+  if (email && ADMIN_EMAILS.has(email)) return true;
+  const name = String(getUsername() || '').trim();
+  if (name && ADMIN_USERNAMES.has(name)) return true;
+  return false;
 }
 
 function normalizeMode(row) {
@@ -139,12 +151,13 @@ async function fetchArtworksUsage(fromDate, toDate) {
 }
 
 function modeToMenuId(mode) {
-  const m = String(mode || '').toLowerCase();
-  if (m.includes('daily')) return 'daily';
-  if (m.includes('gesture')) return 'gestureMode';
-  if (m.includes('part')) return 'part-unknown';
-  if (m.includes('croquis')) return 'croquisMode';
-  if (m.includes('copy') || m.includes('模写')) return 'copyMode';
+  const raw = String(mode || '').trim();
+  const m = raw.toLowerCase();
+  if (m.includes('daily') || raw.includes('デイリー')) return 'daily';
+  if (m.includes('gesture') || raw.includes('ジェスチャー')) return 'gestureMode';
+  if (m.includes('part') || raw.includes('部位')) return 'part-unknown';
+  if (m.includes('croquis') || raw.includes('クロッキー')) return 'croquisMode';
+  if (m.includes('copy') || raw.includes('模写')) return 'copyMode';
   return '';
 }
 
