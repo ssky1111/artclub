@@ -1137,6 +1137,7 @@ function openSbPhoto(photo) {
       const file = photo.id.replace('sb:', '');
       await sbUpdateTags(file, current);
       photo.tags = current;
+      if (sbFilterTags.size) await renderSupabaseGrid({ keepCache: true });
     });
     tagsWrap.append(chip);
   }
@@ -1158,7 +1159,7 @@ function openSbPhoto(photo) {
       toast(next
         ? '非アクティブにしました（お題には出ません）'
         : 'アクティブに戻しました');
-      await renderSupabaseGrid();
+      await renderSupabaseGrid({ keepCache: true });
     };
   }
 
