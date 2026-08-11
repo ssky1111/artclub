@@ -757,6 +757,12 @@ html[data-site-unlocked] .site-gate-dialog,
   font-size: 17px; font-weight: 700; font-family: var(--font-ja);
   color: var(--text-soft); margin: 0; line-height: 1.7;
 }
+.bridge-cue .bridge-lead {
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+}
 .hint-list,
 .menu-hints,
 .bridge-hints {
