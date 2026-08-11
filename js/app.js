@@ -42,7 +42,7 @@ import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, freePeri
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
-import { initAuth, loginWithProvider, logout, getUser, onAuthChange, hasUsername, setUsername, getUsername, hydrateUsername } from './auth.js';
+import { initAuth, loginWithProvider, logout, getUser, getUserEmail, onAuthChange, hasUsername, setUsername, getUsername, hydrateUsername } from './auth.js';
 import {
   uploadArtwork, uploadShareImage, fetchArtworks, fetchArtwork, fetchPublicArtworks, fetchMyArtworks,
   fetchCopyableArtworksPage, deleteArtwork, updateArtwork, toggleLike, workPageUrl, upsertProfile, artworkDisplayName,
@@ -889,11 +889,11 @@ function storedPass() {
   try { return localStorage.getItem(PASS_KEY) || ''; } catch { return ''; }
 }
 
-const ADMIN_EMAILS = ['yuisskweb@gmail.com', 'sayu.u.u.u.u@gmail.com'];
+const ADMIN_EMAILS = new Set(['yuisskweb@gmail.com', 'sayu.u.u.u.u@gmail.com']);
 
 function isAdminUser() {
-  const u = getUser();
-  return u?.email && ADMIN_EMAILS.includes(u.email);
+  const email = getUserEmail();
+  return !!(email && ADMIN_EMAILS.has(email));
 }
 
 async function openAdmin() {
