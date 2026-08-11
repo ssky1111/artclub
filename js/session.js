@@ -320,6 +320,9 @@ export function createSessionRunner({ onFinish, onQuit }) {
         photoId: state.currentPhotoId,
         seconds,
         referenceArtworkId: state.referenceArtworkId || null,
+        drillId: state.current?.drillId || null,
+        source: state.current?.source || null,
+        label: state.current?.label || null,
       });
     }
     pad.clear();

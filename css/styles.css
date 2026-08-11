@@ -2439,12 +2439,32 @@ body[data-skin='pastel-rpg'] .atelier-tabs button.on {
   background: color-mix(in srgb, var(--brand) 22%, transparent); color: var(--brand-ink);
 }
 .atelier-badge.copy { background: color-mix(in srgb, var(--mint) 35%, transparent); color: var(--accent-ink); }
+.atelier-badge.mode {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text-soft);
+}
 /* 非公開は文字ではなく鍵マークだけ。箱を正方形に寄せて名前の横で浮かないようにする */
 .atelier-badge.private {
   background: var(--surface-2); color: var(--muted);
   display: inline-flex; align-items: center; padding: 2px 4px;
 }
 .tl-post .atelier-badge { margin-left: 4px; }
+.tl-copy {
+  appearance: none;
+  margin-left: auto;
+  border: 1px solid var(--line);
+  background: var(--text);
+  color: var(--surface);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.tl-copy:active {
+  transform: translateY(1px);
+}
 button.tl-media {
   display: block; width: 100%; border: none; padding: 0;
   background: transparent; cursor: pointer; text-align: left;
