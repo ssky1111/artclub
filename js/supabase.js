@@ -4,29 +4,48 @@
  * 写真は Supabase Storage の "photos" バケットに置く。
  * メタデータ（タグ・名前など）は同バケット内の manifest.json に保存。
  * SDK は使わず REST API を直接叩く。
+ *
+ * Auth / DB はホストごとに切替。教材 photos だけは常に本番 Storage を共有する
+ *（dev / localhost でも二重管理しない）。
  */
 
+const PROD = {
+  url: 'https://clifnylwatvtrikrfpft.supabase.co',
+  key: 'sb_publishable_kzKAxV0nVjU4ts-ewGHgRg_HmaQPFRj',
+};
+const DEV = {
+  url: 'https://fuggnreupdntutktient.supabase.co',
+  key: 'sb_publishable_vs2GFcc2mV1yjGCZkRIyNA_YP0ocE_l',
+};
+
 const ENV_MAP = {
-  'artclub.space':     { url: 'https://clifnylwatvtrikrfpft.supabase.co', key: 'sb_publishable_kzKAxV0nVjU4ts-ewGHgRg_HmaQPFRj' },
-  'dev.artclub.space': { url: 'https://fuggnreupdntutktient.supabase.co', key: 'sb_publishable_vs2GFcc2mV1yjGCZkRIyNA_YP0ocE_l' },
-  'localhost':         { url: 'https://fuggnreupdntutktient.supabase.co', key: 'sb_publishable_vs2GFcc2mV1yjGCZkRIyNA_YP0ocE_l' },
+  'artclub.space':     PROD,
+  'dev.artclub.space': DEV,
+  'localhost':         DEV,
 };
 const env = ENV_MAP[location.hostname];
 if (!env) throw new Error(`Unknown host: ${location.hostname} — Supabase 接続を拒否しました`);
+
+/** Auth / REST（環境ごと） */
 export const SUPABASE_URL = env.url;
 export const SUPABASE_KEY = env.key;
+
+/** 教材 photos（常に本番） */
+export const PHOTOS_URL = PROD.url;
+export const PHOTOS_KEY = PROD.key;
+
 const BUCKET = 'photos';
 
 function hdrs(extra = {}) {
   return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
+    apikey: PHOTOS_KEY,
+    Authorization: `Bearer ${PHOTOS_KEY}`,
     ...extra,
   };
 }
 
-const storageUrl = (path) => `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`;
-const publicUrl  = (path) => `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+const storageUrl = (path) => `${PHOTOS_URL}/storage/v1/object/${BUCKET}/${path}`;
+const publicUrl  = (path) => `${PHOTOS_URL}/storage/v1/object/public/${BUCKET}/${path}`;
 
 let manifestCache = null;
 
@@ -188,7 +207,7 @@ export async function uploadPhoto(blob, id) {
 }
 
 export async function deletePhotoFromStorage(path) {
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}`, {
+  const res = await fetch(`${PHOTOS_URL}/storage/v1/object/${BUCKET}`, {
     method: 'DELETE',
     headers: hdrs({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ prefixes: [path] }),
@@ -362,7 +381,7 @@ export async function convertToWebp(entry, maxSide = 1000, quality = 0.82) {
   }
 
   if (newPath !== oldPath) {
-    await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}`, {
+    await fetch(`${PHOTOS_URL}/storage/v1/object/${BUCKET}`, {
       method: 'DELETE',
       headers: hdrs({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ prefixes: [oldPath] }),
@@ -373,7 +392,7 @@ export async function convertToWebp(entry, maxSide = 1000, quality = 0.82) {
 }
 
 export async function testConnection() {
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/bucket/${BUCKET}`, {
+  const res = await fetch(`${PHOTOS_URL}/storage/v1/bucket/${BUCKET}`, {
     headers: hdrs(),
   });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
