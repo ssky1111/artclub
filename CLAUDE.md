@@ -23,4 +23,5 @@
 ## Supabase スキーマ
 - `supabase/*.sql` は **Supabase SQL Editor で人が実行**する（エージェントは DDL を直接当てられない）
 - `artworks.kind`（drawing / sheet）が無いと利用解析などが落ちる → `supabase/artworks-kind.sql` を本番で実行
+- 同SQLで `short_id` / `og_image_url` も追加（未追加だと投稿が legacy に落ちて session_id が消える）
 - 管理者のきろく全件読み取り → `supabase/admin-analytics.sql`
