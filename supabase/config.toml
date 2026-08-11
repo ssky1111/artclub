@@ -1,0 +1,12 @@
+# ARTCLUB Supabase 設定メモ
+# CLI を使う場合: supabase link --project-ref <id>
+
+[project]
+# 既定は開発用。本番操作時は明示的に main の ref を指定する。
+id = "fuggnreupdntutktient"
+
+[api]
+enabled = true
+
+[db]
+major_version = 17
