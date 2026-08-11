@@ -434,14 +434,69 @@ export function buildDaily(part) {
 }
 
 /**
- * その日の部位。日付で決まるので、同じ日に何回やっても同じ部位。
- * 自分で選ばせないのは、選ぶ時間が始めない理由になるのと、
- * 放っておくと得意なところばかり選ぶため（1周すると全部位を通る）。
+ * カレンダー日付から部位を決める（履歴が無いときのフォールバック）。
+ * 同じ日は同じ部位になる。
  */
 export function partForDate(dateStr) {
   const days = Math.floor(new Date(`${dateStr}T00:00:00`).getTime() / 86400000);
   const list = ACTIVE_PARTS.length ? ACTIVE_PARTS : PARTS;
   return list[((days % list.length) + list.length) % list.length];
+}
+
+function activePartList() {
+  return ACTIVE_PARTS.length ? ACTIVE_PARTS : PARTS;
+}
+
+export function partById(partId) {
+  if (!partId) return null;
+  return activePartList().find((p) => p.id === partId) || null;
+}
+
+/** 直前にやった部位の「次」（手 → 上半身 → 手 …）。 */
+export function nextPartAfter(partId) {
+  const list = activePartList();
+  if (!list.length) return PARTS[0];
+  const idx = list.findIndex((p) => p.id === partId);
+  if (idx < 0) return list[0];
+  return list[(idx + 1) % list.length];
+}
+
+/**
+ * デイリーの部位。
+ * - きょうすでに DAILY をやっていたら、そのときの部位に固定（同じ日はブレない）
+ * - そうでなければ、前回の DAILY でやった部位の次を出す（履歴ベースで交互）
+ * - 履歴が無ければ ACTIVE_PARTS の先頭（いまは手）
+ *
+ * カレンダー日付だけのローテだと、練習する曜日が偏ると同じ部位ばかりになるため。
+ */
+export function partForDaily(today, history = []) {
+  const list = activePartList();
+  if (!list.length) return PARTS[0];
+
+  const dailies = (history || []).filter((h) => h?.menuId === 'daily' && h.date);
+
+  const todayEntries = dailies
+    .filter((h) => h.date === today)
+    .sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  if (todayEntries.length) {
+    const id = todayEntries[0].partId || partForDate(today)?.id;
+    return partById(id) || partForDate(today) || list[0];
+  }
+
+  const past = dailies
+    .filter((h) => h.date < today)
+    .sort((a, b) => {
+      const ts = (b.ts || 0) - (a.ts || 0);
+      if (ts) return ts;
+      return a.date < b.date ? 1 : a.date > b.date ? -1 : 0;
+    });
+  if (past.length) {
+    const last = past[0];
+    const lastId = last.partId || partForDate(last.date)?.id;
+    return nextPartAfter(lastId);
+  }
+
+  return list[0];
 }
 
 /**

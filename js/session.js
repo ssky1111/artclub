@@ -368,6 +368,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
       drawings: state.drawings,
       menuId: state.menu.id,
       menuTitle: state.menu.title,
+      partId: state.menu.partId || null,
       seconds: state.totalSeconds,
       byDrill: state.byDrill,
       focusId: state.focus.id,
@@ -393,7 +394,8 @@ export function createSessionRunner({ onFinish, onQuit }) {
       if (spent > 0) record(state.current, Math.round(spent));
     }
     const partial = state && state.drawings.length > 0
-      ? { menuId: state.menu.id, menuTitle: state.menu.title, seconds: state.totalSeconds,
+      ? { menuId: state.menu.id, menuTitle: state.menu.title, partId: state.menu.partId || null,
+          seconds: state.totalSeconds,
           byDrill: state.byDrill, focusId: state.focus.id, lessonId: state.lessonId,
           lessonMode: state.lessonMode, drawings: state.drawings, partial: true }
       : null;

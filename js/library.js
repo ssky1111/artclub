@@ -145,11 +145,37 @@ export function setPhotoSrc(img, photoOrUrl) {
   img.src = primary;
 }
 
+/** Fisher–Yates。偏りのある Array.sort(Math.random) は使わない。 */
+function shuffle(list) {
+  const arr = [...list];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/**
+ * その人がまだ描いていないお題を先に、描いたことがあるものを後に並べる。
+ * それぞれのグループ内はランダム。seenIds が空なら全体をシャッフル。
+ */
+export function orderPreferUnseen(pool, seenIds = null) {
+  if (!pool?.length) return [];
+  if (!seenIds?.size) return shuffle(pool);
+  const unseen = [];
+  const seen = [];
+  for (const photo of pool) {
+    (seenIds.has(photo.id) ? seen : unseen).push(photo);
+  }
+  return [...shuffle(unseen), ...shuffle(seen)];
+}
+
 /**
  * セッション用のキュー。images.js のキューと同じ形で使える。
  * 同じ写真が続けて出ないよう、ひと回りしてから戻ってくるようにしている。
+ * seenIds があれば未実施のお題を優先する。
  */
-export function createWeightedQueue(weights, onNotice = () => {}, { photos = null } = {}) {
+export function createWeightedQueue(weights, onNotice = () => {}, { photos = null, seenIds = null } = {}) {
   let pools = [];
   let loading = null;
   const urls = [];
@@ -159,8 +185,7 @@ export function createWeightedQueue(weights, onNotice = () => {}, { photos = nul
       .filter(isPromptActive);
     pools = weights.map(({ tags, weight }) => {
       const matched = all.filter((p) => tags.every((t) => p.tags.includes(t)));
-      matched.sort(() => Math.random() - 0.5);
-      return { photos: matched, weight, cursor: 0 };
+      return { photos: orderPreferUnseen(matched, seenIds), weight, cursor: 0 };
     });
     const total = pools.reduce((s, p) => s + p.photos.length, 0);
     if (!total) onNotice('その条件の写真がありません。写真の管理から追加してください');
@@ -213,7 +238,7 @@ export function createWeightedQueue(weights, onNotice = () => {}, { photos = nul
   };
 }
 
-export function createLibraryQueue(tags, onNotice = () => {}, noticeText = null, { photos = null } = {}) {
+export function createLibraryQueue(tags, onNotice = () => {}, noticeText = null, { photos = null, seenIds = null } = {}) {
   let pool = [];
   let cursor = 0;
   let loading = null;
@@ -231,7 +256,7 @@ export function createLibraryQueue(tags, onNotice = () => {}, noticeText = null,
     if (!pool.length) {
       onNotice(noticeText || 'その条件の写真がありません。写真の管理から追加してください');
     }
-    pool.sort(() => Math.random() - 0.5);
+    pool = orderPreferUnseen(pool, seenIds);
   }
 
   function ensure() {

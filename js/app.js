@@ -3,14 +3,14 @@
  */
 
 import {
-  buildDaily, partForDate, MODES, PARTS, ACTIVE_PARTS, DRILLS, PICKABLE_DRILLS,
+  buildDaily, partForDate, partForDaily, partById, MODES, PARTS, ACTIVE_PARTS, DRILLS, PICKABLE_DRILLS,
   TIME_CHOICES, COUNT_CHOICES, GESTURE_COUNT_CHOICES, ROUND_COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu, buildCopyMenu, buildGestureMenu, buildCroquisMenu, buildComposePoseMenu,
   levelLabel, menuDuration,
 } from './theory.js';
 import {
   getSettings, saveSettings, getHistory, addSession, updateLastSession,
   dateKey, addDays, dailyTotals, drawingsByDay, totalDrawings, roundsToday, stats,
-  recentReviewNotes, hydrateUserData, resetUserCaches, syncSessionNow,
+  recentReviewNotes, hydrateUserData, resetUserCaches, syncSessionNow, seenPhotoIds,
 } from './storage.js';
 import { LESSONS, PD_BOOKS, lessonById } from './anatomy.js';
 import { createPhotoQueue } from './images.js';
@@ -189,7 +189,7 @@ function renderWeekBars(history) {
 function renderDaily(history) {
   const loggedIn = !!getUser();
   const rounds = loggedIn ? roundsToday('daily', history) : 0;
-  const part = partForDate(dateKey());
+  const part = partForDaily(dateKey(), history);
   const daily = buildDaily(part);
 
   const top = $('#menu-primary');
@@ -1743,8 +1743,10 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
 
   // お題は管理画面（Supabase）に上げた写真だけから出す。外部検索には落とさない。
   // 非アクティブはお題キューから除外（一覧・履歴には残る）。
+  // 描いたことのある photoId は後回しにして、未実施を優先する。
   const own = (await supabasePhotos().catch(() => [])).filter((p) => !p.inactive);
-  const fromAdmin = { photos: own };
+  const seenIds = seenPhotoIds();
+  const fromAdmin = { photos: own, seenIds };
   const silent = () => {};   // 使わないキューの空通知は出さない
   const needed = new Set(
     (menu.steps || []).map((s) => s.source
@@ -1788,7 +1790,7 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
       ? createWeightedQueue([
         { tags: ['手'], weight: 7 },
         { tags: ['上半身'], weight: 3 },
-      ], silent, { photos: partPhotos })
+      ], silent, { photos: partPhotos, seenIds })
       : createLibraryQueue(['手'], notice, '手・上半身の写真がありません', fromAdmin);
   }
 
@@ -2636,7 +2638,7 @@ function updateWorkAuthUI(u = getUser()) {
 function renderWorkCtr() {
   const list = $('#work-ctr-steps');
   if (!list) return;
-  const part = partForDate(dateKey());
+  const part = partForDaily(dateKey(), getHistory());
   const partLabel = getLang() === 'en' ? part.en : part.label;
   list.innerHTML = '';
   for (const key of ['work.ctrStepGesture', 'work.ctrStepPart', 'work.ctrStepCroquis', 'work.ctrStepComposePose']) {
@@ -2806,7 +2808,7 @@ function wireGallery() {
 }
 
 function startDailyFromCtr() {
-  const part = partForDate(dateKey());
+  const part = partForDaily(dateKey(), getHistory());
   const daily = buildDaily(part);
   startDaily(daily, part);
 }
@@ -2859,7 +2861,10 @@ function menuStepsForEntry(entry) {
     const n = Math.max(1, (entry.shots || []).length || Math.round((entry.seconds || 600) / 60));
     return buildGestureMenu(n).steps;
   }
-  if (entry.menuId === 'daily') return buildDaily(partForDate(entry.date)).steps;
+  if (entry.menuId === 'daily') {
+    const part = partById(entry.partId) || partForDate(entry.date);
+    return buildDaily(part).steps;
+  }
   if (entry.menuId.startsWith('part-')) {
     const part = PARTS.find((p) => entry.menuId === `part-${p.id}`);
     if (!part) return null;
