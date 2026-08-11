@@ -8,9 +8,6 @@ import { getSession, getUser, getUsername } from './auth.js';
 import { $, toast } from './ui.js';
 import { t } from './i18n.js';
 
-/** INSERT 後にメール通知 Worker を叩く（失敗しても送信自体は成功扱い） */
-const FEEDBACK_MAIL_URL = 'https://artclub.space/api/feedback-mail';
-
 function authHeaders(extra = {}) {
   const session = getSession();
   const token = session?.access_token || SUPABASE_KEY;
@@ -55,19 +52,7 @@ export async function submitFeedback(input) {
     const text = await res.text().catch(() => '');
     throw new Error(`feedback failed: ${res.status} ${text}`);
   }
-  const rows = await res.json().catch(() => []);
-  const row = rows?.[0];
-  if (row?.id) notifyFeedbackMail(row.id);
   return true;
-}
-
-function notifyFeedbackMail(id) {
-  fetch(FEEDBACK_MAIL_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id }),
-    keepalive: true,
-  }).catch((err) => console.warn('[feedback] mail notify failed', err));
 }
 
 /** 右端タブと吹き出しフォームを配線する */
