@@ -10,24 +10,15 @@ import { DRILLS } from './theory.js';
 import { createTimer, sfx } from './timer.js';
 import { createPad } from './draw.js';
 import { $, $$, showScreen, toast, fmtClock, confirmDialog, hintList } from './ui.js';
-import { paintIcons } from './icons.js';
 import { t, tr, fmtDur, getLang } from './i18n.js';
 import { saveSettings } from './storage.js';
 
 export function createSessionRunner({ onFinish, onQuit }) {
   const dom = {
-    img: $('#ref-image'),
-    stageInner: $('#stage-inner'),
     grid: $('#grid-overlay'),
     cover: $('#memory-cover'),
     peekBtn: $('#peek-btn'),
     peekLeft: $('#peek-left'),
-    drillName: $('#drill-name'),
-    drillProgress: $('#drill-progress'),
-    drillCue: $('#drill-cue'),
-    timebar: $('#timebar-fill'),
-    timeLeft: $('#time-left'),
-    pauseBtn: $('#pause-btn'),
     attrBox: $('#attr-box'),
     stageMessage: $('#stage-message'),
     bridgeLabel: $('#bridge-label'),
@@ -51,7 +42,6 @@ export function createSessionRunner({ onFinish, onQuit }) {
     padHint: $('#pad-hint'),
     padOpacity: $('#pad-opacity'),
     padOpacityNum: $('#pad-opacity-num'),
-    stageSwap: $('#stage-swap'),
     padRefSwap: $('#pad-ref-swap'),
     refMiniSwap: $('#ref-mini-swap'),
     bridgeDesc: $('#bridge-desc'),
@@ -71,16 +61,12 @@ export function createSessionRunner({ onFinish, onQuit }) {
     onTick(value, progress, meta = {}) {
       const isUnlimited = !!(meta.unlimited || state?.current?.unlimited);
       if (isUnlimited) {
-        dom.timebar.style.transform = 'scaleX(0)';
         dom.padTimebar.style.transform = 'scaleX(0)';
-        dom.timeLeft.textContent = fmtClock(value);
         dom.padTimeNum.textContent = fmtClock(value);
         setTimeUnit(true);
         return;
       }
       setTimeUnit(false);
-      dom.timebar.style.transform = `scaleX(${progress})`;
-      dom.timeLeft.textContent = fmtClock(value);
       dom.padTimeNum.textContent = fmtClock(value);
       dom.padTimebar.style.transform = `scaleX(${1 - progress})`;
       const whole = Math.ceil(value);
@@ -111,16 +97,24 @@ export function createSessionRunner({ onFinish, onQuit }) {
     if (v.invert) filters.push('invert(1)');
     if (v.blur) filters.push(`blur(${v.blur}px)`);
     if (v.contrast) filters.push(`contrast(${v.contrast})`);
-    dom.img.style.filter = filters.join(' ') || 'none';
+    const filter = filters.join(' ') || 'none';
 
     const transforms = [];
     if (v.rotate) transforms.push(`rotate(${v.rotate}deg)`);
     if (flipped) transforms.push('scaleX(-1)');
-    dom.img.style.transform = transforms.join(' ') || 'none';
+    const transform = transforms.join(' ') || 'none';
 
-    dom.grid.hidden = !state.gridForced && !v.grid;
-    dom.cover.hidden = true;
-    dom.cover.classList.remove('peeking');
+    for (const img of [dom.padRefImg, dom.refMiniImg]) {
+      if (!img) continue;
+      img.style.filter = filter;
+      img.style.transform = transform;
+    }
+
+    if (dom.grid) dom.grid.hidden = !state.gridForced && !v.grid;
+    if (dom.cover) {
+      dom.cover.hidden = true;
+      dom.cover.classList.remove('peeking');
+    }
   }
 
   function maybeHideForMemory(remaining) {
@@ -226,17 +220,14 @@ export function createSessionRunner({ onFinish, onQuit }) {
     state.peeksLeft = DRILLS[item.drillId].view?.peeks ?? 0;
     state.peeking = false;
     lastBeepAt = -1;
-    dom.peekLeft.textContent = String(state.peeksLeft);
-    dom.peekBtn.hidden = state.peeksLeft === 0;
+    if (dom.peekLeft) dom.peekLeft.textContent = String(state.peeksLeft);
+    if (dom.peekBtn) dom.peekBtn.hidden = state.peeksLeft === 0;
 
     const drill = DRILLS[item.drillId];
-    dom.drillName.textContent = stepTitle(item, drill);
-    dom.drillProgress.textContent = `${item.indexInStep} / ${item.countInStep}`;
-    dom.drillCue.textContent = tr(drill, 'cue');
     dom.attrBox.hidden = true;
 
     showScreen('session');
-    setPad(true);              // 紙に描く人は上の道具から閉じられる
+    ensurePad();
     dom.stageMessage.hidden = false;
     dom.stageMessage.textContent =
       item.source === 'plate' ? t('sess.loadingPlate') : t('sess.loading');
@@ -273,24 +264,23 @@ export function createSessionRunner({ onFinish, onQuit }) {
   }
 
   function setReferenceLocked(locked) {
-    for (const btn of [dom.stageSwap, dom.padRefSwap, dom.refMiniSwap]) {
+    for (const btn of [dom.padRefSwap, dom.refMiniSwap]) {
       if (btn) btn.hidden = locked;
     }
   }
 
   function setRefSrc(photo) {
     const apply = (url) => {
-      dom.img.src = url;
-      dom.refMiniImg.src = url;
-      dom.padRefImg.src = url;      // 広い画面では左半分にそのまま出す
+      if (dom.refMiniImg) dom.refMiniImg.src = url;
+      if (dom.padRefImg) dom.padRefImg.src = url;
     };
     apply(photo.url);
     if (photo.fallbackUrl && photo.fallbackUrl !== photo.url) {
       const onErr = () => {
-        dom.img.removeEventListener('error', onErr);
+        if (dom.padRefImg) dom.padRefImg.removeEventListener('error', onErr);
         apply(photo.fallbackUrl);
       };
-      dom.img.addEventListener('error', onErr, { once: true });
+      dom.padRefImg?.addEventListener('error', onErr, { once: true });
     }
   }
 
@@ -365,22 +355,16 @@ export function createSessionRunner({ onFinish, onQuit }) {
     timer.stop();
     releaseWakeLock();
     await harvestDrawing();
-    // closePad を先にやると、旧い「お題写真だけ」の stage が一瞬見えてちらつく。
-    // 画面遷移のあとで閉じる。
-    try {
-      await onFinish({
-        drawings: state.drawings,
-        menuId: state.menu.id,
-        menuTitle: state.menu.title,
-        seconds: state.totalSeconds,
-        byDrill: state.byDrill,
-        focusId: state.focus.id,
-        lessonId: state.lessonId,
-        lessonMode: state.lessonMode,
-      });
-    } finally {
-      closePad();
-    }
+    await onFinish({
+      drawings: state.drawings,
+      menuId: state.menu.id,
+      menuTitle: state.menu.title,
+      seconds: state.totalSeconds,
+      byDrill: state.byDrill,
+      focusId: state.focus.id,
+      lessonId: state.lessonId,
+      lessonMode: state.lessonMode,
+    });
   }
 
   async function quit() {
@@ -405,11 +389,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
           lessonMode: state.lessonMode, drawings: state.drawings, partial: true }
       : null;
     state = null;
-    try {
-      await onQuit(partial);
-    } finally {
-      closePad();
-    }
+    await onQuit(partial);
   }
 
   /* ---------- 画面を消させない ---------- */
@@ -439,66 +419,47 @@ export function createSessionRunner({ onFinish, onQuit }) {
   }
 
   function setPauseIcon() {
-    dom.pauseBtn.dataset.icon = timer.running ? 'pause' : 'play';
     dom.padTime.classList.toggle('paused', !timer.running);
-    paintIcons(dom.pauseBtn.parentNode);
   }
 
-  /**
-   * 画面内に描くモード。
-   * 以前は「写真だけ出て、透明のボタンを押すとペンが出る」形にしていたが、
-   * 押すものが見えないので誰も気づかなかった。最初から開いた状態で始める。
-   */
-  function setPad(open) {
-    dom.padWrap.hidden = !open;
-    dom.stage.classList.toggle('with-pad', open);
-    $('#tool-pad').classList.toggle('on', open);
-    if (open) requestAnimationFrame(() => pad.resize());
-    else dom.refMini.classList.remove('big');
-  }
-
-  function togglePad() { setPad(dom.padWrap.hidden); }
-
-  function closePad() {
-    dom.padWrap.hidden = true;
-    dom.stage.classList.remove('with-pad');
-    $('#tool-pad').classList.remove('on');
+  /** 描画パッドは常時表示（お題写真だけの stage は廃止）。 */
+  function ensurePad() {
+    if (dom.padWrap) dom.padWrap.hidden = false;
+    dom.stage?.classList.add('with-pad');
+    requestAnimationFrame(() => pad.resize());
   }
 
   function toggleGrid() {
     state.gridForced = !state.gridForced;
-    dom.grid.hidden = !state.gridForced && !DRILLS[state.current.drillId].view?.grid;
+    if (dom.grid) {
+      dom.grid.hidden = !state.gridForced && !DRILLS[state.current.drillId].view?.grid;
+    }
+    $$('.pad-btn[data-pad="grid"]').forEach((b) => b.classList.toggle('on', state.gridForced));
   }
 
   function toggleFlip() {
     state.flipForced = !state.flipForced;
     applyView(DRILLS[state.current.drillId], { flipped: state.flipForced });
+    $$('.pad-btn[data-pad="flip"]').forEach((b) => b.classList.toggle('on', state.flipForced));
   }
 
   function peek() {
-    if (!state.peeksLeft) return;
+    if (!state.peeksLeft || !dom.cover) return;
     const item = state.current;
     state.peeksLeft--;
     state.peeking = true;
-    dom.peekLeft.textContent = String(state.peeksLeft);
+    if (dom.peekLeft) dom.peekLeft.textContent = String(state.peeksLeft);
     dom.cover.hidden = true;
     timer.extend(3);   // 見ていた分は時間を足す
     setTimeout(() => {
       if (!state || state.current !== item) return;   // 先に進んでいたら何もしない
       state.peeking = false;
       dom.cover.hidden = false;
-      dom.peekBtn.hidden = state.peeksLeft === 0;
+      if (dom.peekBtn) dom.peekBtn.hidden = state.peeksLeft === 0;
     }, 3000);
   }
 
-  $('#pause-btn').addEventListener('click', togglePause);
-  $('#time-left').addEventListener('click', togglePause);
-  $('#skip-btn').addEventListener('click', () => advance(true));
-  $('#tool-pad').addEventListener('click', togglePad);
-  $('#tool-grid').addEventListener('click', toggleGrid);
-  $('#tool-flip').addEventListener('click', toggleFlip);
-  $('#quit-btn').addEventListener('click', quit);
-  $('#peek-btn').addEventListener('click', peek);
+  $('#peek-btn')?.addEventListener('click', peek);
 
   $('.pad-tools').addEventListener('click', (e) => {
     const tool = e.target.closest('[data-pad]')?.dataset.pad;
@@ -514,6 +475,8 @@ export function createSessionRunner({ onFinish, onQuit }) {
     if (!tool) return;
     if (tool === 'undo') return void pad.undo();
     if (tool === 'clear') return void pad.clear();
+    if (tool === 'grid') return void toggleGrid();
+    if (tool === 'flip') return void toggleFlip();
     pad.setEraser(tool === 'eraser');
     $$('.pad-btn[data-pad="pen"], .pad-btn[data-pad="eraser"]')
       .forEach((b) => b.classList.toggle('on', b.dataset.pad === tool));
@@ -542,14 +505,13 @@ export function createSessionRunner({ onFinish, onQuit }) {
     if (state) state.settings = saveSettings({ hintOpen: open });
   });
 
-  window.addEventListener('resize', () => { if (!dom.padWrap.hidden) pad.resize(); });
+  window.addEventListener('resize', () => { if (state) pad.resize(); });
 
   $('#pad-next').addEventListener('click', () => advance(false));
   $('#pad-skip').addEventListener('click', () => advance(true));
   $('#pad-quit').addEventListener('click', quit);
   $('#pad-time').addEventListener('click', togglePause);
   dom.refMini.addEventListener('click', () => dom.refMini.classList.toggle('big'));
-  $('#attr-btn').addEventListener('click', () => { dom.attrBox.hidden = !dom.attrBox.hidden; });
 
   async function swapPhoto() {
     if (!state?.current) return;
@@ -560,7 +522,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     state.currentPhotoId = photo.photoId || null;
     renderAttribution(photo);
   }
-  for (const btn of [dom.stageSwap, dom.padRefSwap, dom.refMiniSwap]) {
+  for (const btn of [dom.padRefSwap, dom.refMiniSwap]) {
     btn?.addEventListener('click', (e) => {
       e.stopPropagation();
       swapPhoto();
@@ -597,7 +559,6 @@ export function createSessionRunner({ onFinish, onQuit }) {
     if (e.code === 'Space') { e.preventDefault(); togglePause(); }
     else if (e.code === 'ArrowRight') advance(true);
     else if (e.key === 'g') toggleGrid();
-    else if (e.key === 'd') togglePad();
     else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); pad.undo(); }
     else if (e.key === 'f') toggleFlip();
     else if (e.code === 'Escape') quit();

@@ -189,50 +189,10 @@
 </main>
 
 <main id="screen-session" class="screen session">
-  <div class="stage">
-    <div id="stage-inner" class="stage-inner">
-      <img id="ref-image" class="ref-image" alt="お題の写真">
-      <button type="button" id="stage-swap" class="ref-swap" data-icon="photoSwap" data-icon-size="18" data-i18n-label="sess.swapShort" data-icon-label="変更" data-i18n-title="sess.swap" title="写真を入れ替え"></button>
-      <div id="grid-overlay" class="grid-overlay" hidden></div>
-      <div id="memory-cover" class="memory-cover" hidden>
-        <div class="memory-cover-inner">
-          <p data-i18n="sess.memory">記憶で描く時間</p>
-          <button id="peek-btn" class="btn ghost small">
-            <span data-i18n="sess.peek">3秒だけ見る</span>（<span id="peek-left">2</span>）
-          </button>
-        </div>
-      </div>
-    </div>
-
+  <div class="stage with-pad">
     <div id="stage-message" class="stage-message" hidden></div>
 
-    <div class="hud-top">
-      <button id="quit-btn" class="icon-btn" data-icon="close" data-i18n-title="common.cancel"></button>
-      <div class="hud-center">
-        <div id="drill-name" class="drill-name">—</div>
-        <div id="drill-progress" class="drill-progress muted">1 / 5</div>
-      </div>
-      <button id="attr-btn" class="icon-btn" data-icon="info" title="この写真について"></button>
-    </div>
-
-    <div class="hud-cue">
-      <p id="drill-cue"></p>
-    </div>
-
-    <div class="hud-bottom">
-      <div class="timebar"><div id="timebar-fill" class="timebar-fill"></div></div>
-      <div class="hud-controls">
-        <button id="tool-pad" class="tool-btn" data-icon="pencil" title="ここに描く (D)"></button>
-        <button id="tool-grid" class="tool-btn" data-icon="grid" title="グリッド (G)"></button>
-        <button id="tool-flip" class="tool-btn" data-icon="flip" title="左右反転 (F)"></button>
-        <button id="pause-btn" class="round-btn" data-icon="pause" title="一時停止 (Space)"></button>
-        <button id="time-left" class="time-left" title="残り時間">30</button>
-        <button id="skip-btn" class="tool-btn" data-icon="next" title="次へ (→)"></button>
-      </div>
-    </div>
-
-    
-    <div id="pad-wrap" class="pad-wrap" hidden>
+    <div id="pad-wrap" class="pad-wrap">
       <div class="pad-hud">
         <button id="pad-quit" class="pad-icon" data-icon="close" data-i18n-title="common.cancel"></button>
         <button id="pad-time" class="pad-time" title="押すと一時停止">
@@ -249,6 +209,15 @@
       <div class="pad-body">
         <div class="pad-ref">
           <img id="pad-ref-img" alt="お題の写真">
+          <div id="grid-overlay" class="grid-overlay" hidden></div>
+          <div id="memory-cover" class="memory-cover" hidden>
+            <div class="memory-cover-inner">
+              <p data-i18n="sess.memory">記憶で描く時間</p>
+              <button id="peek-btn" class="btn ghost small">
+                <span data-i18n="sess.peek">3秒だけ見る</span>（<span id="peek-left">2</span>）
+              </button>
+            </div>
+          </div>
           <button type="button" id="pad-ref-swap" class="ref-swap" data-icon="photoSwap" data-icon-size="18" data-i18n-label="sess.swapShort" data-icon-label="変更" data-i18n-title="sess.swap" title="写真を入れ替え"></button>
         </div>
 
@@ -286,6 +255,8 @@
         </label>
         <button class="pad-btn" data-pad="undo" data-i18n-title="sess.undo" data-icon="undo"></button>
         <button class="pad-btn" data-pad="clear" data-i18n-title="sess.clear" data-icon="trash"></button>
+        <button class="pad-btn" data-pad="grid" data-icon="grid" title="グリッド (G)"></button>
+        <button class="pad-btn" data-pad="flip" data-icon="flip" title="左右反転 (F)"></button>
         <button id="pad-skip" class="pad-btn" data-i18n-title="sess.skipDrill" data-icon="next"></button>
         <button id="pad-next" class="pad-next" data-icon="check" data-i18n-label="sess.saveNext"></button>
       </div>
