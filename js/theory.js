@@ -456,16 +456,15 @@ export function partById(partId) {
 export const PART_TARGET_WEIGHTS = { hand: 7, upper: 3 };
 
 /**
- * 履歴から部位の実施回数を数える。
- * partId が無い古い DAILY は、メニュー id（part-hand 等）だけ拾う。
+ * 履歴からデイリー部位の実施回数を数える。
+ * 部位練習モード（part-hand 等）は混ぜない（デイリーの 7:3 収束を歪めるため）。
+ * partId が無い古い DAILY は数えられない（これから保存分で収束する）。
  */
 export function countPartsInHistory(history = []) {
   const counts = { hand: 0, upper: 0 };
   for (const h of history || []) {
-    let id = h?.partId || null;
-    if (!id && typeof h?.menuId === 'string' && h.menuId.startsWith('part-')) {
-      id = h.menuId.slice('part-'.length);
-    }
+    if (h?.menuId !== 'daily') continue;
+    const id = h?.partId || null;
     if (id === 'hand' || id === 'upper') counts[id] += 1;
   }
   return counts;

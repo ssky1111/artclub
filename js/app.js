@@ -1832,12 +1832,12 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
       : createLibraryQueue([], silent, null, fromAdmin);
   }
 
-  // 構図とポーズ → 『構図』タグ
+  // 構図とポーズ → 『構図』タグ（無ければ管理写真全体。デイリーを止めない）
   if (needed.has('composePose')) {
     const composePhotos = own.filter((p) => p.tags.includes('構図'));
     queues.composePose = composePhotos.length
       ? createLibraryQueue(['構図'], silent, null, fromAdmin)
-      : createLibraryQueue(['構図'], notice, '『構図』タグの写真がありません', fromAdmin);
+      : createLibraryQueue([], notice, '『構図』タグの写真がありません。全体から出します', fromAdmin);
   }
 
   if (weak) {

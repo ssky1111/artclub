@@ -247,6 +247,8 @@ export function createSessionRunner({ onFinish, onQuit }) {
     prefetch(state.plan[state.cursor + 1]);
 
     if (!photo) {
+      state.currentPhotoId = null;
+      state.referenceArtworkId = null;
       dom.stageMessage.textContent = t('sess.loadFail');
       return;
     }
