@@ -179,11 +179,11 @@ export async function loadRemovedTags() {
   return cfg.removed || [];
 }
 
-export async function saveCustomTags(tags) {
+export async function saveCustomTags(tags, { revive = [] } = {}) {
   const cfg = await loadTagConfig();
-  // 追加し直した名前は削除済みから外す
   const custom = tags || [];
-  const removed = (cfg.removed || []).filter((t) => !custom.includes(t));
+  const reviveSet = new Set(revive);
+  const removed = (cfg.removed || []).filter((t) => !custom.includes(t) && !reviveSet.has(t));
   return saveTagConfig({ custom, removed });
 }
 
