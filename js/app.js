@@ -60,7 +60,7 @@ import {
  * 最初の1つで例外が飛んでホームが真っ白になる。
  * 番号が食い違ったら、キャッシュを外して1回だけ読み直す。
  */
-const BUILD = '205';
+const BUILD = '206';
 const SITE_PASS_KEY = 'artclub.sitePass';
 const SITE_PASS = 'njsj0203';
 /** サイトパスワード解除の有効期限（約1週間） */
@@ -1730,12 +1730,49 @@ let pendingSheetMeta = null;
 function sessionModeFrom(entry) {
   if (!entry) return 'Croquis';
   if (entry.menuId === 'daily') return 'Daily';
+  if (entry.menuId === 'copyMode') return 'Copy';
   if (entry.menuId?.startsWith('part-')) return 'Part';
   if (entry.menuId === 'gestureMode' || (entry.byDrill?.gesture && !entry.byDrill?.croquis)) {
     return 'Gesture';
   }
   if (entry.menuId === 'croquisMode' || entry.byDrill?.croquis) return 'Croquis';
   return entry.menuTitle || 'Practice';
+}
+
+/** 1枚ごとのカテゴリ。Daily 内のジェスチャー／部位／クロッキーを分けて保存する。 */
+function shotModeFrom(shot, sessionMode = null) {
+  const source = String(shot?.source || '');
+  const drill = String(shot?.drillId || '');
+  const label = String(shot?.label || '');
+  if (source === 'copy' || drill === 'copy') return 'Copy';
+  if (source === 'gesture' || drill === 'gesture') return 'Gesture';
+  if (source === 'part' || label.includes('部位') || /^Body part/i.test(label)) return 'Part';
+  if (source === 'croquis' || drill === 'croquis') return 'Croquis';
+  return sessionMode || 'Practice';
+}
+
+/** アトリエ表示用。保存済み mode を日本語／英語のカテゴリ名にする。 */
+function artworkModeLabel(work) {
+  const raw = String(work?.mode || '').trim();
+  if (!raw) return '';
+  const key = raw.toLowerCase();
+  if (key === 'gesture' || key === 'gesturemode' || raw.includes('ジェスチャー') || /gesture/i.test(raw)) {
+    return t('atelier.modeGesture');
+  }
+  if (key === 'part' || key === 'partmode' || key.startsWith('part-') || raw.includes('部位') || /body\s*part/i.test(raw)) {
+    return t('atelier.modePart');
+  }
+  if (key === 'croquis' || key === 'croquismode' || raw.includes('クロッキー') || /croquis/i.test(raw)) {
+    return t('atelier.modeCroquis');
+  }
+  if (key === 'daily' || raw === 'DAILY' || raw.includes('デイリー')) {
+    return t('atelier.modeDaily');
+  }
+  if (key === 'copy' || key === 'copymode' || raw.includes('模写') || /^copy$/i.test(raw)) {
+    return t('atelier.modeCopy');
+  }
+  if (key === 'practice' || raw === '練習') return t('atelier.modeOther');
+  return raw;
 }
 
 function formatErr(err) {
@@ -1812,7 +1849,7 @@ async function uploadPendingArtworks({ quiet = false } = {}) {
       const work = await uploadArtwork(shot.blob, promptId, {
         isPublic,
         sessionId,
-        mode,
+        mode: shotModeFrom(shot, mode),
         allowCopy: !!shot.allowCopy,
         kind: 'drawing',
       });
@@ -3087,7 +3124,10 @@ function renderArtworkTlPost(work, { mine = false } = {}) {
   const posted = el('time', 'tl-time', formatArtworkTime(work));
   if (work.created_at) posted.setAttribute('datetime', work.created_at);
   meta.append(posted);
-  if (work.mode) meta.append(el('span', 'tl-menu', work.mode));
+  if (work.mode) {
+    const modeLabel = artworkModeLabel(work);
+    if (modeLabel) meta.append(el('span', 'atelier-badge mode', modeLabel));
+  }
   if (mine && work.visibility === 'private') {
     meta.append(privateBadge());
   }
@@ -3125,6 +3165,15 @@ function renderArtworkTlPost(work, { mine = false } = {}) {
     }
   });
   actions.append(likeBtn);
+
+  const meId = getUser()?.id;
+  const canCopy = !mine && !!work.allow_copy && !!work.image_url && work.user_id !== meId;
+  if (canCopy) {
+    const copyBtn = el('button', 'tl-copy', t('atelier.copyStart'));
+    copyBtn.type = 'button';
+    copyBtn.addEventListener('click', () => startCopySession(work));
+    actions.append(copyBtn);
+  }
   main.append(actions);
 
   post.append(main);
