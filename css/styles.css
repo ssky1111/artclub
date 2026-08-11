@@ -1813,6 +1813,30 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 .range { width: 100%; accent-color: var(--accent); margin: 6px 0 2px; }
 #screen-admin .input { margin-bottom: 6px; }
 
+#screen-admin .sb-tag-panel {
+  margin-top: 10px;
+}
+#screen-admin .sb-tag-toggle {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+#screen-admin .sb-tag-toggle::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 6px;
+  transition: transform .15s ease;
+}
+#screen-admin .sb-tag-toggle.is-open::before {
+  transform: rotate(90deg);
+}
+#screen-admin .sb-tag-body {
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--muted) 10%, transparent);
+}
+
 /* ---------- 管理画面：2カラム ---------- */
 
 #screen-admin.admin-screen {

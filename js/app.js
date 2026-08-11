@@ -1261,6 +1261,14 @@ function wireAdmin() {
   let sbUploadWithTags = true;
   $('#sb-add').addEventListener('click', () => { sbUploadWithTags = true; $('#sb-input').click(); });
   $('#sb-add-notag').addEventListener('click', () => { sbUploadWithTags = false; $('#sb-input').click(); });
+  $('#sb-upload-toggle')?.addEventListener('click', () => {
+    const open = $('#sb-upload-panel')?.hidden !== false;
+    setSbTagPanelOpen('#sb-upload-toggle', '#sb-upload-panel', open);
+  });
+  $('#sb-filter-toggle')?.addEventListener('click', () => {
+    const open = $('#sb-filter-panel')?.hidden !== false;
+    setSbTagPanelOpen('#sb-filter-toggle', '#sb-filter-panel', open);
+  });
   $('#sb-input').addEventListener('change', async (e) => {
     const files = [...(e.target.files || [])].filter((f) => f.type.startsWith('image/'));
     if (!files.length) return;
