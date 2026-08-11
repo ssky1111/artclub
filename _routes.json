@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "include": ["/*"],
+  "exclude": [
+    "/css/*",
+    "/js/*",
+    "/icons/*",
+    "/photos/*",
+    "/privacy/*",
+    "/terms/*",
+    "/manifest.webmanifest",
+    "/sw.js"
+  ]
+}
