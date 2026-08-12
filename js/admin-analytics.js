@@ -108,7 +108,7 @@ async function fetchSessions(fromDate, toDate) {
   if (!isAdminAnalyticsUser()) throw new Error('not admin');
 
   const params = new URLSearchParams({
-    select: 'user_id,day_date,ts,menu_id,payload',
+    select: 'id,user_id,day_date,ts,menu_id,payload',
     day_date: `gte.${fromDate}`,
     order: 'day_date.desc,ts.desc',
     limit: '5000',
@@ -123,7 +123,19 @@ async function fetchSessions(fromDate, toDate) {
     console.warn('[analytics] sessions fetch failed', res.status, text);
     return [];
   }
-  return res.json();
+  const rows = await res.json();
+  return rows.map((row) => {
+    const sid = row.id || row.payload?.id || null;
+    return {
+      ...row,
+      session_id: sid,
+      payload: {
+        ...(row.payload && typeof row.payload === 'object' ? row.payload : {}),
+        id: sid,
+        menuId: row.payload?.menuId || row.menu_id || null,
+      },
+    };
+  });
 }
 
 /**
@@ -190,6 +202,21 @@ function modeToMenuId(mode) {
   if (m.includes('compose') || m.includes('composepose') || raw.includes('構図')) return 'composePoseMode';
   if (m.includes('copy') || raw.includes('模写')) return 'copyMode';
   return '';
+}
+
+/** Daily は1回の練習で複数モードのショットが混ざる（個別 mode だけでは daily と判定できない） */
+function isDailyMixedCluster(modesSet, drawCount) {
+  if (!drawCount || drawCount < 4 || !modesSet?.size) return false;
+  const buckets = new Set();
+  for (const m of modesSet) {
+    if (m === 'daily') return true;
+    if (String(m).startsWith('part-')) buckets.add('part');
+    else if (m === 'gestureMode') buckets.add('gesture');
+    else if (m === 'croquisMode') buckets.add('croquis');
+    else if (m === 'composePoseMode') buckets.add('compose');
+    else if (m === 'copyMode') buckets.add('copy');
+  }
+  return buckets.size >= 2;
 }
 
 /**
@@ -261,15 +288,15 @@ function artworksToRows(artworks = []) {
     if (seen.has(key)) {
       const prev = seen.get(key);
       if (d._ts > prev.ts) prev.ts = d._ts;
-      if (!prev.menu_id && menuId) {
+      prev._drawCount = (prev._drawCount || 1) + 1;
+      if (menuId) {
+        if (!prev._shotModes) prev._shotModes = new Set();
+        prev._shotModes.add(menuId);
+      }
+      // 先頭ショットの mode だけで確定しない（Daily はショットごとに mode が違う）
+      if (!prev.menu_id && menuId && prev._drawCount === 1) {
         prev.menu_id = menuId;
         prev.payload = { ...(prev.payload || {}), menuId, username: d.username || null };
-      }
-      // 枚数が多い塊は Daily の可能性が高い（mode 欠落の救済）
-      prev._drawCount = (prev._drawCount || 1) + 1;
-      if (!prev.menu_id && prev._drawCount >= 4) {
-        prev.menu_id = 'daily';
-        prev.payload = { ...(prev.payload || {}), menuId: 'daily', username: d.username || null };
       }
       continue;
     }
@@ -277,15 +304,29 @@ function artworksToRows(artworks = []) {
       user_id: d.user_id,
       day_date: d._day,
       ts: d._ts,
-      menu_id: menuId || null,
+      menu_id: null,
       session_id: sid,
       _drawCount: 1,
-      payload: { id: sid, menuId: menuId || null, username: d.username || null },
+      _shotModes: menuId ? new Set([menuId]) : new Set(),
+      payload: { id: sid, menuId: null, username: d.username || null },
     });
   }
 
-  // 1回分として確定した行から内部カウンタを外す
-  return [...seen.values()].map(({ _drawCount, ...row }) => row);
+  // Daily: 同一 session に複数モードのショットが混在（practice_sessions 未取得時の救済）
+  return [...seen.values()].map(({ _drawCount, _shotModes, ...row }) => {
+    if (isDailyMixedCluster(_shotModes, _drawCount)) {
+      row.menu_id = 'daily';
+      row.payload = { ...(row.payload || {}), menuId: 'daily' };
+    } else if (!row.menu_id && _drawCount >= 4 && !_shotModes?.size) {
+      row.menu_id = 'daily';
+      row.payload = { ...(row.payload || {}), menuId: 'daily' };
+    } else if (!row.menu_id && _shotModes?.size === 1) {
+      const only = [..._shotModes][0];
+      row.menu_id = only;
+      row.payload = { ...(row.payload || {}), menuId: only };
+    }
+    return row;
+  });
 }
 
 async function fetchUsernames(userIds) {
@@ -325,7 +366,15 @@ function mergeUsageRows(sessionRows, artworkRows) {
     if (map.has(key)) {
       const prev = map.get(key);
       if ((Number(row.ts) || 0) > (Number(prev.ts) || 0)) prev.ts = row.ts;
-      if (!prev.menu_id && row.menu_id) {
+      // practice_sessions の menu_id を優先（Daily は artworks 側がショット mode になる）
+      if (source === 'session' && row.menu_id) {
+        prev.menu_id = row.menu_id;
+        prev.payload = {
+          ...(prev.payload || {}),
+          ...(row.payload || {}),
+          menuId: row.menu_id || row.payload?.menuId,
+        };
+      } else if (!prev.menu_id && row.menu_id) {
         prev.menu_id = row.menu_id;
         prev.payload = { ...(prev.payload || {}), ...(row.payload || {}) };
       }
@@ -333,8 +382,8 @@ function mergeUsageRows(sessionRows, artworkRows) {
     }
     map.set(key, { ...row, _source: source });
   };
-  for (const r of artworkRows) put(r, 'artwork');
   for (const r of sessionRows) put(r, 'session');
+  for (const r of artworkRows) put(r, 'artwork');
   return [...map.values()];
 }
 
