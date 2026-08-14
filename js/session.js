@@ -492,10 +492,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     const size = e.target.closest('[data-size]')?.dataset.size;
     if (size) {
       pad.setSize(Number(size));
-      pad.setEraser(false);
       $$('.pad-size').forEach((b) => b.classList.toggle('on', b.dataset.size === size));
-      $$('.pad-btn[data-pad="pen"], .pad-btn[data-pad="eraser"]')
-        .forEach((b) => b.classList.toggle('on', b.dataset.pad === 'pen'));
       return;
     }
     if (!tool) return;
@@ -503,6 +500,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     if (tool === 'clear') return void pad.clear();
     if (tool === 'grid') return void toggleGrid();
     if (tool === 'flip') return void toggleFlip();
+    if (tool !== 'pen' && tool !== 'eraser') return;
     pad.setEraser(tool === 'eraser');
     $$('.pad-btn[data-pad="pen"], .pad-btn[data-pad="eraser"]')
       .forEach((b) => b.classList.toggle('on', b.dataset.pad === tool));
