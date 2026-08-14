@@ -395,14 +395,29 @@ export function createSessionRunner({ onFinish, onQuit }) {
   async function quit() {
     timer.stop();
     releaseWakeLock();
-    await harvestDrawing();
 
-    if (state?.drawings.length > 0) {
+    const savedCount = state?.drawings.length || 0;
+    const onFirstShot = (state?.cursor === 0) && savedCount === 0;
+    const unsaved = pad.hasContent;
+
+    // 1枚目の途中やめは収穫せず「やってない」
+    if (onFirstShot) {
+      if (unsaved && !(await confirmDialog(t('sess.quitEmpty')))) {
+        timer.resume();
+        return;
+      }
+      state = null;
+      await onQuit(null);
+      return;
+    }
+
+    if (savedCount > 0 || unsaved) {
       if (!(await confirmDialog(t('sess.quitConfirm')))) {
         timer.resume();
         return;
       }
     }
+    await harvestDrawing();
 
     if (state?.current) {
       const spent = spentSeconds(state.current, { skipped: true });

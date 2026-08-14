@@ -458,12 +458,13 @@ export const PART_TARGET_WEIGHTS = { hand: 7, upper: 3 };
 /**
  * 履歴からデイリー部位の実施回数を数える。
  * 部位練習モード（part-hand 等）は混ぜない（デイリーの 7:3 収束を歪めるため）。
- * partId が無い古い DAILY は数えられない（これから保存分で収束する）。
+ * 1枚も描いていない途中やめは数えない。partId が無い古い DAILY は数えられない。
  */
 export function countPartsInHistory(history = []) {
   const counts = { hand: 0, upper: 0 };
   for (const h of history || []) {
-    if (h?.menuId !== 'daily' || h?.partial) continue;
+    if (h?.menuId !== 'daily') continue;
+    if (!(h.hasDrawing || Number(h.drawingCount) > 0)) continue;
     const id = h?.partId || null;
     if (id === 'hand' || id === 'upper') counts[id] += 1;
   }
