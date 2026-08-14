@@ -313,10 +313,14 @@ export function totalDrawings(history = getHistory()) {
   return history.reduce((sum, s) => sum + (s.drawingCount || 0), 0);
 }
 
+function sessionHasDrawing(s) {
+  return !!(s && (s.hasDrawing || Number(s.drawingCount) > 0));
+}
+
 export function roundsToday(menuId = 'daily', history = getHistory()) {
   const today = dateKey();
-  // 途中やめ（partial）は記録には残すが「完了した1周」には数えない
-  return history.filter((s) => s.date === today && s.menuId === menuId && !s.partial).length;
+  // 1枚でも保存したら1周。1枚目の途中やめ（0枚）は数えない
+  return history.filter((s) => s.date === today && s.menuId === menuId && sessionHasDrawing(s)).length;
 }
 
 /** これまでに描いたお題写真の id 集合（未実施優先キュー用）。 */

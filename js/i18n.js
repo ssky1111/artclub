@@ -228,6 +228,7 @@ const DICT = {
   'sess.hint':           { ja: 'ヒント',               en: 'Hint' },
   'sess.saved':          { ja: '{n}枚目を保存しました', en: 'Saved drawing {n}' },
   'sess.quitConfirm':   { ja: 'スケッチを保存して終わりますか？\nデイリーは完了していません。', en: 'Save sketches and quit?\nDaily is not complete.' },
+  'sess.quitEmpty':     { ja: '終了しますか？（まだ1枚も保存していません）', en: 'Quit? (no drawings saved yet)' },
   'sess.pen':            { ja: 'ペン',                 en: 'Pen' },
   'sess.eraser':         { ja: '消しゴム',             en: 'Eraser' },
   'sess.undo':           { ja: '元に戻す',             en: 'Undo' },
