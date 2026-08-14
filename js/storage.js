@@ -315,7 +315,8 @@ export function totalDrawings(history = getHistory()) {
 
 export function roundsToday(menuId = 'daily', history = getHistory()) {
   const today = dateKey();
-  return history.filter((s) => s.date === today && s.menuId === menuId).length;
+  // 途中やめ（partial）は記録には残すが「完了した1周」には数えない
+  return history.filter((s) => s.date === today && s.menuId === menuId && !s.partial).length;
 }
 
 /** これまでに描いたお題写真の id 集合（未実施優先キュー用）。 */
