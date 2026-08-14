@@ -412,7 +412,8 @@ export function createSessionRunner({ onFinish, onQuit }) {
       ? { menuId: state.menu.id, menuTitle: state.menu.title, partId: state.menu.partId || null,
           seconds: state.totalSeconds,
           byDrill: state.byDrill, focusId: state.focus.id, lessonId: state.lessonId,
-          lessonMode: state.lessonMode, drawings: state.drawings, partial: true }
+          lessonMode: state.lessonMode, drawings: state.drawings, partial: true,
+          drawingCount: state.drawings.length, hasDrawing: true }
       : null;
     state = null;
     await onQuit(partial);

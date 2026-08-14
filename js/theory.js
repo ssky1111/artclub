@@ -463,7 +463,7 @@ export const PART_TARGET_WEIGHTS = { hand: 7, upper: 3 };
 export function countPartsInHistory(history = []) {
   const counts = { hand: 0, upper: 0 };
   for (const h of history || []) {
-    if (h?.menuId !== 'daily') continue;
+    if (h?.menuId !== 'daily' || h?.partial) continue;
     const id = h?.partId || null;
     if (id === 'hand' || id === 'upper') counts[id] += 1;
   }
