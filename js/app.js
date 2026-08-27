@@ -190,7 +190,7 @@ function renderDaily(history) {
   const loggedIn = !!getUser();
   const rounds = loggedIn ? roundsToday('daily', history) : 0;
   const part = partForDaily(dateKey(), history);
-  const daily = buildDaily(part);
+  const daily = buildDaily(part, history);
 
   const top = $('#menu-primary');
   if (!top) return;
@@ -730,7 +730,7 @@ async function startDaily(daily, part) {
   await weekReviewDialog(recentReviewNotes(7));
   // 開始直前に履歴を見て手7割へ収束するよう再抽選（画面表示時点の仮抽選は使わない）
   const picked = partForDaily(dateKey(), getHistory());
-  startSession(buildDaily(picked), { part: picked, skipFreePeriod: true });
+  startSession(buildDaily(picked, getHistory()), { part: picked, skipFreePeriod: true });
 }
 
 /* ==================== はじめる前の設定 ==================== */
@@ -1773,7 +1773,7 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
     (menu.steps || []).map((s) => s.source
       || (s.drill === 'gesture' ? 'gesture'
         : s.drill === 'croquis' ? 'croquis'
-        : s.drill === 'composePose' ? 'composePose'
+        : s.drill === 'composePose' || s.drill === 'memoryCroquis' ? 'composePose'
         : 'photo')),
   );
   if (weak) needed.add(`weak:${weak.id}`);
@@ -1929,8 +1929,8 @@ function shotModeFrom(shot, sessionMode = null) {
   if (source === 'copy' || drill === 'copy') return 'Copy';
   if (source === 'gesture' || drill === 'gesture') return 'Gesture';
   if (source === 'part' || label.includes('部位') || /^Body part/i.test(label)) return 'Part';
-  if (source === 'composePose' || drill === 'composePose'
-      || label.includes('構図') || /composition/i.test(label)) return 'ComposePose';
+  if (source === 'composePose' || drill === 'composePose' || drill === 'memoryCroquis'
+      || label.includes('構図') || label.includes('記憶') || /composition/i.test(label) || /memory/i.test(label)) return 'ComposePose';
   if (source === 'croquis' || drill === 'croquis') return 'Croquis';
   return sessionMode || 'Practice';
 }
@@ -2831,7 +2831,7 @@ function wireGallery() {
 
 function startDailyFromCtr() {
   const part = partForDaily(dateKey(), getHistory());
-  const daily = buildDaily(part);
+  const daily = buildDaily(part, getHistory());
   startDaily(daily, part);
 }
 
@@ -2885,7 +2885,7 @@ function menuStepsForEntry(entry) {
   }
   if (entry.menuId === 'daily') {
     const part = partById(entry.partId) || partForDate(entry.date);
-    return buildDaily(part).steps;
+    return buildDaily(part, []).steps;
   }
   if (entry.menuId.startsWith('part-')) {
     const part = PARTS.find((p) => entry.menuId === `part-${p.id}`);
@@ -2902,7 +2902,7 @@ function croquisShotIndices(steps) {
   for (const step of steps || []) {
     for (let c = 0; c < (step.count || 0); c++) {
       // DAILY の表紙候補: クロッキー本体 + 構図とポーズ（部位は除く）
-      if (step.drill === 'composePose') indices.push(i);
+      if (step.drill === 'composePose' || step.drill === 'memoryCroquis') indices.push(i);
       else if (step.drill === 'croquis' && step.source !== 'part') indices.push(i);
       i++;
     }

@@ -205,6 +205,42 @@ export const DRILLS = {
       ],
     },
   },
+  memoryCroquis: {
+    id: 'memoryCroquis',
+    name: '記憶クロッキー',
+    short: '記憶',
+    about:
+      '1分見て覚え、写真を隠してから2分で描く。' +
+      '見ながらの往復ではなく、頭に残ったポーズを取り出す練習。',
+    steps: [
+      '1分でポーズの流れと比率を覚える',
+      '隠れたら記憶だけで大きく置く',
+      '細部より全体のバランスを優先する',
+    ],
+    theory: '見ながら描くと目と手の往復で済む。一度隠すことで、ポーズを頭の中に保持する力が付く。',
+    cue: '1分見て覚える。隠れたら、記憶したポーズを描く。',
+    hints: [
+      '1分で流れ・比率・重心を頭に残し、隠してから2分で描き起こしましょう',
+    ],
+    // 見る60秒（描けない）→ 描く120秒。合計は構図とポーズと同じ3分
+    view: { memorizeSeconds: 60, drawSeconds: 120, peeks: 1 },
+    en: {
+      name: 'Memory croquis',
+      short: 'Memory',
+      about:
+        'Look for one minute, then hide the photo and draw for two. Trains holding a pose in your head.',
+      steps: [
+        'One minute to memorise flow and proportions',
+        'Once hidden, block in from memory',
+        'Favour overall balance over detail',
+      ],
+      theory: 'Drawing while looking is eye-hand ping-pong. Hiding the subject builds retention.',
+      cue: 'Look for a minute. Then draw the pose you remember.',
+      hints: [
+        'Memorise flow, proportion, and weight for a minute, then redraw from memory in two',
+      ],
+    },
+  },
   copy: {
     id: 'copy',
     name: '模写',
@@ -410,7 +446,37 @@ export const PARTS = [
 /** いま出題する部位（タグ付き写真があるものだけ）。 */
 export const ACTIVE_PARTS = PARTS.filter((p) => !p.disabled);
 
-export function buildDaily(part) {
+/**
+ * デイリー最終枠: 構図とポーズ / 記憶クロッキーを交互。
+ * 描画ありのデイリー回数で判定（0回目・2回目…が記憶）。
+ */
+export function pickDailyComposeStep(history = []) {
+  const rounds = (history || []).filter((h) =>
+    h?.menuId === 'daily' && (h.hasDrawing || Number(h.drawingCount) > 0));
+  if (rounds.length % 2 === 0) {
+    const mem = DRILLS.memoryCroquis;
+    const look = mem.view?.memorizeSeconds || 60;
+    const draw = mem.view?.drawSeconds || 120;
+    return {
+      drill: 'memoryCroquis',
+      count: 1,
+      seconds: look + draw,
+      source: 'composePose',
+      label: '記憶クロッキー',
+      labelEn: 'Memory croquis',
+    };
+  }
+  return {
+    drill: 'composePose',
+    count: 1,
+    seconds: 180,
+    source: 'composePose',
+    label: '構図とポーズ',
+    labelEn: 'Composition & pose',
+  };
+}
+
+export function buildDaily(part, history = []) {
   return {
     id: 'daily',
     title: 'DAILY',
@@ -423,11 +489,7 @@ export function buildDaily(part) {
         labelEn: `Body part: ${part.en}`,
       },
       { drill: 'croquis', count: 1, seconds: 180, source: 'croquis' },
-      {
-        drill: 'composePose', count: 1, seconds: 180, source: 'composePose',
-        label: '構図とポーズ',
-        labelEn: 'Composition & pose',
-      },
+      pickDailyComposeStep(history),
     ],
     en: { title: 'DAILY' },
   };
