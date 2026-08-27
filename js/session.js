@@ -46,6 +46,8 @@ export function createSessionRunner({ onFinish, onQuit }) {
     padRefSwap: $('#pad-ref-swap'),
     refMiniSwap: $('#ref-mini-swap'),
     bridgeDesc: $('#bridge-desc'),
+    padLockMsg: $('#pad-lock-msg'),
+    padGuide: $('#pad-guide'),
   };
 
   const pad = createPad($('#pad'));
@@ -79,6 +81,11 @@ export function createSessionRunner({ onFinish, onQuit }) {
     },
     onDone() {
       if (state?.settings.sound) beeper.done();
+      // 記憶クロッキー: 見るフェーズ終了 → 描くフェーズへ
+      if (state?.memoryPhase === 'look') {
+        enterMemoryDrawPhase();
+        return;
+      }
       advance();
     },
   });
@@ -141,7 +148,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
           source: step.source
             || (step.drill === 'gesture' ? 'gesture'
               : step.drill === 'croquis' ? 'croquis'
-              : step.drill === 'composePose' ? 'composePose'
+              : step.drill === 'composePose' || step.drill === 'memoryCroquis' ? 'composePose'
               : step.drill === 'copy' ? 'copy'
               : 'photo'),
           // 同じドリルでも、その回が何のためのものかは名前を変えて示す（部位練習など）
@@ -196,12 +203,13 @@ export function createSessionRunner({ onFinish, onQuit }) {
 
     const isGesture = item.drillId === 'gesture';
     const isComposePose = item.drillId === 'composePose';
-    const showHints = isGesture || isComposePose;
+    const isMemoryCroquis = item.drillId === 'memoryCroquis';
+    const showHints = isGesture || isComposePose || isMemoryCroquis;
     dom.bridgeDesc.hidden = !showHints;
     if (showHints) {
       const hints = tr(drill, 'hints');
-      // 構図とポーズは一文のリード文なので箇条書きにしない
-      if (isComposePose) {
+      // 構図・記憶は一文のリード文なので箇条書きにしない
+      if (isComposePose || isMemoryCroquis) {
         const p = document.createElement('p');
         p.className = 'bridge-lead';
         p.textContent = Array.isArray(hints) ? (hints[0] || '') : String(hints || '');
@@ -210,9 +218,15 @@ export function createSessionRunner({ onFinish, onQuit }) {
         dom.bridgeDesc.replaceChildren(hintList(hints, 'bridge-hints'));
       }
     }
+    const memLook = drill.view?.memorizeSeconds;
+    const memDraw = drill.view?.drawSeconds;
     dom.bridgeMeta.textContent = item.unlimited
       ? (getLang() === 'en' ? `${item.countInStep} · no time limit` : `${item.countInStep}枚 · 時間無制限`)
-      : `${item.countInStep}枚×${item.seconds < 60 ? item.seconds + '秒' : (item.seconds / 60) + '分'}`;
+      : isMemoryCroquis && memLook && memDraw
+        ? (getLang() === 'en'
+          ? `look ${memLook / 60} min → draw ${memDraw / 60} min`
+          : `見る${memLook / 60}分 → 描く${memDraw / 60}分`)
+        : `${item.countInStep}枚×${item.seconds < 60 ? item.seconds + '秒' : (item.seconds / 60) + '分'}`;
 
     // 復習対象のドリルのときだけ「前回の宿題」を1行出す
     const reminder = item.source.startsWith('weak:') ? state.reminder : null;
@@ -266,6 +280,13 @@ export function createSessionRunner({ onFinish, onQuit }) {
     applyView(drill, { flipped });
 
     setReferenceLocked(!!state.referenceLocked);
+    clearMemoryUi();
+
+    if (item.drillId === 'memoryCroquis') {
+      beginMemoryLookPhase(drill);
+      return;
+    }
+
     if (item.unlimited) {
       setTimeUnit(true);
       timer.start(0, { unlimited: true });
@@ -274,6 +295,90 @@ export function createSessionRunner({ onFinish, onQuit }) {
       timer.start(item.seconds);
     }
     setPauseIcon();
+  }
+
+  function clearMemoryUi() {
+    if (state) state.memoryPhase = null;
+    if (dom.padWrap) {
+      dom.padWrap.classList.remove('is-memory-look', 'is-memory-draw');
+    }
+    if (dom.padLockMsg) {
+      dom.padLockMsg.hidden = true;
+      const p = dom.padLockMsg.querySelector('p');
+      if (p) p.textContent = t('sess.memoryLook');
+    }
+    if (dom.padGuide) {
+      dom.padGuide.hidden = true;
+      dom.padGuide.textContent = t('sess.memoryDrawGuide');
+    }
+    if (dom.cover) {
+      dom.cover.hidden = true;
+      dom.cover.classList.remove('peeking');
+    }
+    const canvas = $('#pad');
+    if (canvas) canvas.style.pointerEvents = '';
+    requestAnimationFrame(() => pad.resize());
+  }
+
+  /** 記憶クロッキー: 見るフェーズ（描けない） */
+  function beginMemoryLookPhase(drill) {
+    const look = Number(drill.view?.memorizeSeconds) || 60;
+    state.memoryPhase = 'look';
+    state.peeksLeft = 0;
+    if (dom.peekBtn) dom.peekBtn.hidden = true;
+    if (dom.padWrap) {
+      dom.padWrap.classList.add('is-memory-look');
+      dom.padWrap.classList.remove('is-memory-draw');
+    }
+    if (dom.padLockMsg) {
+      dom.padLockMsg.hidden = false;
+      const p = dom.padLockMsg.querySelector('p');
+      if (p) p.textContent = t('sess.memoryLook');
+    }
+    if (dom.padGuide) dom.padGuide.hidden = true;
+    const canvas = $('#pad');
+    if (canvas) canvas.style.pointerEvents = 'none';
+    setReferenceLocked(true);
+    setTimeUnit(false);
+    lastBeepAt = -1;
+    timer.start(look);
+    setPauseIcon();
+    requestAnimationFrame(() => pad.resize());
+  }
+
+  /** 記憶クロッキー: 描くフェーズ（写真を隠す） */
+  function enterMemoryDrawPhase() {
+    if (!state?.current) return;
+    const drill = DRILLS[state.current.drillId] || {};
+    const draw = Number(drill.view?.drawSeconds) || 120;
+    state.memoryPhase = 'draw';
+    state.peeksLeft = drill.view?.peeks ?? 0;
+    state.peeking = false;
+    if (dom.peekLeft) dom.peekLeft.textContent = String(state.peeksLeft);
+    if (dom.peekBtn) dom.peekBtn.hidden = state.peeksLeft === 0;
+
+    if (dom.padWrap) {
+      dom.padWrap.classList.remove('is-memory-look');
+      dom.padWrap.classList.add('is-memory-draw');
+    }
+    if (dom.padLockMsg) dom.padLockMsg.hidden = true;
+    if (dom.padGuide) {
+      dom.padGuide.hidden = false;
+      dom.padGuide.textContent = t('sess.memoryDrawGuide');
+    }
+    const canvas = $('#pad');
+    if (canvas) canvas.style.pointerEvents = '';
+    if (dom.cover) {
+      dom.cover.hidden = false;
+      const inner = dom.cover.querySelector('[data-i18n="sess.memory"], .memory-cover-inner p');
+      if (inner && inner.matches('p')) inner.textContent = t('sess.memory');
+    }
+    setReferenceLocked(true);
+    lastBeepAt = -1;
+    setTimeUnit(false);
+    timer.start(draw);
+    setPauseIcon();
+    requestAnimationFrame(() => pad.resize());
   }
 
   /** 次の課題があるときは「保存して次へ」、最後は「保存して終わる」。 */
@@ -355,6 +460,14 @@ export function createSessionRunner({ onFinish, onQuit }) {
   function spentSeconds(item, { skipped = false } = {}) {
     if (!item) return 0;
     if (item.unlimited) return Math.max(0, timer.elapsed);
+    // 記憶クロッキーは見る+描くの合計を1本分として数える
+    if (item.drillId === 'memoryCroquis') {
+      const look = Number(DRILLS.memoryCroquis?.view?.memorizeSeconds) || 60;
+      const draw = Number(DRILLS.memoryCroquis?.view?.drawSeconds) || 120;
+      if (state?.memoryPhase === 'look') return Math.max(0, look - timer.remaining);
+      if (state?.memoryPhase === 'draw') return look + Math.max(0, draw - timer.remaining);
+      return skipped ? 0 : look + draw;
+    }
     if (!skipped) return item.seconds;
     return Math.max(0, item.seconds - timer.remaining);
   }
@@ -367,6 +480,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
       const spent = spentSeconds(done, { skipped });
       if (spent > 0) record(done, Math.round(spent));
     }
+    clearMemoryUi();
     state.cursor++;
     const item = state.plan[state.cursor];
     if (!item) return finish();
@@ -379,6 +493,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     timer.stop();
     releaseWakeLock();
     await harvestDrawing();
+    clearMemoryUi();
     await onFinish({
       drawings: state.drawings,
       menuId: state.menu.id,
@@ -406,6 +521,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
         timer.resume();
         return;
       }
+      clearMemoryUi();
       state = null;
       await onQuit(null);
       return;
@@ -430,6 +546,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
           lessonMode: state.lessonMode, drawings: state.drawings, partial: true,
           drawingCount: state.drawings.length, hasDrawing: true }
       : null;
+    clearMemoryUi();
     state = null;
     await onQuit(partial);
   }

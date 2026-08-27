@@ -235,6 +235,8 @@ const DICT = {
   'sess.clear':          { ja: '全部消す',             en: 'Clear' },
   'sess.opacity':        { ja: '線の濃さ',             en: 'Opacity' },
   'sess.memory':         { ja: '記憶で描く時間',       en: 'Draw from memory' },
+  'sess.memoryLook':     { ja: '1分間見て記憶してください', en: 'Look for 1 minute and memorise' },
+  'sess.memoryDrawGuide':{ ja: '記憶したポーズを描いてください', en: 'Draw the pose you memorised' },
   'sess.peek':           { ja: '3秒だけ見る',          en: 'Peek 3s' },
   'sess.swap':           { ja: '写真を入れ替え',       en: 'Swap photo' },
   'sess.swapShort':      { ja: '変更',                 en: 'Change' },
