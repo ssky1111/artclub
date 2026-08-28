@@ -116,7 +116,7 @@ export function normalizeHandle(raw) {
 
 const HANDLE_RE = /^[a-z][a-z0-9_]{2,19}$/;
 const RESERVED_HANDLES = new Set([
-  'admin', 'artclub', 'support', 'system', 'null', 'undefined', 'me', 'anonymous', 'user', 'root',
+  'admin', 'artclub', 'drawparty', 'support', 'system', 'null', 'undefined', 'me', 'anonymous', 'user', 'root',
 ]);
 
 export function isValidHandle(raw) {

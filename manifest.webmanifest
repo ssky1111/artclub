@@ -1,7 +1,7 @@
 {
-  "name": "ARTCLUB — 毎日のドローイング練習",
-  "short_name": "ARTCLUB",
-  "description": "ARTCLUB │ ブラウザ内で完結。気軽なドローイング練習",
+  "name": "DRAWPARTY — 毎日のドローイング練習",
+  "short_name": "DRAWPARTY",
+  "description": "DRAWPARTY │ ブラウザ内で完結。気軽なドローイング練習",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
