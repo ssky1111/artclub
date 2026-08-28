@@ -3843,12 +3843,6 @@ function authAccountLabel(u) {
   return getUsername() || t('auth.loggedIn');
 }
 
-function isProfileSetupOpen() {
-  const usernameSheet = $('#username-sheet');
-  const handleSheet = $('#handle-sheet');
-  return (usernameSheet && !usernameSheet.hidden) || (handleSheet && !handleSheet.hidden);
-}
-
 async function hydrateProfileForSetup() {
   let profile = await hydrateUsername();
   if (!profile.fetched && (!hasUsername() || !hasHandle())) {
