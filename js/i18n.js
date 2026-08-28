@@ -262,7 +262,7 @@ const DICT = {
   'rev.drawnNote':       { ja: '押すと大きく見られます。端末のなかにだけ保存されます。',
                            en: 'Tap to enlarge. Everything stays on this device.' },
   'rev.addPhoto':        { ja: '写真を追加',           en: 'Add a photo' },
-  'rev.downloadAll':     { ja: '全部個別にダウンロード', en: 'Download each separately' },
+  'rev.downloadAll':     { ja: '自分の絵を全てダウンロード', en: 'Download all my drawings' },
   'rev.sheet':           { ja: '1枚にまとめて出力',    en: 'Export as one sheet' },
   'rev.share':           { ja: 'シェアする',           en: 'Share' },
   'rev.shareX':          { ja: 'Xでシェア',            en: 'Share on X' },

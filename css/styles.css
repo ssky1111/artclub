@@ -899,6 +899,11 @@ html[data-site-unlocked] .site-gate-dialog,
     0 8px 18px rgba(43, 42, 39, 0.14);
 }
 
+.review-board-paper-wrap {
+  position: relative;
+  width: 100%;
+}
+
 .review-board-paper {
   width: 100%;
   min-height: 150px;
@@ -926,6 +931,28 @@ html[data-site-unlocked] .site-gate-dialog,
   max-height: 200px;
   object-fit: contain;
   display: block;
+}
+
+.review-board-dl {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  background: rgba(255, 254, 249, 0.94);
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: 0 1px 5px rgba(43, 42, 39, 0.14);
+}
+.review-board-dl:hover {
+  background: #fff;
+}
+.review-board-dl:active {
+  transform: scale(0.92);
 }
 
 .review-board-others {
