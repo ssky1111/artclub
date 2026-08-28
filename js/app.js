@@ -3840,7 +3840,36 @@ function wireCalendar() {
 
 function authAccountLabel(u) {
   if (!u) return t('auth.login');
-  return getUsername() || t('auth.account');
+  return getUsername() || t('auth.loggedIn');
+}
+
+function isProfileSetupOpen() {
+  const usernameSheet = $('#username-sheet');
+  const handleSheet = $('#handle-sheet');
+  return (usernameSheet && !usernameSheet.hidden) || (handleSheet && !handleSheet.hidden);
+}
+
+async function hydrateProfileForSetup() {
+  let profile = await hydrateUsername();
+  if (!profile.fetched && (!hasUsername() || !hasHandle())) {
+    profile = await hydrateUsername();
+  }
+  return profile;
+}
+
+/** @returns {boolean} セットアップシートを開いた */
+async function runProfileSetupFlow(onDone, profile = null) {
+  const hydrated = profile || await hydrateProfileForSetup();
+  updateAuthUI(getUser());
+  if (!hasUsername() && hydrated.fetched) {
+    showUsernameSheet(onDone);
+    return true;
+  }
+  if (!hasHandle() && hydrated.fetched) {
+    showHandleSheet(onDone);
+    return true;
+  }
+  return false;
 }
 
 function setAuthAccountButton(btn, labelEl, u) {
@@ -3939,6 +3968,7 @@ function showUsernameSheet(onDone) {
   const existing = getUsername();
   input.value = existing || '';
   sheet.hidden = false;
+  updateAuthUI(getUser());
   input.focus();
   let saving = false;
 
@@ -3987,6 +4017,7 @@ function showHandleSheet(onDone) {
   const okBtn = $('#handle-ok');
   input.value = getHandle() || '';
   sheet.hidden = false;
+  updateAuthUI(getUser());
   input.focus();
   let saving = false;
 
@@ -4118,7 +4149,7 @@ function wireAuth() {
     }
     authHandledUserId = uid;
     // 端末に名前が無くても、DB にあれば復元してからユーザーネーム入力を出すか決める
-    Promise.all([hydrateUsername(), hydrateUserData()])
+    Promise.all([hydrateProfileForSetup(), hydrateUserData()])
       .then(([profile, data]) => {
         if (data?.lang) {
           applyLang(data.lang);
@@ -4140,13 +4171,13 @@ function wireAuth() {
             fn();
           }
         };
-        if (!hasUsername()) {
+        if (!hasUsername() && profile.fetched) {
           sheet.hidden = true;
           restorePageScroll();
           showUsernameSheet(finish);
           return;
         }
-        if (!hasHandle()) {
+        if (!hasHandle() && profile.fetched) {
           sheet.hidden = true;
           restorePageScroll();
           showHandleSheet(finish);
@@ -4176,7 +4207,7 @@ async function bootstrapApp() {
     const u = await initAuth();
     if (u) {
       window.__setAuthHandledUserId?.(u.id);
-      const [profile, data] = await Promise.all([hydrateUsername(), hydrateUserData()]);
+      const [profile, data] = await Promise.all([hydrateProfileForSetup(), hydrateUserData()]);
       if (data?.lang) {
         applyLang(data.lang);
         applyI18n();
@@ -4185,20 +4216,10 @@ async function bootstrapApp() {
       settings = getSettings();
       applyTheme();
       updateAuthUI(u);
-      if (!hasUsername()) {
-        showUsernameSheet(() => {
-          applyRoute(routeFromLocation());
-          repaintAfterHydrate();
-        });
-        return;
-      }
-      if (!hasHandle()) {
-        showHandleSheet(() => {
-          applyRoute(routeFromLocation());
-          repaintAfterHydrate();
-        });
-        return;
-      }
+      if (await runProfileSetupFlow(() => {
+        applyRoute(routeFromLocation());
+        repaintAfterHydrate();
+      }, profile)) return;
     } else {
       await hydrateUserData();
       settings = getSettings();
