@@ -170,7 +170,8 @@ export async function upsertProfile(patch) {
 /** 自分のプロフィールを DB から読む。別端末ログイン時の復元用。 */
 export async function fetchMyProfile() {
   const user = getUser();
-  if (!user?.id) return null;
+  if (!user?.id) return { ok: false, row: null };
+  await ensureFreshSession();
   const params = new URLSearchParams({
     select: 'id,username,handle,updated_at',
     id: `eq.${user.id}`,
@@ -179,9 +180,9 @@ export async function fetchMyProfile() {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?${params}`, {
     headers: authHeaders({ Accept: 'application/json' }),
   });
-  if (!res.ok) return null;
+  if (!res.ok) return { ok: false, row: null };
   const [row] = await res.json().catch(() => []);
-  return row || null;
+  return { ok: true, row: row || null };
 }
 
 /**

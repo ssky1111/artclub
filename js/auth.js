@@ -9,6 +9,7 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
 
 const STORAGE_KEY = 'artclub.auth';
+const PROFILE_CACHE_KEY = 'artclub.profile';
 const REDIRECT_URL = location.origin;
 
 /** 管理画面・解析を開ける Google アカウント（小文字 email） */
@@ -46,6 +47,30 @@ function clear() {
 function clearUsernameCache() {
   usernameMem = '';
   handleMem = '';
+  try { localStorage.removeItem(PROFILE_CACHE_KEY); } catch {}
+}
+
+function persistProfileCache() {
+  if (!user?.id) return;
+  try {
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({
+      userId: user.id,
+      username: usernameMem,
+      handle: handleMem,
+    }));
+  } catch {}
+}
+
+function loadProfileCache() {
+  if (!user?.id) return;
+  try {
+    const raw = localStorage.getItem(PROFILE_CACHE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data.userId !== user.id) return;
+    if (data.username) cacheUsername(data.username, { persist: false });
+    if (data.handle) cacheHandle(data.handle, { persist: false });
+  } catch {}
 }
 
 function looksLikeEmail(name) {
@@ -53,16 +78,18 @@ function looksLikeEmail(name) {
   return !s || s.includes('@');
 }
 
-function cacheUsername(name) {
+function cacheUsername(name, { persist = true } = {}) {
   const trimmed = String(name || '').trim().slice(0, 32);
   // メールアドレスは表示名に使わない（過去に混入した分も捨てる）
   usernameMem = looksLikeEmail(trimmed) ? '' : trimmed;
+  if (persist) persistProfileCache();
   return usernameMem;
 }
 
-function cacheHandle(handle) {
+function cacheHandle(handle, { persist = true } = {}) {
   const cleaned = String(handle || '').trim().toLowerCase().replace(/^@/, '');
   handleMem = cleaned;
+  if (persist) persistProfileCache();
   return handleMem;
 }
 
@@ -193,6 +220,7 @@ export async function initAuth() {
       user = await fetchUser(session.access_token);
     } catch {}
     scheduleRefresh();
+    if (user) loadProfileCache();
     notify();
     return user;
   }
@@ -216,7 +244,10 @@ export async function initAuth() {
         await refreshSession();
       }
     }
-    if (user) notify();
+    if (user) {
+      loadProfileCache();
+      notify();
+    }
   }
   return user;
 }
@@ -316,23 +347,32 @@ export function getUsername() {
 /**
  * DB の profiles から表示名・ユーザーID を読む。
  * 新しい端末でも再入力を求めないための入口。
- * @returns {Promise<{ username: string, handle: string }>}
+ * @returns {Promise<{ username: string, handle: string, fetched: boolean }>}
  */
 export async function hydrateUsername() {
-  if (!user) return { username: '', handle: '' };
+  if (!user) return { username: '', handle: '', fetched: false };
+  loadProfileCache();
   try {
     const { fetchMyProfile } = await import('./gallery.js');
-    const profile = await fetchMyProfile();
+    const { ok, row: profile } = await fetchMyProfile();
+    if (!ok) {
+      return { username: getUsername(), handle: getHandle(), fetched: false };
+    }
     if (profile?.handle) cacheHandle(profile.handle);
+    else if (profile) cacheHandle('');
+
     if (profile?.username) {
       const name = cacheUsername(profile.username);
-      // メールが保存されていた場合はプロフィールから消す
       if (!name && looksLikeEmail(profile.username)) {
         import('./gallery.js').then((m) => m.upsertProfile({ username: '' })).catch(() => {});
       }
+    } else if (profile) {
+      cacheUsername('');
     }
-  } catch { /* オフライン等 */ }
-  return { username: getUsername(), handle: getHandle() };
+  } catch { /* オフライン等 */ 
+    return { username: getUsername(), handle: getHandle(), fetched: false };
+  }
+  return { username: getUsername(), handle: getHandle(), fetched: true };
 }
 
 /**
