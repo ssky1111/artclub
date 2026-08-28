@@ -48,6 +48,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     bridgeDesc: $('#bridge-desc'),
     padLockMsg: $('#pad-lock-msg'),
     padGuide: $('#pad-guide'),
+    memoryStartDraw: $('#memory-start-draw'),
   };
 
   const pad = createPad($('#pad'));
@@ -316,6 +317,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
       dom.padGuide.hidden = true;
       dom.padGuide.textContent = t('sess.memoryDrawGuide');
     }
+    if (dom.memoryStartDraw) dom.memoryStartDraw.hidden = true;
     if (dom.cover) {
       dom.cover.hidden = true;
       dom.cover.classList.remove('peeking');
@@ -342,6 +344,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
       dom.padGuide.hidden = false;
       dom.padGuide.textContent = t('sess.memoryLook');
     }
+    if (dom.memoryStartDraw) dom.memoryStartDraw.hidden = false;
     setReferenceLocked(true);
     setTimeUnit(false);
     lastBeepAt = -1;
@@ -370,6 +373,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
       dom.padGuide.hidden = false;
       dom.padGuide.textContent = t('sess.memoryDrawGuide');
     }
+    if (dom.memoryStartDraw) dom.memoryStartDraw.hidden = true;
     const canvas = $('#pad');
     if (canvas) canvas.style.pointerEvents = '';
     if (dom.cover) {
@@ -403,6 +407,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
       dom.padGuide.hidden = false;
       dom.padGuide.textContent = t('sess.memoryCompareGuide');
     }
+    if (dom.memoryStartDraw) dom.memoryStartDraw.hidden = true;
     if (dom.cover) {
       dom.cover.hidden = true;
       dom.cover.classList.remove('peeking');
@@ -659,6 +664,12 @@ export function createSessionRunner({ onFinish, onQuit }) {
   }
 
   $('#peek-btn')?.addEventListener('click', peek);
+
+  dom.memoryStartDraw?.addEventListener('click', () => {
+    if (state?.memoryPhase !== 'look') return;
+    timer.stop();
+    enterMemoryDrawPhase();
+  });
 
   $('.pad-tools').addEventListener('click', (e) => {
     const tool = e.target.closest('[data-pad]')?.dataset.pad;
