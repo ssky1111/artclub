@@ -2104,6 +2104,7 @@ async function uploadPendingArtworks({ quiet = false } = {}) {
     if (failed) toast(`${t('gal.uploadFail')}\n${formatErr(lastErr)}`, 8000);
     else if (uploaded) toast(t('gal.uploaded'));
   }
+  if (uploaded) loadReviewBoardOthers();
   return { uploaded, failed, lastErr };
 }
 
@@ -2274,7 +2275,7 @@ function setShotExcluded(index, excluded) {
   if (!shot) return;
   shot.excludeFromGallery = !!excluded;
   if (excluded) shot.allowCopy = false;
-  const wrap = $(`#drawing-strip .strip-shot[data-index="${index}"]`);
+  const wrap = $(`#review-board .strip-shot[data-index="${index}"]`);
   if (wrap) {
     wrap.classList.toggle('is-excluded', !!excluded);
     const pub = wrap.querySelector('.strip-control-group--publish input[type="checkbox"]');
@@ -2300,20 +2301,25 @@ function setShotExcluded(index, excluded) {
 }
 
 function renderDrawingStrip() {
-  const strip = $('#drawing-strip');
-  strip.innerHTML = '';
+  const board = $('#review-board');
+  board.innerHTML = '';
   const has = pendingDrawings.length > 0;
-  strip.hidden = !has;
+  board.hidden = !has;
   $('#strip-actions').hidden = !has;
   $('#dl-all').disabled = !has;
 
   const showPublish = publishEnabled();
 
   pendingDrawings.forEach((shot, i) => {
-    const wrap = el('div', `strip-shot${shot.excludeFromGallery ? ' is-excluded' : ''}`);
+    const row = el('div', 'review-board-row');
+    row.dataset.index = String(i);
+    if (shot.photoId) row.dataset.promptId = shot.photoId;
+
+    const mineCol = el('div', 'review-board-mine');
+    const wrap = el('div', `strip-shot review-board-pin${shot.excludeFromGallery ? ' is-excluded' : ''}`);
     wrap.dataset.index = String(i);
 
-    const item = el('button', 'strip-item');
+    const item = el('button', 'strip-item review-board-paper');
     item.type = 'button';
     const img = el('img');
     img.src = URL.createObjectURL(shot.blob);
@@ -2362,10 +2368,21 @@ function renderDrawingStrip() {
       wrap.append(controls);
     }
 
-    strip.append(wrap);
+    mineCol.append(wrap);
+
+    const othersCol = el('div', 'review-board-others');
+    const othersHead = el('p', 'review-board-others-label muted small', t('rev.boardOthersLabel'));
+    const othersScroll = el('div', 'review-board-others-scroll');
+    const othersLoading = el('p', 'review-board-others-loading muted small', t('gal.loading'));
+    othersCol.append(othersHead, othersScroll, othersLoading);
+    if (!shot.photoId) othersCol.hidden = true;
+
+    row.append(mineCol, othersCol);
+    board.append(row);
   });
 
   syncBulkToggles();
+  void loadReviewBoardOthers();
 }
 
 let drawingIndex = -1;
@@ -2524,53 +2541,64 @@ function wireReview() {
 
 let galleryPromptIds = [];
 
-async function loadSamePromptGallery() {
-  const card = $('#gallery-card');
-  const grid = $('#gallery-grid');
-  const empty = $('#gallery-empty');
-  const loading = $('#gallery-loading');
-  const countEl = $('#gallery-count');
-  if (!card || !galleryPromptIds.length) {
-    if (card) card.hidden = true;
-    return;
-  }
+function renderBoardOtherCard(work, userId) {
+  const pin = el('button', `review-board-other-pin${work.user_id === userId ? ' is-mine' : ''}`);
+  pin.type = 'button';
+  const img = el('img');
+  img.src = work.image_url;
+  img.loading = 'lazy';
+  img.alt = artworkDisplayName(work);
+  pin.append(img);
+  pin.addEventListener('click', () => openWorkPage(work));
+  const name = el('span', 'review-board-other-name', artworkDisplayName(work));
+  const wrap = el('div', 'review-board-other');
+  wrap.append(pin, name);
+  return wrap;
+}
 
-  card.hidden = false;
-  grid.innerHTML = '';
-  empty.hidden = true;
-  loading.hidden = false;
-  countEl.textContent = '';
+async function loadReviewBoardOthers() {
+  const board = $('#review-board');
+  if (!board || board.hidden) return;
 
-  // 投稿設定（全体／スケッチ単位）は保存・シェア時に反映する。
-  // ここでは他の人のスケッチだけ先に見せる。
-
-  const uniqueIds = [...new Set(galleryPromptIds.filter(Boolean))];
-  let allWorks = [];
-  for (const pid of uniqueIds) {
-    const works = await fetchArtworks(pid, { limit: 10 }).catch(() => []);
-    allWorks.push(...works);
-  }
-  // 同じスケッチが複数 prompt にまたがることは稀だが念のため
-  const seen = new Set();
-  allWorks = allWorks.filter((w) => {
-    if (seen.has(w.id)) return false;
-    seen.add(w.id);
-    return true;
-  });
-  allWorks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  allWorks = allWorks.slice(0, 10);
-
-  loading.hidden = true;
-  if (!allWorks.length) {
-    empty.hidden = false;
-    return;
-  }
-
-  countEl.textContent = t('gal.count', { n: allWorks.length });
   const userId = getUser()?.id;
-  for (const work of allWorks) {
-    grid.append(renderGalleryCard(work, userId));
-  }
+  const rows = [...board.querySelectorAll('.review-board-row')];
+  const promptCache = new Map();
+
+  await Promise.all(rows.map(async (row) => {
+    const promptId = row.dataset.promptId;
+    const scroll = row.querySelector('.review-board-others-scroll');
+    const loading = row.querySelector('.review-board-others-loading');
+    if (!promptId || !scroll) return;
+
+    scroll.innerHTML = '';
+    if (loading) loading.hidden = false;
+
+    let works;
+    if (promptCache.has(promptId)) {
+      works = promptCache.get(promptId);
+    } else {
+      const fetched = await fetchArtworks(promptId, { limit: 12 }).catch(() => []);
+      works = fetched.filter((w) => w.user_id !== userId);
+      promptCache.set(promptId, works);
+    }
+
+    if (loading) loading.hidden = true;
+
+    if (!works.length) {
+      const empty = el('p', 'review-board-empty', t('rev.boardEmptyOthers'));
+      scroll.append(empty);
+      return;
+    }
+
+    for (const work of works.slice(0, 8)) {
+      scroll.append(renderBoardOtherCard(work, userId));
+    }
+  }));
+}
+
+/** @deprecated 旧ギャラリーカード用。ボード表示に統合 */
+async function loadSamePromptGallery() {
+  loadReviewBoardOthers();
 }
 
 function renderGalleryCard(work, userId) {

@@ -316,7 +316,7 @@
       </label>
       <p class="strip-bulk-hint muted small" data-i18n="gal.allowCopyHint">模写モードで他の人があなたの絵を模写できるようになります</p>
     </div>
-    <div id="drawing-strip" class="drawing-strip drawing-strip-vertical" hidden></div>
+    <div id="review-board" class="review-board" hidden></div>
     <div class="row" id="strip-actions" hidden>
       <button id="dl-all" class="btn small strip-dl-all" data-i18n="rev.downloadAll">全部個別にダウンロード</button>
     </div>
@@ -334,7 +334,7 @@
     <textarea id="review-note" class="note" rows="3" data-i18n-ph="rev.notePh"></textarea>
   </section>
 
-  <section class="card" id="gallery-card" hidden>
+  <section class="card" id="gallery-card" hidden aria-hidden="true">
     <div class="section-head">
       <h2 class="review-section-title" data-i18n="gal.title">みんなが描いたスケッチ</h2>
       <span id="gallery-count" class="muted small"></span>

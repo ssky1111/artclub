@@ -817,6 +817,198 @@ html[data-site-unlocked] .site-gate-dialog,
   gap: 8px; margin-top: 10px;
   align-items: start;
 }
+
+/* ---------- ふりかえり：美術予備校ボード ---------- */
+
+.review-board {
+  margin-top: 14px;
+  padding: 16px 14px 18px;
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.06) 0%, transparent 42%),
+    repeating-linear-gradient(
+      -38deg,
+      #c8a882 0 3px,
+      #b9956e 3px 7px,
+      #d4b48e 7px 11px
+    );
+  border: 2px solid color-mix(in srgb, #6b4f2a 28%, var(--line));
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.review-board-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 12px 0;
+}
+.review-board-row + .review-board-row {
+  border-top: 1px dashed color-mix(in srgb, #6b4f2a 22%, transparent);
+}
+
+.review-board-mine {
+  flex: 0 0 auto;
+  width: min(38%, 148px);
+  min-width: 112px;
+}
+
+.review-board-pin {
+  align-items: center;
+}
+
+.review-board-paper,
+.review-board-other-pin {
+  position: relative;
+  background: #fffef9;
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.04),
+    0 8px 18px rgba(43, 42, 39, 0.14);
+}
+
+.review-board-paper {
+  width: 100%;
+  min-height: 150px;
+  padding: 10px 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, #fff);
+  transform: rotate(-1.2deg);
+}
+
+.review-board-paper::before,
+.review-board-other-pin::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--brand) 78%, #fff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.review-board-paper img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  display: block;
+}
+
+.review-board-others {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 2px;
+}
+
+.review-board-others-label {
+  margin: 0 0 8px 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, #3f2f1c 70%, var(--muted));
+}
+
+.review-board-others-scroll {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  min-height: 132px;
+  padding: 4px 2px 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.review-board-other {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 88px;
+  scroll-snap-align: start;
+}
+
+.review-board-other-pin {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--text) 8%, #fff);
+  cursor: pointer;
+  font: inherit;
+}
+
+.review-board-other:nth-child(odd) .review-board-other-pin { transform: rotate(1.4deg); }
+.review-board-other:nth-child(even) .review-board-other-pin { transform: rotate(-1deg); }
+.review-board-other-pin.is-mine {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.review-board-other-pin img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.review-board-other-name {
+  max-width: 100%;
+  font-size: 10px;
+  font-weight: 700;
+  color: color-mix(in srgb, #3f2f1c 75%, var(--text-soft));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.review-board-empty {
+  flex: 1;
+  align-self: center;
+  margin: 0;
+  padding: 18px 14px;
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: color-mix(in srgb, #3f2f1c 62%, var(--muted));
+  background: rgba(255, 253, 248, 0.42);
+  border: 1px dashed color-mix(in srgb, #6b4f2a 24%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+.review-board-others-loading {
+  margin: 0;
+  padding: 12px 0;
+}
+
+.review-board-pin .strip-shot-controls {
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+@media (max-width: 520px) {
+  .review-board-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .review-board-mine {
+    width: min(100%, 168px);
+    margin: 0 auto;
+  }
+  .review-board-others-scroll {
+    min-height: 120px;
+  }
+}
+
 .drawing-strip-vertical {
   display: grid;
   grid-template-columns: 1fr 1fr;

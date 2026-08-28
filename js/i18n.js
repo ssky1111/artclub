@@ -245,7 +245,8 @@ const DICT = {
 
   /* ---------- ふりかえり ---------- */
   'rev.title':           { ja: 'おつかれさま',         en: 'Nice work' },
-  'rev.noteTitle':       { ja: '振り返りメモ',         en: 'Reflection notes' },
+  'rev.boardEmptyOthers': { ja: '他の人がまだ描いていません', en: 'No one else has drawn this yet' },
+  'rev.boardOthersLabel': { ja: '同じお題', en: 'Same prompt' },
   'rev.selfCheck':       { ja: 'セルフチェック',       en: 'Self-check' },
   'rev.selfCheckNote':   { ja: '描いたものを見ながら、できているものだけ押してください。',
                            en: 'Look at what you drew and tap only the ones you managed.' },
