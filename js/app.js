@@ -2602,9 +2602,30 @@ function fitReviewNoteHeight(el = $('#review-note')) {
   el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
 }
 
+async function saveReviewNote() {
+  const note = $('#review-note')?.value.trim() || null;
+  const entry = updateLastSession({ note });
+  if (!entry) {
+    toast(t('toast.saveFail'));
+    return;
+  }
+  const btn = $('#review-note-save');
+  if (btn) btn.disabled = true;
+  try {
+    if (getUser()) await syncSessionNow(entry);
+    toast(t('rev.noteSaved'));
+  } catch (err) {
+    console.error('[note save]', err);
+    toast(t('auth.usernameSaveFail'));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 function wireReview() {
   const reviewNote = $('#review-note');
   reviewNote?.addEventListener('input', () => fitReviewNoteHeight(reviewNote));
+  $('#review-note-save')?.addEventListener('click', () => { void saveReviewNote(); });
   $('#publish-toggle').addEventListener('change', (e) => {
     updatePublishNote(e.target.checked);
     renderDrawingStrip();
