@@ -2277,6 +2277,8 @@ function setShotExcluded(index, excluded) {
   shot.excludeFromGallery = !!excluded;
   if (excluded) shot.allowCopy = false;
   const wrap = $(`#review-board .strip-shot[data-index="${index}"]`);
+  const mineCell = $(`#review-board .review-board-cell--mine[data-index="${index}"]`);
+  if (mineCell) mineCell.classList.toggle('is-excluded', !!excluded);
   if (wrap) {
     wrap.classList.toggle('is-excluded', !!excluded);
     const pub = wrap.querySelector('.strip-control-group--publish input[type="checkbox"]');
@@ -2325,18 +2327,19 @@ function renderDrawingStrip() {
     row.dataset.index = String(i);
     if (shot.photoId) row.dataset.promptId = shot.photoId;
 
-    const mineCol = el('div', 'review-board-mine');
-    const wrap = el('div', `strip-shot review-board-pin${shot.excludeFromGallery ? ' is-excluded' : ''}`);
-    wrap.dataset.index = String(i);
+    const scroll = el('div', 'review-board-scroll');
 
-    const paperWrap = el('div', 'review-board-paper-wrap');
-    const item = el('button', 'strip-item review-board-paper');
-    item.type = 'button';
+    const mineCell = el('div', `review-board-cell review-board-cell--mine${shot.excludeFromGallery ? ' is-excluded' : ''}`);
+    mineCell.dataset.index = String(i);
+
+    const thumbWrap = el('div', 'review-board-thumb-wrap');
+    const thumb = el('button', 'review-board-thumb');
+    thumb.type = 'button';
     const img = el('img');
     img.src = URL.createObjectURL(shot.blob);
     img.alt = '';
-    item.append(img);
-    item.addEventListener('click', () => openDrawing(i));
+    thumb.append(img);
+    thumb.addEventListener('click', () => openDrawing(i));
 
     const dlBtn = el('button', 'review-board-dl');
     dlBtn.type = 'button';
@@ -2349,8 +2352,19 @@ function renderDrawingStrip() {
       void downloadShot(shot, i);
     });
 
-    paperWrap.append(item, dlBtn);
-    wrap.append(paperWrap);
+    thumbWrap.append(thumb, dlBtn);
+    mineCell.append(thumbWrap);
+    scroll.append(mineCell);
+
+    if (shot.photoId) {
+      const loading = el('p', 'review-board-loading muted small', t('gal.loading'));
+      row.append(scroll, loading);
+    } else {
+      row.append(scroll);
+    }
+
+    const wrap = el('div', `strip-shot${shot.excludeFromGallery ? ' is-excluded' : ''}`);
+    wrap.dataset.index = String(i);
 
     if (getUser()) {
       const controls = el('div', 'strip-shot-controls');
@@ -2392,16 +2406,7 @@ function renderDrawingStrip() {
       wrap.append(controls);
     }
 
-    mineCol.append(wrap);
-
-    const othersCol = el('div', 'review-board-others');
-    const othersHead = el('p', 'review-board-others-label muted small', t('rev.boardOthersLabel'));
-    const othersScroll = el('div', 'review-board-others-scroll');
-    const othersLoading = el('p', 'review-board-others-loading muted small', t('gal.loading'));
-    othersCol.append(othersHead, othersScroll, othersLoading);
-    if (!shot.photoId) othersCol.hidden = true;
-
-    row.append(mineCol, othersCol);
+    row.append(wrap);
     board.append(row);
   });
 
@@ -2573,17 +2578,16 @@ function wireReview() {
 let galleryPromptIds = [];
 
 function renderBoardOtherCard(work, userId) {
-  const pin = el('button', `review-board-other-pin${work.user_id === userId ? ' is-mine' : ''}`);
-  pin.type = 'button';
+  const wrap = el('div', `review-board-other${work.user_id === userId ? ' is-mine' : ''}`);
+  const thumb = el('button', 'review-board-thumb');
+  thumb.type = 'button';
   const img = el('img');
   img.src = work.image_url;
   img.loading = 'lazy';
   img.alt = artworkDisplayName(work);
-  pin.append(img);
-  pin.addEventListener('click', () => openWorkPage(work));
-  const name = el('span', 'review-board-other-name', artworkDisplayName(work));
-  const wrap = el('div', 'review-board-other');
-  wrap.append(pin, name);
+  thumb.append(img);
+  thumb.addEventListener('click', () => openWorkPage(work));
+  wrap.append(thumb);
   return wrap;
 }
 
@@ -2597,11 +2601,11 @@ async function loadReviewBoardOthers() {
 
   await Promise.all(rows.map(async (row) => {
     const promptId = row.dataset.promptId;
-    const scroll = row.querySelector('.review-board-others-scroll');
-    const loading = row.querySelector('.review-board-others-loading');
+    const scroll = row.querySelector('.review-board-scroll');
+    const loading = row.querySelector('.review-board-loading');
     if (!promptId || !scroll) return;
 
-    scroll.innerHTML = '';
+    scroll.querySelectorAll('.review-board-other, .review-board-empty').forEach((node) => node.remove());
     if (loading) loading.hidden = false;
 
     let works;
@@ -2616,7 +2620,7 @@ async function loadReviewBoardOthers() {
     if (loading) loading.hidden = true;
 
     if (!works.length) {
-      const empty = el('p', 'review-board-empty', t('rev.boardEmptyOthers'));
+      const empty = el('p', 'review-board-empty muted small', t('rev.boardEmptyOthers'));
       scroll.append(empty);
       return;
     }
