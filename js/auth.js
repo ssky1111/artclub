@@ -11,6 +11,9 @@ import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
 const STORAGE_KEY = 'artclub.auth';
 const REDIRECT_URL = location.origin;
 
+/** 管理画面・解析を開ける Google アカウント（小文字 email） */
+const ADMIN_EMAILS = new Set(['yuisskweb@gmail.com', 'sayu.u.u.u.u@gmail.com']);
+
 let session = null;
 let user = null;
 let usernameMem = '';
@@ -274,6 +277,12 @@ export function getUserEmail(u = user) {
   const fromJwt = String(claim || '').trim();
   if (fromJwt.includes('@')) return fromJwt.toLowerCase();
   return '';
+}
+
+/** 管理者メール（Google ログイン想定） */
+export function isAdminUser(u = user) {
+  const email = getUserEmail(u);
+  return !!(email && ADMIN_EMAILS.has(email));
 }
 
 /** 投稿の直前に呼ぶ。期限が近い（or force）ときだけ更新する。 */

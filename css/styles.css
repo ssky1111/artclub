@@ -1879,6 +1879,8 @@ body[data-screen='log'] #screen-log { padding-bottom: 90px; }
 .lib-item.is-inactive img { opacity: .45; filter: grayscale(.35); }
 .range { width: 100%; accent-color: var(--accent); margin: 6px 0 2px; }
 #screen-admin .input { margin-bottom: 6px; }
+.admin-gate-actions { margin-top: 12px; }
+.admin-gate-actions .auth-provider-btn { width: 100%; max-width: 320px; }
 
 #screen-admin .sb-tag-panel {
   margin-top: 10px;

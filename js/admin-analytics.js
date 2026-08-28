@@ -6,15 +6,12 @@
  */
 
 import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
-import { getSession, getUser, getUserEmail, getUsername, ensureFreshSession } from './auth.js';
+import { getSession, getUser, ensureFreshSession, isAdminUser, loginWithProvider } from './auth.js';
 import { $, el } from './ui.js';
 import { dateKey, addDays } from './storage.js';
 import { t } from './i18n.js';
 
-const ADMIN_EMAILS = new Set(['yuisskweb@gmail.com', 'sayu.u.u.u.u@gmail.com']);
-/** email が取れない OAuth 向け（profiles / 表示名） */
-const ADMIN_USERNAMES = new Set(['しゃお']);
-const ADMIN_PASS_SESSION_KEY = 'drawpamine.admin.session';
+const ADMIN_PENDING_KEY = 'artclub.admin.pendingLogin';
 
 /** 解析から外すユーザーネーム（自分） */
 const EXCLUDED_USERNAMES = new Set(['しゃお']);
@@ -62,18 +59,8 @@ function authHeaders(extra = {}) {
   };
 }
 
-function hasAdminPassSession() {
-  try { return sessionStorage.getItem(ADMIN_PASS_SESSION_KEY) === '1'; } catch { return false; }
-}
-
 export function isAdminAnalyticsUser() {
-  // /admin をパス解除済みなら解析も開ける（Xログインで email が欠ける対策）
-  if (hasAdminPassSession()) return true;
-  const email = getUserEmail();
-  if (email && ADMIN_EMAILS.has(email)) return true;
-  const name = String(getUsername() || '').trim();
-  if (name && ADMIN_USERNAMES.has(name)) return true;
-  return false;
+  return isAdminUser();
 }
 
 function normalizeMode(row) {
@@ -844,6 +831,10 @@ export function wireAdminAnalytics({ onNavigate }) {
   $('#analytics-refresh')?.addEventListener('click', () => renderAdminAnalytics());
   $('#analytics-admin-link')?.addEventListener('click', () => onNavigate?.('admin'));
   $('#admin-analytics-link')?.addEventListener('click', () => onNavigate?.('admin/analytics'));
+  $('#analytics-login-google')?.addEventListener('click', () => {
+    try { sessionStorage.setItem(ADMIN_PENDING_KEY, '1'); } catch { /* */ }
+    loginWithProvider('google');
+  });
 }
 
 export async function openAdminAnalytics() {
