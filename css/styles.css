@@ -938,6 +938,9 @@ html[data-site-unlocked] .site-gate-dialog,
   right: 2px;
   bottom: 2px;
   z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 30px;
   height: 30px;
   padding: 0;
