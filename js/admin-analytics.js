@@ -1,6 +1,6 @@
 /**
  * admin-analytics.js — 利用状況（管理者向け）
- * /admin/analytics … 管理者メールでログイン必須
+ * /admin/analytics … 管理者 Google ログイン必須
  *
  * 自分（しゃお）と閲覧中の管理者は集計から除外する。
  */
