@@ -40,7 +40,7 @@ import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, freePeri
 import { icon, paintIcons } from './icons.js';
 import { t, tr, getLang, setLang, applyLang, applyI18n, fmtDur, fmtCount } from './i18n.js';
 window.__i18n = { t };
-import { initAuth, loginWithProvider, logout, getUser, getUserEmail, onAuthChange, hasUsername, setUsername, getUsername, hydrateUsername, hasHandle, setHandle, getHandle } from './auth.js';
+import { initAuth, loginWithProvider, logout, getUser, getUserEmail, onAuthChange, hasUsername, setUsername, getUsername, hydrateUsername, hasHandle, setHandle, getHandle, isAdminUser } from './auth.js';
 import {
   uploadArtwork, uploadShareImage, fetchArtworks, fetchArtwork, fetchPublicArtworks, fetchMyArtworks,
   fetchCopyableArtworksPage, deleteArtwork, updateArtwork, toggleLike, workPageUrl, upsertProfile, artworkDisplayName,
@@ -915,44 +915,58 @@ function wireLibrary() {
 
 /* ==================== 管理画面（#admin） ==================== */
 
-const PASS_KEY = 'drawpamine.admin.v1';
-const SESSION_KEY = 'drawpamine.admin.session';
+const ADMIN_PENDING_KEY = 'artclub.admin.pendingLogin';
 let adminOpen = false;
 
-function isSessionAuth() {
-  try { return sessionStorage.getItem(SESSION_KEY) === '1'; } catch { return false; }
-}
-function setSessionAuth() {
-  try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* */ }
+function startAdminGoogleLogin() {
+  try { sessionStorage.setItem(ADMIN_PENDING_KEY, '1'); } catch { /* */ }
+  loginWithProvider('google');
 }
 
-async function hash(text) {
-  if (!crypto?.subtle) return `plain:${text}`;      // file:// では subtle が無いことがある
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+function clearAdminPendingLogin() {
+  try { sessionStorage.removeItem(ADMIN_PENDING_KEY); } catch { /* */ }
 }
 
-function storedPass() {
-  try { return localStorage.getItem(PASS_KEY) || ''; } catch { return ''; }
+function hasAdminPendingLogin() {
+  try { return sessionStorage.getItem(ADMIN_PENDING_KEY) === '1'; } catch { return false; }
 }
 
-const ADMIN_EMAILS = new Set(['yuisskweb@gmail.com', 'sayu.u.u.u.u@gmail.com']);
-
-function isAdminUser() {
-  const email = getUserEmail();
-  return !!(email && ADMIN_EMAILS.has(email));
+function updateAdminGate() {
+  const u = getUser();
+  const allowed = isAdminUser();
+  const login = $('#admin-gate-login');
+  const denied = $('#admin-gate-denied');
+  const unlock = $('#admin-gate-unlock');
+  if (login) login.hidden = !!u;
+  if (denied) denied.hidden = !u || allowed;
+  if (unlock) unlock.hidden = !u || !allowed || adminOpen;
 }
 
 async function openAdmin() {
   showScreen('admin');
-  if (!adminOpen && (isSessionAuth() || isAdminUser())) adminOpen = true;
-  $('#admin-gate-note').textContent = t('admin.enterPass');
-  $('#admin-pass').value = '';
-  $('#admin-msg').textContent = '';
+  const allowed = isAdminUser();
+  if (!adminOpen && allowed && getUser()) adminOpen = true;
+  updateAdminGate();
   $('#admin-gate').hidden = adminOpen;
   $('#admin-body').hidden = !adminOpen;
   $('#admin-lock').hidden = !adminOpen;
   if (adminOpen) await renderAdmin();
+}
+
+function onAdminAuthChange(u) {
+  if (hasAdminPendingLogin()) {
+    clearAdminPendingLogin();
+    if (u && isAdminUser()) {
+      adminOpen = true;
+      if ($('#screen-admin')?.classList.contains('is-active')) openAdmin();
+      else navigateTo('admin');
+      return;
+    }
+  }
+  if ($('#screen-admin')?.classList.contains('is-active')) {
+    if (!u || !isAdminUser()) adminOpen = false;
+    openAdmin();
+  }
 }
 
 async function renderAdmin() {
@@ -1270,22 +1284,12 @@ async function renderTagManager() {
 }
 
 function wireAdmin() {
-  $('#admin-enter').addEventListener('click', async () => {
-    const value = $('#admin-pass').value;
-    if (!value) return void ($('#admin-msg').textContent = t('admin.enterPass'));
-    const fixed = await hash('vg5!E8MNMX!OISEm');
-    const digest = await hash(value);
-    if (digest !== fixed) {
-      $('#admin-msg').textContent = t('admin.wrong');
-      return;
+  $('#admin-login-google')?.addEventListener('click', () => startAdminGoogleLogin());
+  $('#admin-unlock')?.addEventListener('click', () => {
+    if (isAdminUser()) {
+      adminOpen = true;
+      openAdmin();
     }
-    adminOpen = true;
-    setSessionAuth();
-    await openAdmin();
-  });
-
-  $('#admin-pass').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') $('#admin-enter').click();
   });
 
   $('#admin-lock').addEventListener('click', () => { adminOpen = false; openAdmin(); });
@@ -4045,6 +4049,7 @@ function wireAuth() {
       resetUserCaches();
       settings = getSettings();
       applyTheme();
+      onAdminAuthChange(null);
       applyRoute(routeFromLocation());
       return;
     }
@@ -4069,6 +4074,7 @@ function wireAuth() {
           restorePageScroll();
           applyRoute(routeFromLocation());
           repaintAfterHydrate();
+          onAdminAuthChange(getUser());
           if (pendingStart) {
             const fn = pendingStart;
             pendingStart = null;
@@ -4144,8 +4150,13 @@ async function bootstrapApp() {
     console.error('[bootstrap]', err);
   } finally {
     window.__finishAuthBootstrap?.();
+    if (hasAdminPendingLogin() && getUser() && isAdminUser()) {
+      clearAdminPendingLogin();
+      adminOpen = true;
+    }
     applyRoute(routeFromLocation());
     repaintAfterHydrate();
+    onAdminAuthChange(getUser());
   }
 }
 
