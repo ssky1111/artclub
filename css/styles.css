@@ -863,25 +863,27 @@ html[data-site-unlocked] .site-gate-dialog,
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 2px;
+  scroll-snap-type: x proximity;
 }
 
 .review-board-cell,
 .review-board-other {
-  flex: 0 0 auto;
-  width: 88px;
-  min-width: 88px;
-  max-width: 88px;
+  flex: 0 0 calc((100% - 5 * 8px) / 6);
+  width: calc((100% - 5 * 8px) / 6);
+  min-width: calc((100% - 5 * 8px) / 6);
+  max-width: calc((100% - 5 * 8px) / 6);
+  scroll-snap-align: start;
 }
 
 .review-board-thumb-wrap {
   position: relative;
-  width: 88px;
+  width: 100%;
 }
 
 .review-board-thumb {
   display: block;
-  width: 88px;
-  height: 118px;
+  width: 100%;
+  aspect-ratio: 3 / 4;
   padding: 0;
   margin: 0;
   border: 1px solid var(--line);
@@ -897,6 +899,7 @@ html[data-site-unlocked] .site-gate-dialog,
   height: 100%;
   object-fit: contain;
   display: block;
+  background: #fff;
 }
 
 .review-board-cell.is-excluded .review-board-thumb {

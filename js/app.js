@@ -33,7 +33,7 @@ import {
   deleteTagEverywhere, filterDuplicatePhotoNames, setPhotosInactive,
 } from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
-import { composeSheet, cropToInkVertical, downloadBlob, downloadEach, saveImageBlob, isAppleTouchDevice, shareToX } from './export.js';
+import { composeSheet, cropToInk, cropToInkVertical, downloadBlob, downloadEach, saveImageBlob, isAppleTouchDevice, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
 import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, freePeriodDialog, restorePageScroll, setScreenShownHook } from './ui.js';
@@ -2336,9 +2336,9 @@ function renderDrawingStrip() {
     const thumb = el('button', 'review-board-thumb');
     thumb.type = 'button';
     const img = el('img');
-    img.src = URL.createObjectURL(shot.blob);
     img.alt = '';
     thumb.append(img);
+    void reviewThumbUrl(shot.blob).then((src) => { img.src = src; });
     thumb.addEventListener('click', () => openDrawing(i));
 
     const dlBtn = el('button', 'review-board-dl');
@@ -2492,11 +2492,31 @@ function wireDrawingLightbox() {
   });
 }
 
-function updatePublishNote(isPublic) {
+function updatePublishNote(_isPublic) {
   const note = $('#publish-note');
   if (!note) return;
-  note.textContent = isPublic ? '' : t('gal.private');
-  note.hidden = isPublic;
+  note.hidden = true;
+  note.textContent = '';
+}
+
+async function reviewThumbUrl(blob) {
+  try {
+    const cropped = (await cropToInk(blob)) || blob;
+    return URL.createObjectURL(cropped);
+  } catch {
+    return URL.createObjectURL(blob);
+  }
+}
+
+async function reviewThumbUrlFromImage(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return url;
+    const blob = await res.blob();
+    return reviewThumbUrl(blob);
+  } catch {
+    return url;
+  }
 }
 
 function fitReviewNoteHeight(el = $('#review-note')) {
@@ -2587,6 +2607,7 @@ function renderBoardOtherCard(work, userId) {
   img.alt = artworkDisplayName(work);
   thumb.append(img);
   thumb.addEventListener('click', () => openWorkPage(work));
+  void reviewThumbUrlFromImage(work.image_url).then((src) => { img.src = src; });
   wrap.append(thumb);
   return wrap;
 }
