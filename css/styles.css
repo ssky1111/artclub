@@ -305,29 +305,46 @@ body[data-skin='pastel-rpg'] .brand {
   color: var(--brand-ink);
 }
 .review-note-bubble {
-  margin: 0 0 12px;
+  position: relative;
+  margin: 0 0 16px;
   max-width: 100%;
+}
+.review-note-bubble::after {
+  content: '';
+  position: absolute;
+  left: 22px;
+  bottom: -8px;
+  width: 12px;
+  height: 12px;
+  background: var(--surface);
+  border-right: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  transform: rotate(45deg);
 }
 .review-note-input {
   display: block;
   width: 100%;
-  min-height: 38px;
-  max-height: 72px;
+  min-height: 56px;
+  max-height: 120px;
   margin: 0;
-  padding: 8px 12px;
-  font: inherit;
-  font-size: 14px;
-  line-height: 1.4;
+  padding: 16px 18px;
+  font-family: var(--font-ja);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
   resize: none;
   overflow: hidden;
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
   color: var(--text);
+  box-shadow: 0 2px 12px color-mix(in srgb, #000 5%, transparent);
 }
 .review-note-input::placeholder {
   color: var(--muted);
-  opacity: .85;
+  opacity: 0.8;
+  font-weight: 600;
 }
 .review-note-input:focus {
   outline: none;

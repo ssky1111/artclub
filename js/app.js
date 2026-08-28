@@ -2552,7 +2552,7 @@ async function reviewThumbUrlFromImage(url) {
 function fitReviewNoteHeight(el = $('#review-note')) {
   if (!el) return;
   el.style.height = 'auto';
-  el.style.height = `${Math.min(el.scrollHeight, 72)}px`;
+  el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
 }
 
 function wireReview() {
