@@ -309,6 +309,10 @@ body[data-skin='pastel-rpg'] .brand {
   margin: 0 0 16px;
   max-width: 100%;
 }
+.review-note-field {
+  position: relative;
+  width: 100%;
+}
 .review-note-bubble::after {
   content: '';
   position: absolute;
@@ -327,7 +331,7 @@ body[data-skin='pastel-rpg'] .brand {
   min-height: 56px;
   max-height: 120px;
   margin: 0;
-  padding: 16px 18px;
+  padding: 16px 18px 44px;
   font-family: var(--font-body);
   font-size: 20px;
   font-weight: 400;
@@ -349,6 +353,11 @@ body[data-skin='pastel-rpg'] .brand {
 .review-note-input:focus {
   outline: none;
   border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.review-note-save {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
 }
 .review-section-title,
 .section-head h2.review-section-title {
