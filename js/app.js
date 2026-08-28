@@ -33,7 +33,7 @@ import {
   deleteTagEverywhere, filterDuplicatePhotoNames, setPhotosInactive,
 } from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
-import { composeSheet, cropToInkVertical, downloadBlob, downloadEach, saveImageBlob, isAppleTouchDevice, shareToX } from './export.js';
+import { composeSheet, cropToInk, cropToInkVertical, downloadBlob, downloadEach, saveImageBlob, isAppleTouchDevice, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
 import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, freePeriodDialog, restorePageScroll, setScreenShownHook } from './ui.js';
@@ -2322,98 +2322,128 @@ function renderDrawingStrip() {
 
   const showPublish = publishEnabled();
 
-  pendingDrawings.forEach((shot, i) => {
-    const row = el('div', 'review-board-row');
-    row.dataset.index = String(i);
-    if (shot.photoId) row.dataset.promptId = shot.photoId;
+  void (async () => {
+    const photoMap = new Map();
+    try {
+      for (const photo of await everyPhoto()) {
+        if (photo?.id) photoMap.set(photo.id, photo);
+      }
+    } catch { /* offline */ }
 
-    const scroll = el('div', 'review-board-scroll');
+    pendingDrawings.forEach((shot, i) => {
+      const row = el('div', 'review-board-row');
+      row.dataset.index = String(i);
+      if (shot.photoId) row.dataset.promptId = shot.photoId;
 
-    const mineCell = el('div', `review-board-cell review-board-cell--mine${shot.excludeFromGallery ? ' is-excluded' : ''}`);
-    mineCell.dataset.index = String(i);
+      const scroll = el('div', 'review-board-scroll');
 
-    const thumbWrap = el('div', 'review-board-thumb-wrap');
-    const thumb = el('button', 'review-board-thumb');
-    thumb.type = 'button';
-    const img = el('img');
-    img.src = URL.createObjectURL(shot.blob);
-    img.alt = '';
-    thumb.append(img);
-    thumb.addEventListener('click', () => openDrawing(i));
+      if (shot.photoId) {
+        const promptCell = el('div', 'review-board-cell review-board-cell--prompt');
+        const promptThumb = el('div', 'review-board-thumb review-board-prompt');
+        const photo = photoMap.get(shot.photoId);
+        if (photo) {
+          const pImg = el('img');
+          pImg.alt = t('atelier.promptPhoto');
+          setPhotoSrc(pImg, photo);
+          promptThumb.append(pImg);
+        } else {
+          promptThumb.classList.add('is-empty');
+          promptThumb.textContent = '—';
+        }
+        promptCell.append(promptThumb);
+        scroll.append(promptCell);
+      }
 
-    const dlBtn = el('button', 'review-board-dl');
-    dlBtn.type = 'button';
-    dlBtn.dataset.icon = 'download';
-    dlBtn.dataset.iconSize = '16';
-    dlBtn.dataset.i18nTitle = 'common.download';
-    dlBtn.title = t('common.download');
-    dlBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      void downloadShot(shot, i);
+      const mineCell = el('div', `review-board-cell review-board-cell--mine${shot.excludeFromGallery ? ' is-excluded' : ''}`);
+      mineCell.dataset.index = String(i);
+
+      const thumbWrap = el('div', 'review-board-thumb-wrap');
+      const thumb = el('button', 'review-board-thumb');
+      thumb.type = 'button';
+      const img = el('img');
+      img.alt = '';
+      thumb.append(img);
+      void reviewThumbUrl(shot.blob).then((src) => { img.src = src; });
+      thumb.addEventListener('click', () => openDrawing(i));
+
+      const dlBtn = el('button', 'review-board-dl');
+      dlBtn.type = 'button';
+      dlBtn.dataset.icon = 'download';
+      dlBtn.dataset.iconSize = '16';
+      dlBtn.dataset.i18nTitle = 'common.download';
+      dlBtn.title = t('common.download');
+      dlBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        void downloadShot(shot, i);
+      });
+
+      thumbWrap.append(thumb, dlBtn);
+      mineCell.append(thumbWrap);
+      scroll.append(mineCell);
+
+      if (shot.photoId) {
+        scroll.append(el('div', 'review-board-divider'));
+      }
+
+      if (shot.photoId) {
+        const loading = el('p', 'review-board-loading muted small', t('gal.loading'));
+        row.append(scroll, loading);
+      } else {
+        row.append(scroll);
+      }
+
+      const wrap = el('div', `strip-shot${shot.excludeFromGallery ? ' is-excluded' : ''}`);
+      wrap.dataset.index = String(i);
+
+      if (getUser()) {
+        const controls = el('div', 'strip-shot-controls');
+
+        const pubGroup = el('div', 'strip-control-group strip-control-group--publish');
+        const pubLabel = el('label', `toggle-row${(!showPublish || shot.excludeFromGallery) ? ' is-off' : ''}`);
+        const pubText = el('span', null, t('gal.postThis'));
+        const pubInput = el('input');
+        pubInput.type = 'checkbox';
+        pubInput.checked = showPublish && !shot.excludeFromGallery;
+        pubInput.disabled = !showPublish;
+        pubInput.addEventListener('change', () => {
+          setShotExcluded(i, !pubInput.checked);
+          pubLabel.classList.toggle('is-off', !pubInput.checked);
+        });
+        const pubTrack = el('span', 'toggle-track');
+        pubLabel.append(pubText, pubInput, pubTrack);
+        pubGroup.append(pubLabel);
+        controls.append(pubGroup);
+
+        const copyGroup = el('div', 'strip-control-group strip-control-group--copy');
+        const copyLabel = el('label', `toggle-row${shot.allowCopy ? '' : ' is-off'}`);
+        const copyText = el('span', null, t('gal.allowCopy'));
+        const copyInput = el('input');
+        copyInput.type = 'checkbox';
+        copyInput.checked = !!shot.allowCopy;
+        copyInput.addEventListener('change', () => {
+          shot.allowCopy = !!copyInput.checked;
+          copyLabel.classList.toggle('is-off', !copyInput.checked);
+          syncBulkToggles();
+          persistAllowCopyPreference();
+          void syncPendingShotArtwork(shot);
+        });
+        const copyTrack = el('span', 'toggle-track');
+        copyLabel.append(copyText, copyInput, copyTrack);
+        copyGroup.append(copyLabel);
+        controls.append(copyGroup);
+
+        wrap.append(controls);
+      }
+
+      row.append(wrap);
+      board.append(row);
     });
 
-    thumbWrap.append(thumb, dlBtn);
-    mineCell.append(thumbWrap);
-    scroll.append(mineCell);
-
-    if (shot.photoId) {
-      const loading = el('p', 'review-board-loading muted small', t('gal.loading'));
-      row.append(scroll, loading);
-    } else {
-      row.append(scroll);
-    }
-
-    const wrap = el('div', `strip-shot${shot.excludeFromGallery ? ' is-excluded' : ''}`);
-    wrap.dataset.index = String(i);
-
-    if (getUser()) {
-      const controls = el('div', 'strip-shot-controls');
-
-      const pubGroup = el('div', 'strip-control-group strip-control-group--publish');
-      const pubLabel = el('label', `toggle-row${(!showPublish || shot.excludeFromGallery) ? ' is-off' : ''}`);
-      const pubText = el('span', null, t('gal.postThis'));
-      const pubInput = el('input');
-      pubInput.type = 'checkbox';
-      pubInput.checked = showPublish && !shot.excludeFromGallery;
-      pubInput.disabled = !showPublish;
-      pubInput.addEventListener('change', () => {
-        setShotExcluded(i, !pubInput.checked);
-        pubLabel.classList.toggle('is-off', !pubInput.checked);
-      });
-      const pubTrack = el('span', 'toggle-track');
-      pubLabel.append(pubText, pubInput, pubTrack);
-      pubGroup.append(pubLabel);
-      controls.append(pubGroup);
-
-      const copyGroup = el('div', 'strip-control-group strip-control-group--copy');
-      const copyLabel = el('label', `toggle-row${shot.allowCopy ? '' : ' is-off'}`);
-      const copyText = el('span', null, t('gal.allowCopy'));
-      const copyInput = el('input');
-      copyInput.type = 'checkbox';
-      copyInput.checked = !!shot.allowCopy;
-      copyInput.addEventListener('change', () => {
-        shot.allowCopy = !!copyInput.checked;
-        copyLabel.classList.toggle('is-off', !copyInput.checked);
-        syncBulkToggles();
-        persistAllowCopyPreference();
-        void syncPendingShotArtwork(shot);
-      });
-      const copyTrack = el('span', 'toggle-track');
-      copyLabel.append(copyText, copyInput, copyTrack);
-      copyGroup.append(copyLabel);
-      controls.append(copyGroup);
-
-      wrap.append(controls);
-    }
-
-    row.append(wrap);
-    board.append(row);
-  });
-
-  paintIcons(board);
-  applyI18n(board);
-  syncBulkToggles();
-  void loadReviewBoardOthers();
+    paintIcons(board);
+    applyI18n(board);
+    syncBulkToggles();
+    void loadReviewBoardOthers();
+  })();
 }
 
 let drawingIndex = -1;
@@ -2492,11 +2522,31 @@ function wireDrawingLightbox() {
   });
 }
 
-function updatePublishNote(isPublic) {
+function updatePublishNote(_isPublic) {
   const note = $('#publish-note');
   if (!note) return;
-  note.textContent = isPublic ? '' : t('gal.private');
-  note.hidden = isPublic;
+  note.hidden = true;
+  note.textContent = '';
+}
+
+async function reviewThumbUrl(blob) {
+  try {
+    const cropped = (await cropToInk(blob)) || blob;
+    return URL.createObjectURL(cropped);
+  } catch {
+    return URL.createObjectURL(blob);
+  }
+}
+
+async function reviewThumbUrlFromImage(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return url;
+    const blob = await res.blob();
+    return reviewThumbUrl(blob);
+  } catch {
+    return url;
+  }
 }
 
 function fitReviewNoteHeight(el = $('#review-note')) {
@@ -2587,6 +2637,7 @@ function renderBoardOtherCard(work, userId) {
   img.alt = artworkDisplayName(work);
   thumb.append(img);
   thumb.addEventListener('click', () => openWorkPage(work));
+  void reviewThumbUrlFromImage(work.image_url).then((src) => { img.src = src; });
   wrap.append(thumb);
   return wrap;
 }
