@@ -1625,6 +1625,37 @@ html[data-site-unlocked] .site-gate-dialog,
   padding: 14px var(--pad);
   border-top: 1px solid var(--line);
 }
+.tl-post--mine {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.tl-post--mine .tl-main {
+  flex: 1;
+  min-width: 0;
+}
+.tl-delete {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-top: 2px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tl-delete:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+}
+.tl-delete:active {
+  transform: scale(0.92);
+}
 .tl-post:first-child { border-top: 1px solid var(--line); }
 .tl-main { min-width: 0; }
 .tl-meta {
