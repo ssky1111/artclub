@@ -135,6 +135,11 @@ const DICT = {
     ja: '1枚あたり3分。枚数は自分で選びます。',
     en: '3 minutes each. Choose how many.',
   },
+  'setup.memoryCroquisCount': { ja: '何枚やる？', en: 'How many drawings?' },
+  'setup.memoryCroquisNote': {
+    ja: '1枚あたり1分見て2分描く。枚数は自分で選びます。',
+    en: 'Look 1 min, draw 2 min each. Choose how many.',
+  },
 
   /* ---------- アトリエ ---------- */
   'atelier.title':        { ja: 'アトリエ',               en: 'Atelier' },
@@ -155,6 +160,7 @@ const DICT = {
   'atelier.modePart':     { ja: '部位練習',               en: 'Body part' },
   'atelier.modeCroquis':  { ja: 'クロッキー',             en: 'Croquis' },
   'atelier.modeComposePose': { ja: '構図とポーズ',        en: 'Composition & pose' },
+  'atelier.modeMemoryCroquis': { ja: '記憶クロッキー',   en: 'Memory croquis' },
   'atelier.modeDaily':    { ja: 'デイリー',               en: 'Daily' },
   'atelier.modeCopy':     { ja: '模写',                   en: 'Copy' },
   'atelier.modeOther':    { ja: '練習',                   en: 'Practice' },
@@ -364,6 +370,7 @@ const DICT = {
   'analytics.modePart':  { ja: '部位',                 en: 'Part' },
   'analytics.modeCroquis': { ja: 'クロッキー',         en: 'Croquis' },
   'analytics.modeComposePose': { ja: '構図とポーズ',   en: 'Composition & pose' },
+  'analytics.modeMemoryCroquis': { ja: '記憶クロッキー', en: 'Memory croquis' },
   'analytics.modeCopy':  { ja: '模写',                 en: 'Copy' },
   'analytics.modeOther': { ja: 'その他',               en: 'Other' },
   'analytics.noData':    { ja: 'この日のデータはありません', en: 'No data for this day' },

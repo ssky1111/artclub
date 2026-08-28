@@ -22,6 +22,7 @@ const MODE_DEFS = [
   { key: 'part', labelKey: 'analytics.modePart', color: '#c45c26' },
   { key: 'croquis', labelKey: 'analytics.modeCroquis', color: '#2a7a8c' },
   { key: 'composePose', labelKey: 'analytics.modeComposePose', color: '#6b5b95' },
+  { key: 'memoryCroquis', labelKey: 'analytics.modeMemoryCroquis', color: '#9b6b8a' },
   { key: 'copy', labelKey: 'analytics.modeCopy', color: '#8a6b4a' },
   { key: 'other', labelKey: 'analytics.modeOther', color: '#888888' },
 ];
@@ -43,6 +44,7 @@ function chartColors() {
       part: '#c45c26',
       croquis: '#2a7a8c',
       composePose: '#6b5b95',
+      memoryCroquis: '#9b6b8a',
       copy: '#8a6b4a',
       other: muted,
     },
@@ -69,6 +71,7 @@ function normalizeMode(row) {
   if (menuId === 'gestureMode') return 'gesture';
   if (menuId === 'croquisMode') return 'croquis';
   if (menuId === 'composePoseMode') return 'composePose';
+  if (menuId === 'memoryCroquisMode') return 'memoryCroquis';
   if (menuId === 'copyMode') return 'copy';
   if (String(menuId).startsWith('part-')) return 'part';
   return 'other';
@@ -187,6 +190,7 @@ function modeToMenuId(mode) {
   if (m.includes('part') || raw.includes('部位')) return 'part-unknown';
   if (m.includes('croquis') || raw.includes('クロッキー')) return 'croquisMode';
   if (m.includes('compose') || m.includes('composepose') || raw.includes('構図')) return 'composePoseMode';
+  if (m.includes('memory') || raw.includes('記憶')) return 'memoryCroquisMode';
   if (m.includes('copy') || raw.includes('模写')) return 'copyMode';
   return '';
 }
@@ -201,6 +205,7 @@ function isDailyMixedCluster(modesSet, drawCount) {
     else if (m === 'gestureMode') buckets.add('gesture');
     else if (m === 'croquisMode') buckets.add('croquis');
     else if (m === 'composePoseMode') buckets.add('compose');
+    else if (m === 'memoryCroquisMode') buckets.add('memoryCroquis');
     else if (m === 'copyMode') buckets.add('copy');
   }
   return buckets.size >= 2;

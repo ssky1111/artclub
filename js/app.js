@@ -4,7 +4,7 @@
 
 import {
   buildDaily, partForDate, partForDaily, partById, MODES, PARTS, ACTIVE_PARTS, DRILLS, PICKABLE_DRILLS,
-  TIME_CHOICES, COUNT_CHOICES, GESTURE_COUNT_CHOICES, ROUND_COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu, buildCopyMenu, buildGestureMenu, buildCroquisMenu, buildComposePoseMenu,
+  TIME_CHOICES, COUNT_CHOICES, GESTURE_COUNT_CHOICES, ROUND_COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu, buildCopyMenu, buildGestureMenu, buildCroquisMenu, buildComposePoseMenu, buildMemoryCroquisMenu,
   levelLabel, menuDuration,
 } from './theory.js';
 import {
@@ -252,6 +252,7 @@ function renderModes() {
       if (mode.picker === 'gestureCount') return openGestureSheet();
       if (mode.picker === 'croquisCount') return openCroquisSheet();
       if (mode.picker === 'composePoseCount') return openComposePoseSheet();
+      if (mode.picker === 'memoryCroquisCount') return openMemoryCroquisSheet();
       startSession(mode);
     });
     wrap.append(card);
@@ -410,6 +411,47 @@ function wireComposePoseSheet() {
   $('#compose-pose-start')?.addEventListener('click', () => {
     $('#compose-pose-sheet').hidden = true;
     startSession(buildComposePoseMenu(composePoseCount));
+  });
+}
+
+/* ==================== 記憶クロッキー ==================== */
+
+let memoryCroquisCount = 1;
+
+function openMemoryCroquisSheet() {
+  renderMemoryCroquisChips();
+  $('#memory-croquis-sheet').hidden = false;
+}
+
+function renderMemoryCroquisChips() {
+  const wrap = $('#memory-croquis-count-chips');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  for (const n of ROUND_COUNT_CHOICES) {
+    const chip = el('button', `chip${memoryCroquisCount === n ? ' on' : ''}`,
+                    getLang() === 'ja' ? `${n}枚` : String(n));
+    chip.addEventListener('click', () => { memoryCroquisCount = n; renderMemoryCroquisChips(); });
+    wrap.append(chip);
+  }
+  const perRound = 185;
+  const note = $('#memory-croquis-note');
+  if (note) {
+    note.textContent = getLang() === 'ja'
+      ? `1枚約3分（1分見て2分描く）× ${memoryCroquisCount}枚（合計 ${Math.round(memoryCroquisCount * perRound / 60)}分）`
+      : `~3 min each (1 min look, 2 min draw) × ${memoryCroquisCount} (total ${Math.round(memoryCroquisCount * perRound / 60)} min)`;
+  }
+  const start = $('#memory-croquis-start');
+  if (start) start.textContent = t('setup.start', { d: fmtDur(perRound * memoryCroquisCount) });
+}
+
+function wireMemoryCroquisSheet() {
+  $('#memory-croquis-close')?.addEventListener('click', () => { $('#memory-croquis-sheet').hidden = true; });
+  $('#memory-croquis-sheet')?.addEventListener('click', (e) => {
+    if (e.target.id === 'memory-croquis-sheet') $('#memory-croquis-sheet').hidden = true;
+  });
+  $('#memory-croquis-start')?.addEventListener('click', () => {
+    $('#memory-croquis-sheet').hidden = true;
+    startSession(buildMemoryCroquisMenu(memoryCroquisCount));
   });
 }
 
@@ -1921,6 +1963,7 @@ function sessionModeFrom(entry) {
     return 'Gesture';
   }
   if (entry.menuId === 'composePoseMode' || entry.byDrill?.composePose) return 'ComposePose';
+  if (entry.menuId === 'memoryCroquisMode' || entry.byDrill?.memoryCroquis) return 'MemoryCroquis';
   if (entry.menuId === 'croquisMode' || entry.byDrill?.croquis) return 'Croquis';
   return entry.menuTitle || 'Practice';
 }
@@ -1953,6 +1996,10 @@ function artworkModeLabel(work) {
   if (key === 'composepose' || key === 'composepodemode'
       || raw.includes('構図') || /composition\s*&?\s*pose/i.test(raw)) {
     return t('atelier.modeComposePose');
+  }
+  if (key === 'memorycroquis' || key === 'memorycroquismode'
+      || raw.includes('記憶') || /memory\s*croquis/i.test(raw)) {
+    return t('atelier.modeMemoryCroquis');
   }
   if (key === 'croquis' || key === 'croquismode' || raw.includes('クロッキー') || /croquis/i.test(raw)) {
     return t('atelier.modeCroquis');
@@ -2995,6 +3042,10 @@ function menuStepsForEntry(entry) {
   if (entry.menuId === 'composePoseMode') {
     const n = Math.max(1, (entry.shots || []).length || Math.round((entry.seconds || 180) / 180));
     return buildComposePoseMenu(n).steps;
+  }
+  if (entry.menuId === 'memoryCroquisMode') {
+    const n = Math.max(1, (entry.shots || []).length || 1);
+    return buildMemoryCroquisMenu(n).steps;
   }
   if (entry.menuId === 'gestureMode') {
     // 体数は可変。履歴の枚数から復元（1体1分）
@@ -4456,6 +4507,7 @@ function init() {
   wireGestureSheet();
   wireCroquisSheet();
   wireComposePoseSheet();
+  wireMemoryCroquisSheet();
   wireCopySheet();
   wireLibrary();
   wireCalendar();
