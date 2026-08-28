@@ -2155,6 +2155,7 @@ async function finishSession(result) {
   };
   $('#gallery-card').hidden = true;
   $('#review-note').value = '';
+  fitReviewNoteHeight();
 
   const canPublish = pendingDrawings.length > 0 && !!getUser();
   const publishRow = $('#publish-row');
@@ -2471,7 +2472,15 @@ function updatePublishNote(isPublic) {
   note.hidden = isPublic;
 }
 
+function fitReviewNoteHeight(el = $('#review-note')) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = `${Math.min(el.scrollHeight, 72)}px`;
+}
+
 function wireReview() {
+  const reviewNote = $('#review-note');
+  reviewNote?.addEventListener('input', () => fitReviewNoteHeight(reviewNote));
   $('#publish-toggle').addEventListener('change', (e) => {
     updatePublishNote(e.target.checked);
     renderDrawingStrip();
