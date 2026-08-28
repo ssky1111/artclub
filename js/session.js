@@ -330,19 +330,18 @@ export function createSessionRunner({ onFinish, onQuit }) {
     const look = Number(drill.view?.memorizeSeconds) || 60;
     state.memoryPhase = 'look';
     state.peeksLeft = 0;
+    pad.clear();
+    pad.resetHistory();
     if (dom.peekBtn) dom.peekBtn.hidden = true;
     if (dom.padWrap) {
       dom.padWrap.classList.add('is-memory-look');
-      dom.padWrap.classList.remove('is-memory-draw');
+      dom.padWrap.classList.remove('is-memory-draw', 'is-memory-compare');
     }
-    if (dom.padLockMsg) {
-      dom.padLockMsg.hidden = false;
-      const p = dom.padLockMsg.querySelector('p');
-      if (p) p.textContent = t('sess.memoryLook');
+    if (dom.padLockMsg) dom.padLockMsg.hidden = true;
+    if (dom.padGuide) {
+      dom.padGuide.hidden = false;
+      dom.padGuide.textContent = t('sess.memoryLook');
     }
-    if (dom.padGuide) dom.padGuide.hidden = true;
-    const canvas = $('#pad');
-    if (canvas) canvas.style.pointerEvents = 'none';
     setReferenceLocked(true);
     setTimeUnit(false);
     lastBeepAt = -1;

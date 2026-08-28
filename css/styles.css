@@ -1083,13 +1083,14 @@ html[data-site-unlocked] .site-gate-dialog,
 }
 .pad-wrap.is-memory-look .pad-body { flex-direction: column; }
 .pad-wrap.is-memory-look .pad-ref {
-  display: flex; flex: 1.6; align-items: center; justify-content: center;
+  display: flex; flex: 1; align-items: center; justify-content: center;
   background: #14130f; min-height: 0;
 }
 .pad-wrap.is-memory-look .pad-ref img {
   max-width: 100%; max-height: 100%; object-fit: contain; display: block;
 }
-.pad-wrap.is-memory-look .pad-canvas { flex: 0.55; min-height: 110px; }
+/* 見る時間は描けない。前の課題の線が潰れて見えないようキャンバスごと隠す */
+.pad-wrap.is-memory-look .pad-canvas { display: none !important; }
 .pad-wrap.is-memory-look .ref-mini-wrap,
 .pad-wrap.is-memory-look .pad-tools,
 .pad-wrap.is-memory-look #pad-next,
