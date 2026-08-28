@@ -207,6 +207,9 @@
       <div class="pad-timebar"><div id="pad-timebar-fill" class="pad-timebar-fill"></div></div>
 
       <div class="pad-body">
+        <p id="pad-guide" class="pad-guide" hidden data-i18n="sess.memoryDrawGuide">記憶したポーズを描いてください</p>
+        <button type="button" id="memory-start-draw" class="memory-start-draw btn primary small" hidden data-i18n="sess.memoryStartDraw">描きはじめる</button>
+
         <div class="pad-ref">
           <img id="pad-ref-img" alt="お題の写真">
           <div id="grid-overlay" class="grid-overlay" hidden></div>
@@ -224,9 +227,8 @@
         <div class="pad-canvas">
           <canvas id="pad" class="pad"></canvas>
           <div id="pad-lock-msg" class="pad-lock-msg" hidden>
-            <p data-i18n="sess.memoryLook">1分間見て記憶してください</p>
+            <p data-i18n="sess.memoryLook">1分間観察して覚えましょう</p>
           </div>
-          <p id="pad-guide" class="pad-guide" hidden data-i18n="sess.memoryDrawGuide">記憶したポーズを描いてください</p>
 
           <div class="ref-mini-wrap">
             <button id="ref-mini" class="ref-mini" title="お題を大きく見る">

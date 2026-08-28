@@ -1199,7 +1199,7 @@ html[data-site-unlocked] .site-gate-dialog,
   position: absolute; inset: 0; z-index: 10;
   display: flex; flex-direction: column; background: #fffdf8;
 }
-.pad-body { flex: 1; display: flex; min-height: 0; }
+.pad-body { flex: 1; display: flex; min-height: 0; position: relative; }
 .pad-ref { display: none; position: relative; overflow: hidden; }
 .pad-canvas { position: relative; flex: 1; min-width: 0; display: flex; }
 .pad { flex: 1; width: 100%; touch-action: none; cursor: crosshair; }
@@ -1215,11 +1215,25 @@ html[data-site-unlocked] .site-gate-dialog,
 }
 .pad-guide {
   position: absolute; left: 50%; top: 12px; transform: translateX(-50%);
-  z-index: 3; margin: 0; max-width: min(92%, 420px);
+  z-index: 4; margin: 0; max-width: min(92%, 420px);
   padding: 8px 14px; border-radius: 999px;
   background: rgba(43, 42, 39, 0.88); color: #fffdf8;
   font-size: 13px; font-weight: 700; text-align: center;
   pointer-events: none;
+}
+.memory-start-draw {
+  position: absolute;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 4;
+}
+.pad-wrap.is-memory-look .pad-guide {
+  top: max(12px, env(safe-area-inset-top));
+}
+.pad-wrap.is-memory-draw .pad-guide,
+.pad-wrap.is-memory-compare .pad-guide {
+  top: 12px;
 }
 .pad-wrap.is-memory-look .pad-body { flex-direction: column; }
 .pad-wrap.is-memory-look .pad-ref {
