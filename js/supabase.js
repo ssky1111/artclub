@@ -44,6 +44,19 @@ function hdrs(extra = {}) {
   };
 }
 
+/** photos バケットへの書き込み（RLS: 管理者 JWT 必須） */
+async function adminHdrs(extra = {}) {
+  const { getSession, ensureFreshSession } = await import('./auth.js');
+  await ensureFreshSession();
+  const token = getSession()?.access_token;
+  if (!token) throw new Error('管理者としてログインしてください');
+  return {
+    apikey: PHOTOS_KEY,
+    Authorization: `Bearer ${token}`,
+    ...extra,
+  };
+}
+
 const storageUrl = (path) => `${PHOTOS_URL}/storage/v1/object/${BUCKET}/${path}`;
 const publicUrl  = (path) => `${PHOTOS_URL}/storage/v1/object/public/${BUCKET}/${path}`;
 
@@ -75,7 +88,7 @@ async function fetchStorageJson(path) {
 async function putStorageJson(path, data) {
   const res = await fetch(storageUrl(path), {
     method: 'POST',
-    headers: hdrs({
+    headers: await adminHdrs({
       'Content-Type': 'application/json',
       'x-upsert': 'true',
       ...WRITE_CACHE_HDRS,
@@ -272,7 +285,7 @@ export async function uploadPhoto(blob, id) {
 
   const res = await fetch(storageUrl(path), {
     method: 'POST',
-    headers: hdrs({
+    headers: await adminHdrs({
       'Content-Type': contentType,
       'x-upsert': 'true',
       ...WRITE_CACHE_HDRS,
@@ -289,7 +302,7 @@ export async function uploadPhoto(blob, id) {
 export async function deletePhotoFromStorage(path) {
   const res = await fetch(`${PHOTOS_URL}/storage/v1/object/${BUCKET}`, {
     method: 'DELETE',
-    headers: hdrs({ 'Content-Type': 'application/json' }),
+    headers: await adminHdrs({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ prefixes: [path] }),
   });
   if (!res.ok) {
@@ -510,7 +523,7 @@ export async function convertToWebp(entry, maxSide = 1000, quality = 0.82) {
   if (!(alreadyWebp && oldPath === newPath)) {
     const up = await fetch(storageUrl(newPath), {
       method: 'POST',
-      headers: hdrs({
+      headers: await adminHdrs({
         'Content-Type': 'image/webp',
         'x-upsert': 'true',
         ...WRITE_CACHE_HDRS,
@@ -545,7 +558,7 @@ export async function convertToWebp(entry, maxSide = 1000, quality = 0.82) {
   if (newPath !== oldPath) {
     await fetch(`${PHOTOS_URL}/storage/v1/object/${BUCKET}`, {
       method: 'DELETE',
-      headers: hdrs({ 'Content-Type': 'application/json' }),
+      headers: await adminHdrs({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ prefixes: [oldPath] }),
     }).catch(() => {});
   }
