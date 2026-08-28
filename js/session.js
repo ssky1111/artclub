@@ -81,9 +81,13 @@ export function createSessionRunner({ onFinish, onQuit }) {
     },
     onDone() {
       if (state?.settings.sound) beeper.done();
-      // 記憶クロッキー: 見るフェーズ終了 → 描くフェーズへ
+      // 記憶クロッキー: 見る → 描く → 見比べ → 次へ
       if (state?.memoryPhase === 'look') {
         enterMemoryDrawPhase();
+        return;
+      }
+      if (state?.memoryPhase === 'draw') {
+        enterMemoryComparePhase();
         return;
       }
       advance();
@@ -220,12 +224,13 @@ export function createSessionRunner({ onFinish, onQuit }) {
     }
     const memLook = drill.view?.memorizeSeconds;
     const memDraw = drill.view?.drawSeconds;
+    const memCompare = drill.view?.compareSeconds;
     dom.bridgeMeta.textContent = item.unlimited
       ? (getLang() === 'en' ? `${item.countInStep} · no time limit` : `${item.countInStep}枚 · 時間無制限`)
       : isMemoryCroquis && memLook && memDraw
         ? (getLang() === 'en'
-          ? `look ${memLook / 60} min → draw ${memDraw / 60} min`
-          : `見る${memLook / 60}分 → 描く${memDraw / 60}分`)
+          ? `look ${memLook / 60} min → draw ${memDraw / 60} min → compare ${memCompare || 5}s`
+          : `見る${memLook / 60}分 → 描く${memDraw / 60}分 → 見比べ${memCompare || 5}秒`)
         : `${item.countInStep}枚×${item.seconds < 60 ? item.seconds + '秒' : (item.seconds / 60) + '分'}`;
 
     // 復習対象のドリルのときだけ「前回の宿題」を1行出す
@@ -300,7 +305,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
   function clearMemoryUi() {
     if (state) state.memoryPhase = null;
     if (dom.padWrap) {
-      dom.padWrap.classList.remove('is-memory-look', 'is-memory-draw');
+      dom.padWrap.classList.remove('is-memory-look', 'is-memory-draw', 'is-memory-compare');
     }
     if (dom.padLockMsg) {
       dom.padLockMsg.hidden = true;
@@ -377,6 +382,38 @@ export function createSessionRunner({ onFinish, onQuit }) {
     lastBeepAt = -1;
     setTimeUnit(false);
     timer.start(draw);
+    setPauseIcon();
+    requestAnimationFrame(() => pad.resize());
+  }
+
+  /** 記憶クロッキー: 見比べフェーズ（写真と描いた絵を並べて見る） */
+  function enterMemoryComparePhase() {
+    if (!state?.current) return;
+    const drill = DRILLS[state.current.drillId] || {};
+    const compare = Number(drill.view?.compareSeconds) || 5;
+    state.memoryPhase = 'compare';
+    state.peeking = false;
+    if (dom.peekBtn) dom.peekBtn.hidden = true;
+
+    if (dom.padWrap) {
+      dom.padWrap.classList.remove('is-memory-look', 'is-memory-draw');
+      dom.padWrap.classList.add('is-memory-compare');
+    }
+    if (dom.padLockMsg) dom.padLockMsg.hidden = true;
+    if (dom.padGuide) {
+      dom.padGuide.hidden = false;
+      dom.padGuide.textContent = t('sess.memoryCompareGuide');
+    }
+    if (dom.cover) {
+      dom.cover.hidden = true;
+      dom.cover.classList.remove('peeking');
+    }
+    const canvas = $('#pad');
+    if (canvas) canvas.style.pointerEvents = 'none';
+    setReferenceLocked(true);
+    lastBeepAt = -1;
+    setTimeUnit(false);
+    timer.start(compare);
     setPauseIcon();
     requestAnimationFrame(() => pad.resize());
   }
@@ -460,13 +497,17 @@ export function createSessionRunner({ onFinish, onQuit }) {
   function spentSeconds(item, { skipped = false } = {}) {
     if (!item) return 0;
     if (item.unlimited) return Math.max(0, timer.elapsed);
-    // 記憶クロッキーは見る+描くの合計を1本分として数える
+    // 記憶クロッキーは見る+描く+見比べの合計を1本分として数える
     if (item.drillId === 'memoryCroquis') {
       const look = Number(DRILLS.memoryCroquis?.view?.memorizeSeconds) || 60;
       const draw = Number(DRILLS.memoryCroquis?.view?.drawSeconds) || 120;
+      const compare = Number(DRILLS.memoryCroquis?.view?.compareSeconds) || 5;
       if (state?.memoryPhase === 'look') return Math.max(0, look - timer.remaining);
       if (state?.memoryPhase === 'draw') return look + Math.max(0, draw - timer.remaining);
-      return skipped ? 0 : look + draw;
+      if (state?.memoryPhase === 'compare') {
+        return look + draw + Math.max(0, compare - timer.remaining);
+      }
+      return skipped ? 0 : look + draw + compare;
     }
     if (!skipped) return item.seconds;
     return Math.max(0, item.seconds - timer.remaining);
