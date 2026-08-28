@@ -3470,6 +3470,32 @@ function renderArtworkTlPost(work, { mine = false } = {}) {
   main.append(actions);
 
   post.append(main);
+
+  if (mine) {
+    post.classList.add('tl-post--mine');
+    const delBtn = el('button', 'tl-delete');
+    delBtn.type = 'button';
+    delBtn.dataset.icon = 'trash';
+    delBtn.dataset.iconSize = '16';
+    delBtn.dataset.i18nTitle = 'gal.delete';
+    delBtn.title = t('gal.delete');
+    delBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!(await confirmDialog(t('gal.deleteConfirm')))) return;
+      try {
+        await deleteArtwork(work.id, work.storage_path);
+        post.remove();
+        const feed = $('#atelier-mine-feed');
+        if (feed && !feed.querySelector('.tl-post')) {
+          $('#atelier-mine-empty').hidden = false;
+        }
+      } catch {
+        toast(t('gal.uploadFail'));
+      }
+    });
+    post.append(delBtn);
+  }
+
   return post;
 }
 
@@ -3539,6 +3565,8 @@ async function renderAtelierMine() {
     return;
   }
   for (const work of works) feed.append(renderArtworkTlPost(work, { mine: true }));
+  paintIcons(feed);
+  applyI18n(feed);
 }
 
 async function renderAtelierByPrompt() {
