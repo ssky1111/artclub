@@ -344,7 +344,7 @@ body[data-skin='pastel-rpg'] .brand {
 .review-note-input::placeholder {
   color: var(--muted);
   opacity: 0.8;
-  font-weight: 600;
+  font-weight: 400;
 }
 .review-note-input:focus {
   outline: none;
