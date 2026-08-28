@@ -256,7 +256,7 @@ export async function composeSheet(blobs, { date = '', crop = true } = {}) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = '600 16px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
-  ctx.fillText('ARTCLUB', W / 2, H - bottomBand / 2);
+  ctx.fillText('DRAWPARTY', W / 2, H - bottomBand / 2);
 
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.88));
 }
@@ -265,7 +265,7 @@ export async function composeSheet(blobs, { date = '', crop = true } = {}) {
  * OGP用に右下へ ARTCLUB を焼き込む。
  * ギャラリー本体の絵はそのままにし、og_image_url 側で使う。
  */
-export async function brandForOgp(blob, { label = 'ARTCLUB' } = {}) {
+export async function brandForOgp(blob, { label = 'DRAWPARTY' } = {}) {
   if (!blob) return null;
   const img = await loadImage(blob);
   const canvas = document.createElement('canvas');
