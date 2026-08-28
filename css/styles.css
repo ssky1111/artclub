@@ -328,9 +328,9 @@ body[data-skin='pastel-rpg'] .brand {
   max-height: 120px;
   margin: 0;
   padding: 16px 18px;
-  font-family: var(--font-ja);
+  font-family: var(--font-body);
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 400;
   line-height: 1.45;
   letter-spacing: 0.02em;
   resize: none;
@@ -344,7 +344,7 @@ body[data-skin='pastel-rpg'] .brand {
 .review-note-input::placeholder {
   color: var(--muted);
   opacity: 0.8;
-  font-weight: 600;
+  font-weight: 400;
 }
 .review-note-input:focus {
   outline: none;
