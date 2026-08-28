@@ -293,7 +293,9 @@
       <span class="brand-text">DRAWPARTY</span>
     </a>
   </header>
-  <h1 class="review-page-title" data-i18n="rev.title">おつかれさま</h1>
+  <div class="review-note-bubble">
+    <textarea id="review-note" class="review-note-input" rows="1" data-i18n-ph="rev.noteLinePh" placeholder="振り返りの一言を書く"></textarea>
+  </div>
 
   <section class="card" id="sheet-card">
     <div id="sheet-preview" class="sheet-preview" hidden>
@@ -326,12 +328,6 @@
       <span class="toggle-track"></span>
     </label>
     <p class="muted small" id="publish-note" hidden></p>
-  </section>
-
-  <section class="card" id="review-note-card">
-    <h2 class="review-section-title" data-i18n="rev.noteTitle">振り返りメモ</h2>
-    <p class="muted small" data-i18n="rev.howWas">終わった後に絵を見返して気付いたことをメモしてみましょう。練習効率がアップします</p>
-    <textarea id="review-note" class="note" rows="3" data-i18n-ph="rev.notePh"></textarea>
   </section>
 
   <section class="card" id="gallery-card" hidden aria-hidden="true">

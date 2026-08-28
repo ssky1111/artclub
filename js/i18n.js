@@ -257,6 +257,7 @@ const DICT = {
   'rev.rate3':           { ja: 'つかめた',             en: 'Got it' },
   'rev.notePh':          { ja: '気づいたことを一言（例：上半身を大きく描いて下半身が小さくなる、比率がおかしい）',
                            en: 'One thing you noticed (e.g. upper body too big, legs too small — proportions off)' },
+  'rev.noteLinePh':      { ja: '振り返りの一言を書く', en: 'Write a quick reflection' },
   'rev.drawn':           { ja: 'きょう描いたもの',     en: 'What you drew today' },
   'rev.drawnNote':       { ja: '押すと大きく見られます。端末のなかにだけ保存されます。',
                            en: 'Tap to enlarge. Everything stays on this device.' },
