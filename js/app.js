@@ -2301,6 +2301,15 @@ function setShotExcluded(index, excluded) {
   void syncPendingShotArtwork(shot);
 }
 
+async function downloadShot(shot, index) {
+  try {
+    const blob = (await cropToInkVertical(shot.blob)) || shot.blob;
+    downloadBlob(blob, `artclub-${dateKey()}-${index + 1}.jpg`);
+  } catch {
+    downloadBlob(shot.blob, `artclub-${dateKey()}-${index + 1}.jpg`);
+  }
+}
+
 function renderDrawingStrip() {
   const board = $('#review-board');
   board.innerHTML = '';
@@ -2320,6 +2329,7 @@ function renderDrawingStrip() {
     const wrap = el('div', `strip-shot review-board-pin${shot.excludeFromGallery ? ' is-excluded' : ''}`);
     wrap.dataset.index = String(i);
 
+    const paperWrap = el('div', 'review-board-paper-wrap');
     const item = el('button', 'strip-item review-board-paper');
     item.type = 'button';
     const img = el('img');
@@ -2327,7 +2337,20 @@ function renderDrawingStrip() {
     img.alt = '';
     item.append(img);
     item.addEventListener('click', () => openDrawing(i));
-    wrap.append(item);
+
+    const dlBtn = el('button', 'review-board-dl');
+    dlBtn.type = 'button';
+    dlBtn.dataset.icon = 'download';
+    dlBtn.dataset.iconSize = '16';
+    dlBtn.dataset.i18nTitle = 'common.download';
+    dlBtn.title = t('common.download');
+    dlBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      void downloadShot(shot, i);
+    });
+
+    paperWrap.append(item, dlBtn);
+    wrap.append(paperWrap);
 
     if (getUser()) {
       const controls = el('div', 'strip-shot-controls');
@@ -2382,6 +2405,8 @@ function renderDrawingStrip() {
     board.append(row);
   });
 
+  paintIcons(board);
+  applyI18n(board);
   syncBulkToggles();
   void loadReviewBoardOthers();
 }
@@ -2419,10 +2444,7 @@ function wireDrawingLightbox() {
     const btn = $('#draw-dl');
     if (btn) btn.disabled = true;
     try {
-      const blob = (await cropToInkVertical(shot.blob)) || shot.blob;
-      downloadBlob(blob, `artclub-${dateKey()}-${drawingIndex + 1}.jpg`);
-    } catch {
-      downloadBlob(shot.blob, `artclub-${dateKey()}-${drawingIndex + 1}.jpg`);
+      await downloadShot(shot, drawingIndex);
     } finally {
       if (btn) btn.disabled = false;
     }

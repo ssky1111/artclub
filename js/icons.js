@@ -41,6 +41,7 @@ const PATHS = {
   trash:    '<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/>',
   expand:   '<path d="M4 9V4h5M20 15v5h-5M4 15v5h5M20 9V4h-5"/>',
   collapse: '<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>',
+  download: '<path d="M12 4v9M8.5 10.5L12 14l3.5-3.5"/><path d="M5 20h14"/>',
   camera:   '<path d="M3 8h4l2-2h6l2 2h4v12H3z"/><circle cx="12" cy="13" r="3.5"/>',
 
   /* ホーム */
