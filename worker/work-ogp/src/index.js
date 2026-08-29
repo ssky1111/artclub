@@ -62,13 +62,13 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
   const pageUrl = `${origin}/work/${key}`;
   const kindLabel = work.kind === 'sheet' ? 'まとめ' : modeLabel(work.mode);
   const title = work.kind === 'sheet'
-    ? `DRAWPARTY - ${kindLabel}`
-    : `DRAWPARTY - 3分${kindLabel}`;
+    ? `DrawParty - ${kindLabel}`
+    : `DrawParty - 3分${kindLabel}`;
   const desc = work.username
     ? (work.kind === 'sheet'
       ? `${work.username} さんのまとめ`
       : `${work.username} さんが描いたスケッチ`)
-    : 'DRAWPARTY で描いたクロッキー';
+    : 'DrawParty で描いたクロッキー';
   const image = work.og_image_url || work.image_url;
   const authLink = `${origin}/#auth`;
   const dailyLink = `${origin}/#daily`;
@@ -81,7 +81,7 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(desc)}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="DRAWPARTY">
+<meta property="og:site_name" content="DrawParty">
 <meta property="og:title" content="${escapeHtml(title)}">
 <meta property="og:description" content="${escapeHtml(desc)}">
 <meta property="og:image" content="${escapeHtml(image)}">
@@ -107,7 +107,7 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(desc)}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="DRAWPARTY">
+<meta property="og:site_name" content="DrawParty">
 <meta property="og:title" content="${escapeHtml(title)}">
 <meta property="og:description" content="${escapeHtml(desc)}">
 <meta property="og:image" content="${escapeHtml(image)}">
@@ -225,7 +225,7 @@ function renderWorkHtml(env, work, { forBot = false } = {}) {
       <button class="back" type="button" aria-label="戻る" onclick="if(history.length>1)history.back();else location.href='${escapeHtml(origin)}/';">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
       </button>
-      <a class="brand" href="${escapeHtml(origin)}/">DRAWPARTY</a>
+      <a class="brand" href="${escapeHtml(origin)}/">DrawParty</a>
       <div class="auth">
         <a class="signup" href="${escapeHtml(authLink)}">新規登録</a>
         <a class="login" href="${escapeHtml(authLink)}">ログイン</a>
@@ -254,7 +254,7 @@ function notFoundHtml(origin = 'https://artclub.space') {
 <title>Not found</title>
 <style>body{font-family:system-ui;padding:40px;background:#f4f4f1;color:#111}a{color:#c96f94}</style>
 </head><body><h1>スケッチが見つかりません</h1>
-<p><a href="${escapeHtml(origin)}/">DRAWPARTY へ戻る</a></p></body></html>`;
+<p><a href="${escapeHtml(origin)}/">DrawParty へ戻る</a></p></body></html>`;
 }
 
 export default {
