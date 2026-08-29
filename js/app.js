@@ -2239,10 +2239,13 @@ async function finishSession(result) {
   showScreen('review');
 
   if (pendingDrawings.length > 0) {
+    const includePrompt = !!getSettings().showRefCorner;
     const sheetBlobs = [];
     for (const shot of pendingDrawings) {
-      const prompt = await promptBlobForShot(shot);
-      if (prompt) sheetBlobs.push(prompt);
+      if (includePrompt) {
+        const prompt = await promptBlobForShot(shot);
+        if (prompt) sheetBlobs.push(prompt);
+      }
       sheetBlobs.push(shot.blob);
     }
     const blob = await composeSheet(sheetBlobs, { date: dateKey(), crop: true });
@@ -2405,8 +2408,10 @@ async function promptBlobForShot(shot) {
 
 async function downloadShot(shot, index) {
   try {
-    const prompt = await promptBlobForShot(shot);
-    const blob = (await composeWithPrompt(shot.blob, prompt, { crop: true })) || shot.blob;
+    const prompt = getSettings().showRefCorner ? await promptBlobForShot(shot) : null;
+    const blob = prompt
+      ? ((await composeWithPrompt(shot.blob, prompt, { crop: true })) || shot.blob)
+      : ((await cropToInkVertical(shot.blob)) || shot.blob);
     downloadBlob(blob, `artclub-${dateKey()}-${index + 1}.jpg`);
   } catch {
     try {
