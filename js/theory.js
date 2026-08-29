@@ -462,7 +462,7 @@ export function pickDailyComposeStep(history = []) {
       count: 1,
       // 見比べは練習時間に含めない
       seconds: look + draw,
-      source: 'composePose',
+      source: 'memoryCroquis',
       label: '記憶クロッキー',
       labelEn: 'Memory croquis',
     };
@@ -724,7 +724,7 @@ export function buildMemoryCroquisMenu(count = 1) {
       drill: 'memoryCroquis',
       count: n,
       seconds,
-      source: 'composePose',
+      source: 'memoryCroquis',
       label: '記憶クロッキー',
       labelEn: 'Memory croquis',
     }],

@@ -153,7 +153,8 @@ export function createSessionRunner({ onFinish, onQuit }) {
           source: step.source
             || (step.drill === 'gesture' ? 'gesture'
               : step.drill === 'croquis' ? 'croquis'
-              : step.drill === 'composePose' || step.drill === 'memoryCroquis' ? 'composePose'
+              : step.drill === 'composePose' ? 'composePose'
+              : step.drill === 'memoryCroquis' ? 'memoryCroquis'
               : step.drill === 'copy' ? 'copy'
               : 'photo'),
           // 同じドリルでも、その回が何のためのものかは名前を変えて示す（部位練習など）
