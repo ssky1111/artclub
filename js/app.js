@@ -1819,7 +1819,8 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
     (menu.steps || []).map((s) => s.source
       || (s.drill === 'gesture' ? 'gesture'
         : s.drill === 'croquis' ? 'croquis'
-        : s.drill === 'composePose' || s.drill === 'memoryCroquis' ? 'composePose'
+        : s.drill === 'composePose' ? 'composePose'
+        : s.drill === 'memoryCroquis' ? 'memoryCroquis'
         : 'photo')),
   );
   if (weak) needed.add(`weak:${weak.id}`);
@@ -1884,6 +1885,17 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
     queues.composePose = composePhotos.length
       ? createLibraryQueue(['構図'], silent, null, fromAdmin)
       : createLibraryQueue([], notice, '『構図』タグの写真がありません。全体から出します', fromAdmin);
+  }
+
+  // 記憶クロッキー → 『全身』と『構図』からランダム
+  if (needed.has('memoryCroquis')) {
+    const memPhotos = own.filter((p) => p.tags.includes('全身') || p.tags.includes('構図'));
+    queues.memoryCroquis = memPhotos.length
+      ? createWeightedQueue([
+        { tags: ['全身'], weight: 1 },
+        { tags: ['構図'], weight: 1 },
+      ], silent, { photos: memPhotos, seenIds })
+      : createLibraryQueue([], notice, '『全身』『構図』タグの写真がありません', fromAdmin);
   }
 
   if (weak) {
@@ -1976,8 +1988,10 @@ function shotModeFrom(shot, sessionMode = null) {
   if (source === 'copy' || drill === 'copy') return 'Copy';
   if (source === 'gesture' || drill === 'gesture') return 'Gesture';
   if (source === 'part' || label.includes('部位') || /^Body part/i.test(label)) return 'Part';
-  if (source === 'composePose' || drill === 'composePose' || drill === 'memoryCroquis'
-      || label.includes('構図') || label.includes('記憶') || /composition/i.test(label) || /memory/i.test(label)) return 'ComposePose';
+  if (source === 'composePose' || drill === 'composePose'
+      || label.includes('構図') || /composition/i.test(label)) return 'ComposePose';
+  if (source === 'memoryCroquis' || drill === 'memoryCroquis'
+      || label.includes('記憶') || /memory/i.test(label)) return 'MemoryCroquis';
   if (source === 'croquis' || drill === 'croquis') return 'Croquis';
   return sessionMode || 'Practice';
 }
