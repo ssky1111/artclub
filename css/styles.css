@@ -1388,6 +1388,7 @@ html[data-site-unlocked] .site-gate-dialog,
 .pad-wrap.is-memory-look .pad-tools,
 .pad-wrap.is-memory-look #pad-next,
 .pad-wrap.is-memory-look #pad-skip { display: none !important; }
+.pad-wrap.is-memory-draw .ref-mini-wrap { display: none !important; }
 .pad-wrap.is-memory-draw .pad-ref .ref-swap { display: none !important; }
 .pad-wrap.is-memory-compare .pad-body { flex-direction: column; }
 .pad-wrap.is-memory-compare .pad-ref {
@@ -1408,10 +1409,9 @@ html[data-site-unlocked] .site-gate-dialog,
   .pad-wrap.is-memory-compare .pad-ref { flex: 0 0 46%; }
 }
 
-/* 左上のお題。既定は非表示（設定ONで出す） */
+/* 左上のお題。狭い画面用の退避小窓（暗記の描く中は出さない） */
 .ref-mini-wrap {
   position: absolute; left: 10px; top: 10px; z-index: 3;
-  display: none;
 }
 .ref-mini {
   position: relative;
@@ -1541,26 +1541,17 @@ html[data-site-unlocked] .site-gate-dialog,
 /*
  * 広い画面では、お題を小窓に閉じ込める理由が無い。
  * 左半分に写真、右半分にキャンバス。小窓は消す。
- * ただし「お題を左上に表示」ON のときは小窓を使い、大お題は隠す。
+ * （「お題を左上に表示」設定はまとめ画像／DL用。描画中のレイアウトは変えない）
  */
 @media (min-width: 900px) {
-  .pad-wrap:not(.show-ref-corner) .pad-ref {
+  .pad-ref {
     display: flex; align-items: center; justify-content: center;
     flex: 0 0 46%; background: #14130f; padding: 12px; min-width: 0;
     position: relative;
   }
-  .pad-wrap:not(.show-ref-corner) .pad-ref img {
-    max-width: 100%; max-height: 100%; object-fit: contain; display: block;
-  }
-  .pad-wrap:not(.show-ref-corner) .pad-ref .ref-swap { right: 14px; bottom: 14px; }
-}
-
-/* 設定ON: 全モードで左上ミニ表示（見る／見比べ中は全面お題なので除外） */
-.pad-wrap.show-ref-corner:not(.is-memory-look):not(.is-memory-compare) .ref-mini-wrap {
-  display: block !important;
-}
-.pad-wrap.show-ref-corner:not(.is-memory-look):not(.is-memory-compare) .pad-ref {
-  display: none !important;
+  .pad-ref img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+  .pad-ref .ref-swap { right: 14px; bottom: 14px; }
+  .ref-mini-wrap { display: none; }
 }
 
 .settings-check {

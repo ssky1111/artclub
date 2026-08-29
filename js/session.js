@@ -11,7 +11,7 @@ import { createTimer, sfx } from './timer.js';
 import { createPad } from './draw.js';
 import { $, $$, showScreen, toast, fmtClock, confirmDialog, hintList } from './ui.js';
 import { t, tr, fmtDur, getLang } from './i18n.js';
-import { saveSettings, getSettings } from './storage.js';
+import { saveSettings } from './storage.js';
 import { paintIcons } from './icons.js';
 
 export function createSessionRunner({ onFinish, onQuit }) {
@@ -442,11 +442,8 @@ export function createSessionRunner({ onFinish, onQuit }) {
   }
 
   function applyRefCornerMode() {
-    // セッション中に設定が変わっても拾えるよう、都度最新を見る
-    const fresh = getSettings();
-    if (state?.settings) state.settings.showRefCorner = !!fresh.showRefCorner;
-    const on = !!fresh.showRefCorner;
-    dom.padWrap?.classList.toggle('show-ref-corner', on);
+    // 描画中レイアウトは変えない（設定はまとめ画像／DL専用）
+    dom.padWrap?.classList.remove('show-ref-corner');
   }
 
   function setRefSrc(photo) {

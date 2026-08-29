@@ -2244,11 +2244,13 @@ async function finishSession(result) {
     for (const shot of pendingDrawings) {
       if (includePrompt) {
         const prompt = await promptBlobForShot(shot);
-        if (prompt) sheetBlobs.push(prompt);
+        const composed = await composeWithPrompt(shot.blob, prompt, { crop: true });
+        sheetBlobs.push(composed || shot.blob);
+      } else {
+        sheetBlobs.push(shot.blob);
       }
-      sheetBlobs.push(shot.blob);
     }
-    const blob = await composeSheet(sheetBlobs, { date: dateKey(), crop: true });
+    const blob = await composeSheet(sheetBlobs, { date: dateKey(), crop: !includePrompt });
     if (blob) {
       sheetBlob = blob;
       $('#sheet-img').src = URL.createObjectURL(blob);
