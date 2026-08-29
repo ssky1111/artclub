@@ -310,17 +310,23 @@
         <button id="share-x" class="btn primary small" data-i18n="rev.shareX">Xでシェア</button>
       </div>
     </div>
-    <div id="strip-bulk" class="strip-bulk" hidden>
-      <label class="toggle-row" id="bulk-publish-row">
-        <span data-i18n="gal.publishAll">全て公開</span>
-        <input type="checkbox" id="bulk-publish" checked>
-        <span class="toggle-track"></span>
-      </label>
-      <label class="toggle-row" id="bulk-copy-row">
-        <span data-i18n="gal.copyAll">全て模写OK</span>
-        <input type="checkbox" id="bulk-copy">
-        <span class="toggle-track"></span>
-      </label>
+    <div id="strip-bulk" class="review-settings" hidden>
+      <div class="review-settings-label" data-i18n="rev.settings">設定</div>
+      <div class="review-settings-sep" aria-hidden="true">│</div>
+      <div class="review-settings-items">
+        <label class="check-row" id="bulk-publish-row">
+          <input type="checkbox" id="bulk-publish" checked>
+          <span data-i18n="gal.publishAll">全て公開</span>
+        </label>
+        <label class="check-row" id="bulk-copy-row">
+          <input type="checkbox" id="bulk-copy">
+          <span data-i18n="gal.copyAll">全て模写OK</span>
+        </label>
+        <label class="check-row" id="review-ref-corner-row">
+          <input type="checkbox" id="review-ref-corner">
+          <span data-i18n="set.refCorner">お題を左上に表示</span>
+        </label>
+      </div>
       <p class="strip-bulk-hint muted small" data-i18n="gal.allowCopyHint">模写モードで他の人があなたの絵を模写できるようになります</p>
     </div>
     <div id="review-board" class="review-board" hidden></div>
@@ -1008,6 +1014,11 @@
     <label class="switch"><input type="checkbox" id="opt-sfx"> <span data-i18n="set.sfx"></span></label>
     <label class="switch"><input type="checkbox" id="opt-autoflip"> <span data-i18n="set.autoflip"></span></label>
     <label class="switch"><input type="checkbox" id="opt-keepawake"> <span data-i18n="set.keepawake"></span></label>
+    <label class="check-row settings-check" id="opt-ref-corner-wrap">
+      <input type="checkbox" id="opt-ref-corner">
+      <span data-i18n="set.refCorner">お題を左上に表示</span>
+    </label>
+    <p class="muted small" data-i18n="set.refCornerNote">描いているあいだ、お題写真をキャンバス左上に小さく出します</p>
 
     <label class="label" for="opt-orientation" data-i18n="set.orientation">写真の向き</label>
     <select id="opt-orientation" class="input">

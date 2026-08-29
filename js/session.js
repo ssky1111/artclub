@@ -258,6 +258,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
 
     showScreen('session');
     ensurePad();
+    applyRefCornerMode();
     updateSaveNextLabel();
     dom.stageMessage.hidden = false;
     dom.stageMessage.textContent =
@@ -437,6 +438,11 @@ export function createSessionRunner({ onFinish, onQuit }) {
     for (const btn of [dom.padRefSwap, dom.refMiniSwap]) {
       if (btn) btn.hidden = locked;
     }
+  }
+
+  function applyRefCornerMode() {
+    const on = !!state?.settings?.showRefCorner;
+    dom.padWrap?.classList.toggle('show-ref-corner', on);
   }
 
   function setRefSrc(photo) {
@@ -803,6 +809,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
       dom.padOpacity.parentElement.style.setProperty('--a', String(initAlpha));
       dom.padHint.classList.toggle('open', settings.hintOpen !== false);
       setReferenceLocked(!!referenceLocked);
+      applyRefCornerMode();
       Object.values(queues).forEach((q) => q.prime?.());
       if (settings.source === 'unsplash' && !settings.unsplashKey) {
         toast('Unsplash のキーが未設定です。設定から入れてください');
