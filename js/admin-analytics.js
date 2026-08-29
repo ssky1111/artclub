@@ -190,7 +190,7 @@ function modeToMenuId(mode) {
   if (m.includes('part') || raw.includes('部位')) return 'part-unknown';
   if (m.includes('croquis') || raw.includes('クロッキー')) return 'croquisMode';
   if (m.includes('compose') || m.includes('composepose') || raw.includes('構図')) return 'composePoseMode';
-  if (m.includes('memory') || raw.includes('記憶')) return 'memoryCroquisMode';
+  if (m.includes('memory') || raw.includes('記憶') || raw.includes('暗記')) return 'memoryCroquisMode';
   if (m.includes('copy') || raw.includes('模写')) return 'copyMode';
   return '';
 }

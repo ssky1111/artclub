@@ -207,8 +207,8 @@ export const DRILLS = {
   },
   memoryCroquis: {
     id: 'memoryCroquis',
-    name: '記憶クロッキー',
-    short: '記憶',
+    name: '暗記クロッキー',
+    short: '暗記',
     about:
       '1分見て覚え、写真を隠してから2分で描く。' +
       '見ながらの往復ではなく、頭に残ったポーズを取り出す練習。',
@@ -447,8 +447,8 @@ export const PARTS = [
 export const ACTIVE_PARTS = PARTS.filter((p) => !p.disabled);
 
 /**
- * デイリー最終枠: 構図とポーズ / 記憶クロッキーを交互。
- * 描画ありのデイリー回数で判定（0回目・2回目…が記憶）。
+ * デイリー最終枠: 構図とポーズ / 暗記クロッキーを交互。
+ * 描画ありのデイリー回数で判定（0回目・2回目…が暗記）。
  */
 export function pickDailyComposeStep(history = []) {
   const rounds = (history || []).filter((h) =>
@@ -463,7 +463,7 @@ export function pickDailyComposeStep(history = []) {
       // 見比べは練習時間に含めない
       seconds: look + draw,
       source: 'memoryCroquis',
-      label: '記憶クロッキー',
+      label: '暗記クロッキー',
       labelEn: 'Memory croquis',
     };
   }
@@ -636,7 +636,7 @@ export const MODES = [
   },
   {
     id: 'memoryCroquisMode',
-    title: '記憶クロッキー',
+    title: '暗記クロッキー',
     subtitle: '1分見て2分描く。何枚やるかは自分で選ぶ',
     picker: 'memoryCroquisCount',
     drillId: 'memoryCroquis',
@@ -707,7 +707,7 @@ export function buildComposePoseMenu(count = 1) {
   };
 }
 
-/** 記憶クロッキー。1分見て2分描く、枚数だけ選ぶ。 */
+/** 暗記クロッキー。1分見て2分描く、枚数だけ選ぶ。 */
 export function buildMemoryCroquisMenu(count = 1) {
   const n = Math.max(1, Number(count) || 1);
   const mem = DRILLS.memoryCroquis;
@@ -717,7 +717,7 @@ export function buildMemoryCroquisMenu(count = 1) {
   const seconds = look + draw;
   return {
     id: 'memoryCroquisMode',
-    title: '記憶クロッキー',
+    title: '暗記クロッキー',
     subtitle: `1分見て2分描く × ${n}枚`,
     drillId: 'memoryCroquis',
     steps: [{
@@ -725,7 +725,7 @@ export function buildMemoryCroquisMenu(count = 1) {
       count: n,
       seconds,
       source: 'memoryCroquis',
-      label: '記憶クロッキー',
+      label: '暗記クロッキー',
       labelEn: 'Memory croquis',
     }],
     en: {
