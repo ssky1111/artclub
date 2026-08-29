@@ -222,8 +222,8 @@ export const DRILLS = {
     hints: [
       '1分で流れ・比率・重心を頭に残し、隠してから2分で描き起こしましょう',
     ],
-    // 見る60秒（描けない）→ 描く120秒 → 見比べ5秒。合計185秒
-    view: { memorizeSeconds: 60, drawSeconds: 120, compareSeconds: 5, peeks: 1 },
+    // 見る60秒（描けない）→ 描く120秒 → 見比べ15秒（練習時間には含めない）
+    view: { memorizeSeconds: 60, drawSeconds: 120, compareSeconds: 15, peeks: 1 },
     en: {
       name: 'Memory croquis',
       short: 'Memory',
@@ -457,11 +457,11 @@ export function pickDailyComposeStep(history = []) {
     const mem = DRILLS.memoryCroquis;
     const look = mem.view?.memorizeSeconds || 60;
     const draw = mem.view?.drawSeconds || 120;
-    const compare = mem.view?.compareSeconds || 5;
     return {
       drill: 'memoryCroquis',
       count: 1,
-      seconds: look + draw + compare,
+      // 見比べは練習時間に含めない
+      seconds: look + draw,
       source: 'composePose',
       label: '記憶クロッキー',
       labelEn: 'Memory croquis',
@@ -713,8 +713,8 @@ export function buildMemoryCroquisMenu(count = 1) {
   const mem = DRILLS.memoryCroquis;
   const look = mem.view?.memorizeSeconds || 60;
   const draw = mem.view?.drawSeconds || 120;
-  const compare = mem.view?.compareSeconds || 5;
-  const seconds = look + draw + compare;
+  // 見比べは練習時間に含めない
+  const seconds = look + draw;
   return {
     id: 'memoryCroquisMode',
     title: '記憶クロッキー',

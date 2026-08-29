@@ -433,7 +433,7 @@ function renderMemoryCroquisChips() {
     chip.addEventListener('click', () => { memoryCroquisCount = n; renderMemoryCroquisChips(); });
     wrap.append(chip);
   }
-  const perRound = 185;
+  const perRound = 180;
   const note = $('#memory-croquis-note');
   if (note) {
     note.textContent = getLang() === 'ja'
