@@ -120,7 +120,7 @@ export function manifestJson(entries) {
   return JSON.stringify({
     version: 1,
     updatedAt: new Date().toISOString(),
-    note: 'ARTCLUB のお題写真。file は photos/ からの相対パス。',
+    note: 'DrawParty のお題写真。file は photos/ からの相対パス。',
     photos: entries,
   }, null, 2);
 }

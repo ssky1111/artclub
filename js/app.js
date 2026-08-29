@@ -552,7 +552,7 @@ function createArtworkQueue(work) {
       name: artworkDisplayName(work),
       link: workPageUrl(work),
       photoLink: workPageUrl(work),
-      source: 'DRAWPARTY',
+      source: 'DrawParty',
     },
   };
   return {

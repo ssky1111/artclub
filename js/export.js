@@ -251,21 +251,21 @@ export async function composeSheet(blobs, { date = '', crop = true } = {}) {
     }
   });
 
-  // ARTCLUB は下中央（黒）
+  // DrawParty は下中央（黒）
   ctx.fillStyle = INK;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = '600 16px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
-  ctx.fillText('DRAWPARTY', W / 2, H - bottomBand / 2);
+  ctx.fillText('DrawParty', W / 2, H - bottomBand / 2);
 
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.88));
 }
 
 /**
- * OGP用に右下へ ARTCLUB を焼き込む。
+ * OGP用に右下へ DrawParty を焼き込む。
  * ギャラリー本体の絵はそのままにし、og_image_url 側で使う。
  */
-export async function brandForOgp(blob, { label = 'DRAWPARTY' } = {}) {
+export async function brandForOgp(blob, { label = 'DrawParty' } = {}) {
   if (!blob) return null;
   const img = await loadImage(blob);
   const canvas = document.createElement('canvas');

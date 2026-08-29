@@ -14,7 +14,7 @@ import { upsertUserPrefs } from './usercloud.js';
 
 const DICT = {
   /* ---------- 共通 ---------- */
-  'app.name':            { ja: 'DRAWPARTY',         en: 'DRAWPARTY' },
+  'app.name':            { ja: 'DrawParty',         en: 'DrawParty' },
   'app.beta':            { ja: 'テスト公開中',        en: 'beta' },
   'app.tagline':         { ja: '毎日のドローイング練習', en: 'Daily drawing practice' },
   'common.close':        { ja: '閉じる',             en: 'Close' },
@@ -276,8 +276,8 @@ const DICT = {
   'rev.shareX':          { ja: 'Xでシェア',            en: 'Share on X' },
   'rev.shareNote':       { ja: '画像は自動では付きません。ダウンロードしてから貼ってください。',
                            en: 'The image is not attached automatically — download it and attach it.' },
-  'rev.shareText':       { ja: '{n}枚 / {d} ドローイング練習しました。#DRAWPARTY',
-                           en: '{n} sketches / {d} drawing practice. #DRAWPARTY' },
+  'rev.shareText':       { ja: '{n}枚 / {d} ドローイング練習しました。#DrawParty',
+                           en: '{n} sketches / {d} drawing practice. #DrawParty' },
   'rev.save':            { ja: '保存して終わる',       en: 'Save & finish' },
   'rev.home':            { ja: 'ホームに戻る',         en: 'Back to home' },
   'rev.again':           { ja: 'もう一周やる',          en: 'Try again' },
