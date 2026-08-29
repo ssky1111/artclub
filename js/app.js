@@ -2282,11 +2282,26 @@ function syncBulkToggles() {
   const bulkCopy = $('#bulk-copy');
   const bulkPubRow = $('#bulk-publish-row');
   const bulkCopyRow = $('#bulk-copy-row');
-  if (!bulk || !bulkPub || !bulkCopy) return;
+  const refCorner = $('#review-ref-corner');
+  const refCornerRow = $('#review-ref-corner-row');
+  if (!bulk) return;
 
-  const loggedIn = !!getUser() && pendingDrawings.length > 0;
-  bulk.hidden = !loggedIn;
-  if (!loggedIn) return;
+  const hasDrawings = pendingDrawings.length > 0;
+  bulk.hidden = !hasDrawings;
+  if (!hasDrawings) return;
+
+  const loggedIn = !!getUser();
+  if (bulkPubRow) bulkPubRow.hidden = !loggedIn;
+  if (bulkCopyRow) bulkCopyRow.hidden = !loggedIn;
+  const hint = bulk.querySelector('.strip-bulk-hint');
+  if (hint) hint.hidden = !loggedIn;
+
+  if (refCorner) {
+    refCorner.checked = !!getSettings().showRefCorner;
+    refCornerRow?.classList.toggle('is-off', !refCorner.checked);
+  }
+
+  if (!loggedIn || !bulkPub || !bulkCopy) return;
 
   const allPublic = pendingDrawings.every((s) => !s.excludeFromGallery);
   const allCopy = pendingDrawings.length > 0 && pendingDrawings.every((s) => !!s.allowCopy);
@@ -2294,6 +2309,10 @@ function syncBulkToggles() {
   bulkCopy.checked = allCopy;
   bulkPubRow?.classList.toggle('is-off', !bulkPub.checked);
   bulkCopyRow?.classList.toggle('is-off', !bulkCopy.checked);
+}
+
+function persistRefCornerPreference(on) {
+  settings = saveSettings({ showRefCorner: !!on });
 }
 
 function setAllPublish(on) {
@@ -2329,13 +2348,13 @@ function setShotExcluded(index, excluded) {
   if (wrap) {
     wrap.classList.toggle('is-excluded', !!excluded);
     const pub = wrap.querySelector('.strip-control-group--publish input[type="checkbox"]');
-    const pubLabel = wrap.querySelector('.strip-control-group--publish .toggle-row');
+    const pubLabel = wrap.querySelector('.strip-control-group--publish .check-row');
     if (pub && pubLabel) {
       pub.checked = publishEnabled() && !excluded;
       pubLabel.classList.toggle('is-off', !pub.checked);
     }
     const copy = wrap.querySelector('.strip-control-group--copy input[type="checkbox"]');
-    const copyLabel = wrap.querySelector('.strip-control-group--copy .toggle-row');
+    const copyLabel = wrap.querySelector('.strip-control-group--copy .check-row');
     if (copy && copyLabel) {
       copy.checked = !!shot.allowCopy;
       copyLabel.classList.toggle('is-off', !copy.checked);
@@ -2446,8 +2465,7 @@ function renderDrawingStrip() {
         const controls = el('div', 'strip-shot-controls');
 
         const pubGroup = el('div', 'strip-control-group strip-control-group--publish');
-        const pubLabel = el('label', `toggle-row${(!showPublish || shot.excludeFromGallery) ? ' is-off' : ''}`);
-        const pubText = el('span', null, t('gal.postThis'));
+        const pubLabel = el('label', `check-row${(!showPublish || shot.excludeFromGallery) ? ' is-off' : ''}`);
         const pubInput = el('input');
         pubInput.type = 'checkbox';
         pubInput.checked = showPublish && !shot.excludeFromGallery;
@@ -2456,14 +2474,13 @@ function renderDrawingStrip() {
           setShotExcluded(i, !pubInput.checked);
           pubLabel.classList.toggle('is-off', !pubInput.checked);
         });
-        const pubTrack = el('span', 'toggle-track');
-        pubLabel.append(pubText, pubInput, pubTrack);
+        const pubText = el('span', null, t('gal.postThis'));
+        pubLabel.append(pubInput, pubText);
         pubGroup.append(pubLabel);
         controls.append(pubGroup);
 
         const copyGroup = el('div', 'strip-control-group strip-control-group--copy');
-        const copyLabel = el('label', `toggle-row${shot.allowCopy ? '' : ' is-off'}`);
-        const copyText = el('span', null, t('gal.allowCopy'));
+        const copyLabel = el('label', `check-row${shot.allowCopy ? '' : ' is-off'}`);
         const copyInput = el('input');
         copyInput.type = 'checkbox';
         copyInput.checked = !!shot.allowCopy;
@@ -2474,8 +2491,8 @@ function renderDrawingStrip() {
           persistAllowCopyPreference();
           void syncPendingShotArtwork(shot);
         });
-        const copyTrack = el('span', 'toggle-track');
-        copyLabel.append(copyText, copyInput, copyTrack);
+        const copyText = el('span', null, t('gal.allowCopy'));
+        copyLabel.append(copyInput, copyText);
         copyGroup.append(copyLabel);
         controls.append(copyGroup);
 
@@ -2637,6 +2654,12 @@ function wireReview() {
   });
   $('#bulk-copy')?.addEventListener('change', (e) => {
     setAllAllowCopy(e.target.checked);
+  });
+  $('#review-ref-corner')?.addEventListener('change', (e) => {
+    persistRefCornerPreference(e.target.checked);
+    $('#review-ref-corner-row')?.classList.toggle('is-off', !e.target.checked);
+    const opt = $('#opt-ref-corner');
+    if (opt) opt.checked = !!e.target.checked;
   });
 
   $('#dl-all').addEventListener('click', () => {
@@ -3424,6 +3447,8 @@ function renderSettings() {
   $('#opt-sfx').checked = settings.sfx;
   $('#opt-autoflip').checked = settings.autoFlip;
   $('#opt-keepawake').checked = settings.keepAwake;
+  const refCorner = $('#opt-ref-corner');
+  if (refCorner) refCorner.checked = !!settings.showRefCorner;
   $('#opt-orientation').value = settings.orientation;
   $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 0.9) * 100));
   renderLangChips();
@@ -3496,6 +3521,14 @@ function wireSettings() {
   });
   bind('#opt-autoflip', 'autoFlip');
   bind('#opt-keepawake', 'keepAwake');
+  $('#opt-ref-corner')?.addEventListener('change', (e) => {
+    persistRefCornerPreference(e.target.checked);
+    const review = $('#review-ref-corner');
+    if (review) {
+      review.checked = !!e.target.checked;
+      $('#review-ref-corner-row')?.classList.toggle('is-off', !e.target.checked);
+    }
+  });
   bind('#opt-orientation', 'orientation');
 }
 
