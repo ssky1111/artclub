@@ -38,6 +38,8 @@ const DEFAULT_SETTINGS = {
   skinDefaultV3: 1,
   /** 公開時の「全て模写OK」初期値（ログイン後は prefs に保存） */
   defaultAllowCopy: true,
+  /** 描画中にお題を左上ミニ表示（既定オフ。一度オンにしたら prefs に残す） */
+  showRefCorner: false,
 };
 
 let settingsCache = { ...DEFAULT_SETTINGS };

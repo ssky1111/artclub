@@ -230,8 +230,8 @@ export function createSessionRunner({ onFinish, onQuit }) {
       ? (getLang() === 'en' ? `${item.countInStep} · no time limit` : `${item.countInStep}枚 · 時間無制限`)
       : isMemoryCroquis && memLook && memDraw
         ? (getLang() === 'en'
-          ? `look ${memLook / 60} min → draw ${memDraw / 60} min → compare ${memCompare || 5}s`
-          : `見る${memLook / 60}分 → 描く${memDraw / 60}分 → 見比べ${memCompare || 5}秒`)
+          ? `look ${memLook / 60} min → draw ${memDraw / 60} min → compare ${memCompare || 15}s`
+          : `見る${memLook / 60}分 → 描く${memDraw / 60}分 → 見比べ${memCompare || 15}秒`)
         : `${item.countInStep}枚×${item.seconds < 60 ? item.seconds + '秒' : (item.seconds / 60) + '分'}`;
 
     // 復習対象のドリルのときだけ「前回の宿題」を1行出す
@@ -258,6 +258,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
 
     showScreen('session');
     ensurePad();
+    applyRefCornerMode();
     updateSaveNextLabel();
     dom.stageMessage.hidden = false;
     dom.stageMessage.textContent =
@@ -393,7 +394,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
   function enterMemoryComparePhase() {
     if (!state?.current) return;
     const drill = DRILLS[state.current.drillId] || {};
-    const compare = Number(drill.view?.compareSeconds) || 5;
+    const compare = Number(drill.view?.compareSeconds) || 15;
     state.memoryPhase = 'compare';
     state.peeking = false;
     if (dom.peekBtn) dom.peekBtn.hidden = true;
@@ -437,6 +438,11 @@ export function createSessionRunner({ onFinish, onQuit }) {
     for (const btn of [dom.padRefSwap, dom.refMiniSwap]) {
       if (btn) btn.hidden = locked;
     }
+  }
+
+  function applyRefCornerMode() {
+    const on = !!state?.settings?.showRefCorner;
+    dom.padWrap?.classList.toggle('show-ref-corner', on);
   }
 
   function setRefSrc(photo) {
@@ -501,17 +507,14 @@ export function createSessionRunner({ onFinish, onQuit }) {
   function spentSeconds(item, { skipped = false } = {}) {
     if (!item) return 0;
     if (item.unlimited) return Math.max(0, timer.elapsed);
-    // 記憶クロッキーは見る+描く+見比べの合計を1本分として数える
+    // 記憶クロッキーは見る+描くだけを数える（見比べは練習時間に含めない）
     if (item.drillId === 'memoryCroquis') {
       const look = Number(DRILLS.memoryCroquis?.view?.memorizeSeconds) || 60;
       const draw = Number(DRILLS.memoryCroquis?.view?.drawSeconds) || 120;
-      const compare = Number(DRILLS.memoryCroquis?.view?.compareSeconds) || 5;
       if (state?.memoryPhase === 'look') return Math.max(0, look - timer.remaining);
       if (state?.memoryPhase === 'draw') return look + Math.max(0, draw - timer.remaining);
-      if (state?.memoryPhase === 'compare') {
-        return look + draw + Math.max(0, compare - timer.remaining);
-      }
-      return skipped ? 0 : look + draw + compare;
+      if (state?.memoryPhase === 'compare') return look + draw;
+      return skipped ? 0 : look + draw;
     }
     if (!skipped) return item.seconds;
     return Math.max(0, item.seconds - timer.remaining);
@@ -806,6 +809,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
       dom.padOpacity.parentElement.style.setProperty('--a', String(initAlpha));
       dom.padHint.classList.toggle('open', settings.hintOpen !== false);
       setReferenceLocked(!!referenceLocked);
+      applyRefCornerMode();
       Object.values(queues).forEach((q) => q.prime?.());
       if (settings.source === 'unsplash' && !settings.unsplashKey) {
         toast('Unsplash のキーが未設定です。設定から入れてください');

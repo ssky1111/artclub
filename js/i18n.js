@@ -14,7 +14,7 @@ import { upsertUserPrefs } from './usercloud.js';
 
 const DICT = {
   /* ---------- 共通 ---------- */
-  'app.name':            { ja: 'DRAWPARTY',         en: 'DRAWPARTY' },
+  'app.name':            { ja: 'DrawParty',         en: 'DrawParty' },
   'app.beta':            { ja: 'テスト公開中',        en: 'beta' },
   'app.tagline':         { ja: '毎日のドローイング練習', en: 'Daily drawing practice' },
   'common.close':        { ja: '閉じる',             en: 'Close' },
@@ -135,6 +135,11 @@ const DICT = {
     ja: '1枚あたり3分。枚数は自分で選びます。',
     en: '3 minutes each. Choose how many.',
   },
+  'setup.memoryCroquisCount': { ja: '何枚やる？', en: 'How many drawings?' },
+  'setup.memoryCroquisNote': {
+    ja: '1枚あたり1分見て2分描く。枚数は自分で選びます。',
+    en: 'Look 1 min, draw 2 min each. Choose how many.',
+  },
 
   /* ---------- アトリエ ---------- */
   'atelier.title':        { ja: 'アトリエ',               en: 'Atelier' },
@@ -155,6 +160,7 @@ const DICT = {
   'atelier.modePart':     { ja: '部位練習',               en: 'Body part' },
   'atelier.modeCroquis':  { ja: 'クロッキー',             en: 'Croquis' },
   'atelier.modeComposePose': { ja: '構図とポーズ',        en: 'Composition & pose' },
+  'atelier.modeMemoryCroquis': { ja: '記憶クロッキー',   en: 'Memory croquis' },
   'atelier.modeDaily':    { ja: 'デイリー',               en: 'Daily' },
   'atelier.modeCopy':     { ja: '模写',                   en: 'Copy' },
   'atelier.modeOther':    { ja: '練習',                   en: 'Practice' },
@@ -259,6 +265,8 @@ const DICT = {
   'rev.notePh':          { ja: '気づいたことを一言（例：上半身を大きく描いて下半身が小さくなる、比率がおかしい）',
                            en: 'One thing you noticed (e.g. upper body too big, legs too small — proportions off)' },
   'rev.noteLinePh':      { ja: '振り返りの一言を書く', en: 'Write a quick reflection' },
+  'rev.noteSaved':       { ja: '振り返りを保存しました', en: 'Reflection saved' },
+  'rev.settings':        { ja: '設定',                 en: 'Settings' },
   'rev.drawn':           { ja: 'きょう描いたもの',     en: 'What you drew today' },
   'rev.drawnNote':       { ja: '押すと大きく見られます。端末のなかにだけ保存されます。',
                            en: 'Tap to enlarge. Everything stays on this device.' },
@@ -269,8 +277,8 @@ const DICT = {
   'rev.shareX':          { ja: 'Xでシェア',            en: 'Share on X' },
   'rev.shareNote':       { ja: '画像は自動では付きません。ダウンロードしてから貼ってください。',
                            en: 'The image is not attached automatically — download it and attach it.' },
-  'rev.shareText':       { ja: '{n}枚 / {d} ドローイング練習しました。#DRAWPARTY',
-                           en: '{n} sketches / {d} drawing practice. #DRAWPARTY' },
+  'rev.shareText':       { ja: '{n}枚 / {d} ドローイング練習しました。#DrawParty',
+                           en: '{n} sketches / {d} drawing practice. #DrawParty' },
   'rev.save':            { ja: '保存して終わる',       en: 'Save & finish' },
   'rev.home':            { ja: 'ホームに戻る',         en: 'Back to home' },
   'rev.again':           { ja: 'もう一周やる',          en: 'Try again' },
@@ -364,6 +372,7 @@ const DICT = {
   'analytics.modePart':  { ja: '部位',                 en: 'Part' },
   'analytics.modeCroquis': { ja: 'クロッキー',         en: 'Croquis' },
   'analytics.modeComposePose': { ja: '構図とポーズ',   en: 'Composition & pose' },
+  'analytics.modeMemoryCroquis': { ja: '記憶クロッキー', en: 'Memory croquis' },
   'analytics.modeCopy':  { ja: '模写',                 en: 'Copy' },
   'analytics.modeOther': { ja: 'その他',               en: 'Other' },
   'analytics.noData':    { ja: 'この日のデータはありません', en: 'No data for this day' },
@@ -444,6 +453,9 @@ const DICT = {
   'set.sfx':             { ja: '効果音を鳴らす',       en: 'Play sound effects' },
   'set.autoflip':        { ja: '毎回ランダムに左右反転する', en: 'Randomly mirror the reference' },
   'set.keepawake':       { ja: '練習中に画面を消さない', en: 'Keep the screen on while practising' },
+  'set.refCorner':       { ja: 'お題を左上に表示',     en: 'Show reference in the corner' },
+  'set.refCornerNote':   { ja: '描いているあいだ、お題写真をキャンバス左上に小さく出します',
+                           en: 'While drawing, show a small reference photo in the top-left of the canvas' },
   'set.orientation':     { ja: '写真の向き',           en: 'Photo orientation' },
   'set.orAny':           { ja: 'おまかせ',             en: 'Either' },
   'set.orPortrait':      { ja: '縦',                   en: 'Portrait' },

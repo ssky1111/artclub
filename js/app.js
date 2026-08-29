@@ -4,7 +4,7 @@
 
 import {
   buildDaily, partForDate, partForDaily, partById, MODES, PARTS, ACTIVE_PARTS, DRILLS, PICKABLE_DRILLS,
-  TIME_CHOICES, COUNT_CHOICES, GESTURE_COUNT_CHOICES, ROUND_COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu, buildCopyMenu, buildGestureMenu, buildCroquisMenu, buildComposePoseMenu,
+  TIME_CHOICES, COUNT_CHOICES, GESTURE_COUNT_CHOICES, ROUND_COUNT_CHOICES, timeLabel, buildCustomMenu, buildPartMenu, buildCopyMenu, buildGestureMenu, buildCroquisMenu, buildComposePoseMenu, buildMemoryCroquisMenu,
   levelLabel, menuDuration,
 } from './theory.js';
 import {
@@ -252,6 +252,7 @@ function renderModes() {
       if (mode.picker === 'gestureCount') return openGestureSheet();
       if (mode.picker === 'croquisCount') return openCroquisSheet();
       if (mode.picker === 'composePoseCount') return openComposePoseSheet();
+      if (mode.picker === 'memoryCroquisCount') return openMemoryCroquisSheet();
       startSession(mode);
     });
     wrap.append(card);
@@ -413,6 +414,47 @@ function wireComposePoseSheet() {
   });
 }
 
+/* ==================== 記憶クロッキー ==================== */
+
+let memoryCroquisCount = 1;
+
+function openMemoryCroquisSheet() {
+  renderMemoryCroquisChips();
+  $('#memory-croquis-sheet').hidden = false;
+}
+
+function renderMemoryCroquisChips() {
+  const wrap = $('#memory-croquis-count-chips');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  for (const n of ROUND_COUNT_CHOICES) {
+    const chip = el('button', `chip${memoryCroquisCount === n ? ' on' : ''}`,
+                    getLang() === 'ja' ? `${n}枚` : String(n));
+    chip.addEventListener('click', () => { memoryCroquisCount = n; renderMemoryCroquisChips(); });
+    wrap.append(chip);
+  }
+  const perRound = 180;
+  const note = $('#memory-croquis-note');
+  if (note) {
+    note.textContent = getLang() === 'ja'
+      ? `1枚約3分（1分見て2分描く）× ${memoryCroquisCount}枚（合計 ${Math.round(memoryCroquisCount * perRound / 60)}分）`
+      : `~3 min each (1 min look, 2 min draw) × ${memoryCroquisCount} (total ${Math.round(memoryCroquisCount * perRound / 60)} min)`;
+  }
+  const start = $('#memory-croquis-start');
+  if (start) start.textContent = t('setup.start', { d: fmtDur(perRound * memoryCroquisCount) });
+}
+
+function wireMemoryCroquisSheet() {
+  $('#memory-croquis-close')?.addEventListener('click', () => { $('#memory-croquis-sheet').hidden = true; });
+  $('#memory-croquis-sheet')?.addEventListener('click', (e) => {
+    if (e.target.id === 'memory-croquis-sheet') $('#memory-croquis-sheet').hidden = true;
+  });
+  $('#memory-croquis-start')?.addEventListener('click', () => {
+    $('#memory-croquis-sheet').hidden = true;
+    startSession(buildMemoryCroquisMenu(memoryCroquisCount));
+  });
+}
+
 /* ==================== 部位練習 ==================== */
 
 let currentPart = ACTIVE_PARTS[0] || PARTS[0];
@@ -510,7 +552,7 @@ function createArtworkQueue(work) {
       name: artworkDisplayName(work),
       link: workPageUrl(work),
       photoLink: workPageUrl(work),
-      source: 'DRAWPARTY',
+      source: 'DrawParty',
     },
   };
   return {
@@ -1921,6 +1963,7 @@ function sessionModeFrom(entry) {
     return 'Gesture';
   }
   if (entry.menuId === 'composePoseMode' || entry.byDrill?.composePose) return 'ComposePose';
+  if (entry.menuId === 'memoryCroquisMode' || entry.byDrill?.memoryCroquis) return 'MemoryCroquis';
   if (entry.menuId === 'croquisMode' || entry.byDrill?.croquis) return 'Croquis';
   return entry.menuTitle || 'Practice';
 }
@@ -1953,6 +1996,10 @@ function artworkModeLabel(work) {
   if (key === 'composepose' || key === 'composepodemode'
       || raw.includes('構図') || /composition\s*&?\s*pose/i.test(raw)) {
     return t('atelier.modeComposePose');
+  }
+  if (key === 'memorycroquis' || key === 'memorycroquismode'
+      || raw.includes('記憶') || /memory\s*croquis/i.test(raw)) {
+    return t('atelier.modeMemoryCroquis');
   }
   if (key === 'croquis' || key === 'croquismode' || raw.includes('クロッキー') || /croquis/i.test(raw)) {
     return t('atelier.modeCroquis');
@@ -2235,11 +2282,26 @@ function syncBulkToggles() {
   const bulkCopy = $('#bulk-copy');
   const bulkPubRow = $('#bulk-publish-row');
   const bulkCopyRow = $('#bulk-copy-row');
-  if (!bulk || !bulkPub || !bulkCopy) return;
+  const refCorner = $('#review-ref-corner');
+  const refCornerRow = $('#review-ref-corner-row');
+  if (!bulk) return;
 
-  const loggedIn = !!getUser() && pendingDrawings.length > 0;
-  bulk.hidden = !loggedIn;
-  if (!loggedIn) return;
+  const hasDrawings = pendingDrawings.length > 0;
+  bulk.hidden = !hasDrawings;
+  if (!hasDrawings) return;
+
+  const loggedIn = !!getUser();
+  if (bulkPubRow) bulkPubRow.hidden = !loggedIn;
+  if (bulkCopyRow) bulkCopyRow.hidden = !loggedIn;
+  const hint = bulk.querySelector('.strip-bulk-hint');
+  if (hint) hint.hidden = !loggedIn;
+
+  if (refCorner) {
+    refCorner.checked = !!getSettings().showRefCorner;
+    refCornerRow?.classList.toggle('is-off', !refCorner.checked);
+  }
+
+  if (!loggedIn || !bulkPub || !bulkCopy) return;
 
   const allPublic = pendingDrawings.every((s) => !s.excludeFromGallery);
   const allCopy = pendingDrawings.length > 0 && pendingDrawings.every((s) => !!s.allowCopy);
@@ -2247,6 +2309,10 @@ function syncBulkToggles() {
   bulkCopy.checked = allCopy;
   bulkPubRow?.classList.toggle('is-off', !bulkPub.checked);
   bulkCopyRow?.classList.toggle('is-off', !bulkCopy.checked);
+}
+
+function persistRefCornerPreference(on) {
+  settings = saveSettings({ showRefCorner: !!on });
 }
 
 function setAllPublish(on) {
@@ -2282,13 +2348,13 @@ function setShotExcluded(index, excluded) {
   if (wrap) {
     wrap.classList.toggle('is-excluded', !!excluded);
     const pub = wrap.querySelector('.strip-control-group--publish input[type="checkbox"]');
-    const pubLabel = wrap.querySelector('.strip-control-group--publish .toggle-row');
+    const pubLabel = wrap.querySelector('.strip-control-group--publish .check-row');
     if (pub && pubLabel) {
       pub.checked = publishEnabled() && !excluded;
       pubLabel.classList.toggle('is-off', !pub.checked);
     }
     const copy = wrap.querySelector('.strip-control-group--copy input[type="checkbox"]');
-    const copyLabel = wrap.querySelector('.strip-control-group--copy .toggle-row');
+    const copyLabel = wrap.querySelector('.strip-control-group--copy .check-row');
     if (copy && copyLabel) {
       copy.checked = !!shot.allowCopy;
       copyLabel.classList.toggle('is-off', !copy.checked);
@@ -2399,8 +2465,7 @@ function renderDrawingStrip() {
         const controls = el('div', 'strip-shot-controls');
 
         const pubGroup = el('div', 'strip-control-group strip-control-group--publish');
-        const pubLabel = el('label', `toggle-row${(!showPublish || shot.excludeFromGallery) ? ' is-off' : ''}`);
-        const pubText = el('span', null, t('gal.postThis'));
+        const pubLabel = el('label', `check-row${(!showPublish || shot.excludeFromGallery) ? ' is-off' : ''}`);
         const pubInput = el('input');
         pubInput.type = 'checkbox';
         pubInput.checked = showPublish && !shot.excludeFromGallery;
@@ -2409,14 +2474,13 @@ function renderDrawingStrip() {
           setShotExcluded(i, !pubInput.checked);
           pubLabel.classList.toggle('is-off', !pubInput.checked);
         });
-        const pubTrack = el('span', 'toggle-track');
-        pubLabel.append(pubText, pubInput, pubTrack);
+        const pubText = el('span', null, t('gal.postThis'));
+        pubLabel.append(pubInput, pubText);
         pubGroup.append(pubLabel);
         controls.append(pubGroup);
 
         const copyGroup = el('div', 'strip-control-group strip-control-group--copy');
-        const copyLabel = el('label', `toggle-row${shot.allowCopy ? '' : ' is-off'}`);
-        const copyText = el('span', null, t('gal.allowCopy'));
+        const copyLabel = el('label', `check-row${shot.allowCopy ? '' : ' is-off'}`);
         const copyInput = el('input');
         copyInput.type = 'checkbox';
         copyInput.checked = !!shot.allowCopy;
@@ -2427,8 +2491,8 @@ function renderDrawingStrip() {
           persistAllowCopyPreference();
           void syncPendingShotArtwork(shot);
         });
-        const copyTrack = el('span', 'toggle-track');
-        copyLabel.append(copyText, copyInput, copyTrack);
+        const copyText = el('span', null, t('gal.allowCopy'));
+        copyLabel.append(copyInput, copyText);
         copyGroup.append(copyLabel);
         controls.append(copyGroup);
 
@@ -2555,9 +2619,30 @@ function fitReviewNoteHeight(el = $('#review-note')) {
   el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
 }
 
+async function saveReviewNote() {
+  const note = $('#review-note')?.value.trim() || null;
+  const entry = updateLastSession({ note });
+  if (!entry) {
+    toast(t('toast.saveFail'));
+    return;
+  }
+  const btn = $('#review-note-save');
+  if (btn) btn.disabled = true;
+  try {
+    if (getUser()) await syncSessionNow(entry);
+    toast(t('rev.noteSaved'));
+  } catch (err) {
+    console.error('[note save]', err);
+    toast(t('auth.usernameSaveFail'));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 function wireReview() {
   const reviewNote = $('#review-note');
   reviewNote?.addEventListener('input', () => fitReviewNoteHeight(reviewNote));
+  $('#review-note-save')?.addEventListener('click', () => { void saveReviewNote(); });
   $('#publish-toggle').addEventListener('change', (e) => {
     updatePublishNote(e.target.checked);
     renderDrawingStrip();
@@ -2569,6 +2654,12 @@ function wireReview() {
   });
   $('#bulk-copy')?.addEventListener('change', (e) => {
     setAllAllowCopy(e.target.checked);
+  });
+  $('#review-ref-corner')?.addEventListener('change', (e) => {
+    persistRefCornerPreference(e.target.checked);
+    $('#review-ref-corner-row')?.classList.toggle('is-off', !e.target.checked);
+    const opt = $('#opt-ref-corner');
+    if (opt) opt.checked = !!e.target.checked;
   });
 
   $('#dl-all').addEventListener('click', () => {
@@ -2996,6 +3087,10 @@ function menuStepsForEntry(entry) {
     const n = Math.max(1, (entry.shots || []).length || Math.round((entry.seconds || 180) / 180));
     return buildComposePoseMenu(n).steps;
   }
+  if (entry.menuId === 'memoryCroquisMode') {
+    const n = Math.max(1, (entry.shots || []).length || 1);
+    return buildMemoryCroquisMenu(n).steps;
+  }
   if (entry.menuId === 'gestureMode') {
     // 体数は可変。履歴の枚数から復元（1体1分）
     const n = Math.max(1, (entry.shots || []).length || Math.round((entry.seconds || 600) / 60));
@@ -3352,6 +3447,8 @@ function renderSettings() {
   $('#opt-sfx').checked = settings.sfx;
   $('#opt-autoflip').checked = settings.autoFlip;
   $('#opt-keepawake').checked = settings.keepAwake;
+  const refCorner = $('#opt-ref-corner');
+  if (refCorner) refCorner.checked = !!settings.showRefCorner;
   $('#opt-orientation').value = settings.orientation;
   $('#opt-alpha').value = String(Math.round((settings.penAlpha ?? 0.9) * 100));
   renderLangChips();
@@ -3424,6 +3521,14 @@ function wireSettings() {
   });
   bind('#opt-autoflip', 'autoFlip');
   bind('#opt-keepawake', 'keepAwake');
+  $('#opt-ref-corner')?.addEventListener('change', (e) => {
+    persistRefCornerPreference(e.target.checked);
+    const review = $('#review-ref-corner');
+    if (review) {
+      review.checked = !!e.target.checked;
+      $('#review-ref-corner-row')?.classList.toggle('is-off', !e.target.checked);
+    }
+  });
   bind('#opt-orientation', 'orientation');
 }
 
@@ -4456,6 +4561,7 @@ function init() {
   wireGestureSheet();
   wireCroquisSheet();
   wireComposePoseSheet();
+  wireMemoryCroquisSheet();
   wireCopySheet();
   wireLibrary();
   wireCalendar();

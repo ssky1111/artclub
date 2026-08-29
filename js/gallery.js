@@ -188,7 +188,7 @@ export async function fetchMyProfile() {
 /**
  * スケッチを保存する。user_id は常にログイン中の Auth ユーザー。
  * kind: 'drawing' | 'sheet'
- * og_image_url: ARTCLUB 入りの OGP 用画像（別ファイル）
+ * og_image_url: DrawParty 入りの OGP 用画像（別ファイル）
  */
 export async function uploadArtwork(drawingBlob, promptId, {
   isPublic = true,
@@ -239,7 +239,7 @@ export async function uploadArtwork(drawingBlob, promptId, {
 
   const imageUrl = publicUrl(path);
 
-  // OGP用（右下 ARTCLUB）。失敗しても本体投稿は通す
+  // OGP用（右下 DrawParty）。失敗しても本体投稿は通す
   let ogImageUrl = null;
   try {
     const branded = await brandForOgp(drawingBlob);

@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f7f7f5">
-<meta name="description" content="DRAWPARTY │ ブラウザ内で完結。気軽なドローイング練習">
-<meta property="og:description" content="DRAWPARTY │ ブラウザ内で完結。気軽なドローイング練習">
-<meta name="twitter:description" content="DRAWPARTY │ ブラウザ内で完結。気軽なドローイング練習">
-<title>DRAWPARTY — 毎日のドローイング練習</title>
+<meta name="description" content="DrawParty │ ブラウザ内で完結。気軽なドローイング練習">
+<meta property="og:description" content="DrawParty │ ブラウザ内で完結。気軽なドローイング練習">
+<meta name="twitter:description" content="DrawParty │ ブラウザ内で完結。気軽なドローイング練習">
+<title>DrawParty — 毎日のドローイング練習</title>
 <script>
 (function () {
   var b = document.createElement('base');
@@ -81,7 +81,7 @@
 
 <div id="site-gate" class="confirm-dialog site-gate-dialog" role="dialog" aria-modal="true" aria-labelledby="site-gate-title">
   <div class="confirm-dialog-inner site-gate-inner">
-    <div id="site-gate-title" class="site-gate-brand brand-text">DRAWPARTY</div>
+    <div id="site-gate-title" class="site-gate-brand brand-text">DrawParty</div>
     <p id="site-gate-note" class="confirm-dialog-msg">テスト公開中です。パスワードを入力してください。</p>
     <input type="password" id="site-pass" class="input site-gate-input" autocomplete="current-password" placeholder="パスワード">
     <p id="site-pass-msg" class="muted small site-gate-msg" aria-live="polite"></p>
@@ -124,9 +124,9 @@
 
 <main id="screen-home" class="screen is-active">
   <header class="topbar">
-    <a href="/" class="brand brand-link" aria-label="DRAWPARTY">
+    <a href="/" class="brand brand-link" aria-label="DrawParty">
       <span class="brand-stack">
-        <span class="brand-text">DRAWPARTY</span>
+        <span class="brand-text">DrawParty</span>
         <span class="beta" data-i18n="app.beta">テスト公開中</span>
       </span>
     </a>
@@ -291,12 +291,15 @@
 
 <main id="screen-review" class="screen">
   <header class="topbar">
-    <a href="/" class="brand brand-link" aria-label="DRAWPARTY">
-      <span class="brand-text">DRAWPARTY</span>
+    <a href="/" class="brand brand-link" aria-label="DrawParty">
+      <span class="brand-text">DrawParty</span>
     </a>
   </header>
   <div class="review-note-bubble">
-    <textarea id="review-note" class="review-note-input" rows="1" data-i18n-ph="rev.noteLinePh" placeholder="振り返りの一言を書く"></textarea>
+    <div class="review-note-field">
+      <textarea id="review-note" class="review-note-input" rows="1" data-i18n-ph="rev.noteLinePh" placeholder="振り返りの一言を書く"></textarea>
+      <button id="review-note-save" type="button" class="btn primary small review-note-save" data-i18n="common.save">保存</button>
+    </div>
   </div>
 
   <section class="card" id="sheet-card">
@@ -307,17 +310,23 @@
         <button id="share-x" class="btn primary small" data-i18n="rev.shareX">Xでシェア</button>
       </div>
     </div>
-    <div id="strip-bulk" class="strip-bulk" hidden>
-      <label class="toggle-row" id="bulk-publish-row">
-        <span data-i18n="gal.publishAll">全て公開</span>
-        <input type="checkbox" id="bulk-publish" checked>
-        <span class="toggle-track"></span>
-      </label>
-      <label class="toggle-row" id="bulk-copy-row">
-        <span data-i18n="gal.copyAll">全て模写OK</span>
-        <input type="checkbox" id="bulk-copy">
-        <span class="toggle-track"></span>
-      </label>
+    <div id="strip-bulk" class="review-settings" hidden>
+      <div class="review-settings-label" data-i18n="rev.settings">設定</div>
+      <div class="review-settings-sep" aria-hidden="true">│</div>
+      <div class="review-settings-items">
+        <label class="check-row" id="bulk-publish-row">
+          <input type="checkbox" id="bulk-publish" checked>
+          <span data-i18n="gal.publishAll">全て公開</span>
+        </label>
+        <label class="check-row" id="bulk-copy-row">
+          <input type="checkbox" id="bulk-copy">
+          <span data-i18n="gal.copyAll">全て模写OK</span>
+        </label>
+        <label class="check-row" id="review-ref-corner-row">
+          <input type="checkbox" id="review-ref-corner">
+          <span data-i18n="set.refCorner">お題を左上に表示</span>
+        </label>
+      </div>
       <p class="strip-bulk-hint muted small" data-i18n="gal.allowCopyHint">模写モードで他の人があなたの絵を模写できるようになります</p>
     </div>
     <div id="review-board" class="review-board" hidden></div>
@@ -354,8 +363,8 @@
     <div class="topbar-start">
       <button id="work-back" class="icon-btn" type="button" data-icon="back"
               data-i18n-title="common.back" title="もどる"></button>
-      <a href="/" class="brand brand-link work-brand" aria-label="DRAWPARTY">
-        <span class="brand-text">DRAWPARTY</span>
+      <a href="/" class="brand brand-link work-brand" aria-label="DrawParty">
+        <span class="brand-text">DrawParty</span>
       </a>
     </div>
     <div class="topbar-actions work-auth-actions">
@@ -404,8 +413,8 @@
   <header class="topbar">
     <div class="topbar-start">
       <button class="icon-btn" data-nav="home" data-icon="back" data-i18n-title="common.back" title="もどる"></button>
-      <a href="/" class="brand brand-link" aria-label="DRAWPARTY">
-        <span class="brand-text">DRAWPARTY</span>
+      <a href="/" class="brand brand-link" aria-label="DrawParty">
+        <span class="brand-text">DrawParty</span>
       </a>
     </div>
   </header>
@@ -451,8 +460,8 @@
   <header class="topbar">
     <div class="topbar-start">
       <button class="icon-btn" data-nav="home" data-icon="back" data-i18n-title="common.back" title="もどる"></button>
-      <a href="/" class="brand brand-link" aria-label="DRAWPARTY">
-        <span class="brand-text">DRAWPARTY</span>
+      <a href="/" class="brand brand-link" aria-label="DrawParty">
+        <span class="brand-text">DrawParty</span>
       </a>
     </div>
   </header>
@@ -497,6 +506,7 @@
 <div id="part-sheet" class="sheet" hidden>
   <div class="sheet-inner">
     <button id="part-close" class="icon-btn sheet-close" data-icon="close"></button>
+    <h2 data-i18n="atelier.modePart">部位練習</h2>
     <div class="label" data-i18n="setup.part">どこを練習する？</div>
     <div id="part-chips" class="chips big-chips"></div>
     <div class="label setup-label" data-i18n="setup.partCount">何枚やる？</div>
@@ -510,6 +520,7 @@
 <div id="gesture-sheet" class="sheet" hidden>
   <div class="sheet-inner">
     <button id="gesture-close" class="icon-btn sheet-close" data-icon="close"></button>
+    <h2 data-i18n="atelier.modeGesture">ジェスチャードローイング</h2>
     <div class="label" data-i18n="setup.gestureCount">何体やる？</div>
     <p class="muted small" data-i18n="setup.gestureNote">1体あたり1分。デイリーと同じペースです。</p>
     <div id="gesture-count-chips" class="chips big-chips"></div>
@@ -521,6 +532,7 @@
 <div id="croquis-sheet" class="sheet" hidden>
   <div class="sheet-inner">
     <button id="croquis-close" class="icon-btn sheet-close" data-icon="close"></button>
+    <h2 data-i18n="atelier.modeCroquis">クロッキー</h2>
     <div class="label" data-i18n="setup.croquisCount">何枚やる？</div>
     <p class="muted small" data-i18n="setup.croquisNote">1枚あたり3分。デイリーと同じペースです。</p>
     <div id="croquis-count-chips" class="chips big-chips"></div>
@@ -532,6 +544,7 @@
 <div id="compose-pose-sheet" class="sheet" hidden>
   <div class="sheet-inner">
     <button id="compose-pose-close" class="icon-btn sheet-close" data-icon="close"></button>
+    <h2 data-i18n="atelier.modeComposePose">構図とポーズ</h2>
     <div class="label" data-i18n="setup.composePoseCount">何枚やる？</div>
     <p class="muted small" data-i18n="setup.composePoseNote">1枚あたり3分。枚数は自分で選びます。</p>
     <div id="compose-pose-count-chips" class="chips big-chips"></div>
@@ -540,10 +553,23 @@
   </div>
 </div>
 
+<div id="memory-croquis-sheet" class="sheet" hidden>
+  <div class="sheet-inner">
+    <button id="memory-croquis-close" class="icon-btn sheet-close" data-icon="close"></button>
+    <h2 data-i18n="atelier.modeMemoryCroquis">記憶クロッキー</h2>
+    <div class="label" data-i18n="setup.memoryCroquisCount">何枚やる？</div>
+    <p class="muted small" data-i18n="setup.memoryCroquisNote">1枚あたり1分見て2分描く。枚数は自分で選びます。</p>
+    <div id="memory-croquis-count-chips" class="chips big-chips"></div>
+    <p id="memory-croquis-note" class="muted small"></p>
+    <button id="memory-croquis-start" class="btn primary big">はじめる</button>
+  </div>
+</div>
+
 <div id="copy-sheet" class="sheet" hidden>
   <div class="sheet-inner copy-sheet-inner">
     <button id="copy-close" class="icon-btn sheet-close" data-icon="close"></button>
-    <h2 data-i18n="copy.title">模写するスケッチを選ぶ</h2>
+    <h2 data-i18n="atelier.modeCopy">模写</h2>
+    <p class="muted small" data-i18n="copy.title">模写するスケッチを選ぶ</p>
     <p id="copy-status" class="muted small"></p>
     <div id="copy-grid" class="copy-grid"></div>
     <button id="copy-start" class="btn primary big" disabled data-i18n="home.startPlain">はじめる</button>
@@ -610,8 +636,8 @@
   <header class="topbar">
     <div class="topbar-start">
       <button class="icon-btn" data-nav="home" data-icon="back" data-i18n-title="common.back" title="もどる"></button>
-      <a href="/" class="brand brand-link" aria-label="DRAWPARTY">
-        <span class="brand-text">DRAWPARTY</span>
+      <a href="/" class="brand brand-link" aria-label="DrawParty">
+        <span class="brand-text">DrawParty</span>
       </a>
     </div>
     <div class="topbar-actions">
@@ -673,8 +699,8 @@
 
 <main id="screen-log" class="screen">
   <header class="topbar">
-    <a href="/" class="brand brand-link" aria-label="DRAWPARTY">
-      <span class="brand-text">DRAWPARTY</span>
+    <a href="/" class="brand brand-link" aria-label="DrawParty">
+      <span class="brand-text">DrawParty</span>
     </a>
     <div class="topbar-actions">
       <button id="log-settings-btn" class="icon-btn" data-nav="settings" data-icon="settings"
@@ -718,8 +744,8 @@
   <header class="topbar">
     <div class="topbar-start">
       <button class="icon-btn" data-nav="home" data-icon="back" data-i18n-title="common.back" title="もどる"></button>
-      <a href="/" class="brand brand-link" aria-label="DRAWPARTY">
-        <span class="brand-text">DRAWPARTY</span>
+      <a href="/" class="brand brand-link" aria-label="DrawParty">
+        <span class="brand-text">DrawParty</span>
       </a>
     </div>
     <div class="topbar-actions">
@@ -828,8 +854,8 @@
   <header class="topbar">
     <div class="topbar-start">
       <button id="analytics-admin-link" class="icon-btn" type="button" data-icon="back" data-i18n-title="analytics.backAdmin" title="管理に戻る"></button>
-      <a href="/" class="brand brand-link" aria-label="DRAWPARTY">
-        <span class="brand-text">DRAWPARTY</span>
+      <a href="/" class="brand brand-link" aria-label="DrawParty">
+        <span class="brand-text">DrawParty</span>
       </a>
     </div>
     <div class="topbar-actions">
@@ -940,8 +966,8 @@
   <header class="topbar">
     <div class="topbar-start">
       <button class="icon-btn" data-nav="home" data-icon="back" data-i18n-title="common.back" title="もどる"></button>
-      <a href="/" class="brand brand-link" aria-label="DRAWPARTY">
-        <span class="brand-text">DRAWPARTY</span>
+      <a href="/" class="brand brand-link" aria-label="DrawParty">
+        <span class="brand-text">DrawParty</span>
       </a>
     </div>
   </header>
@@ -988,6 +1014,11 @@
     <label class="switch"><input type="checkbox" id="opt-sfx"> <span data-i18n="set.sfx"></span></label>
     <label class="switch"><input type="checkbox" id="opt-autoflip"> <span data-i18n="set.autoflip"></span></label>
     <label class="switch"><input type="checkbox" id="opt-keepawake"> <span data-i18n="set.keepawake"></span></label>
+    <label class="check-row settings-check" id="opt-ref-corner-wrap">
+      <input type="checkbox" id="opt-ref-corner">
+      <span data-i18n="set.refCorner">お題を左上に表示</span>
+    </label>
+    <p class="muted small" data-i18n="set.refCornerNote">描いているあいだ、お題写真をキャンバス左上に小さく出します</p>
 
     <label class="label" for="opt-orientation" data-i18n="set.orientation">写真の向き</label>
     <select id="opt-orientation" class="input">
@@ -1014,8 +1045,8 @@
 
 <main id="screen-atelier" class="screen">
   <header class="topbar atelier-topbar">
-    <a href="/" class="brand brand-link atelier-brand" aria-label="DRAWPARTY">
-      <span class="brand-text">DRAWPARTY</span>
+    <a href="/" class="brand brand-link atelier-brand" aria-label="DrawParty">
+      <span class="brand-text">DrawParty</span>
     </a>
     <div class="topbar-actions atelier-auth-actions">
       <button id="atelier-signup-btn" class="auth-btn auth-btn-secondary" type="button"

@@ -222,8 +222,8 @@ export const DRILLS = {
     hints: [
       '1分で流れ・比率・重心を頭に残し、隠してから2分で描き起こしましょう',
     ],
-    // 見る60秒（描けない）→ 描く120秒 → 見比べ5秒。合計185秒
-    view: { memorizeSeconds: 60, drawSeconds: 120, compareSeconds: 5, peeks: 1 },
+    // 見る60秒（描けない）→ 描く120秒 → 見比べ15秒（練習時間には含めない）
+    view: { memorizeSeconds: 60, drawSeconds: 120, compareSeconds: 15, peeks: 1 },
     en: {
       name: 'Memory croquis',
       short: 'Memory',
@@ -457,11 +457,11 @@ export function pickDailyComposeStep(history = []) {
     const mem = DRILLS.memoryCroquis;
     const look = mem.view?.memorizeSeconds || 60;
     const draw = mem.view?.drawSeconds || 120;
-    const compare = mem.view?.compareSeconds || 5;
     return {
       drill: 'memoryCroquis',
       count: 1,
-      seconds: look + draw + compare,
+      // 見比べは練習時間に含めない
+      seconds: look + draw,
       source: 'composePose',
       label: '記憶クロッキー',
       labelEn: 'Memory croquis',
@@ -635,6 +635,17 @@ export const MODES = [
     },
   },
   {
+    id: 'memoryCroquisMode',
+    title: '記憶クロッキー',
+    subtitle: '1分見て2分描く。何枚やるかは自分で選ぶ',
+    picker: 'memoryCroquisCount',
+    drillId: 'memoryCroquis',
+    en: {
+      title: 'Memory croquis',
+      subtitle: 'Look 1 min, draw 2 min. Choose how many',
+    },
+  },
+  {
     id: 'copyMode',
     title: '模写',
     subtitle: '人気のスケッチを選んで、時間無制限で描く',
@@ -692,6 +703,34 @@ export function buildComposePoseMenu(count = 1) {
     en: {
       title: 'Composition & pose',
       subtitle: `${n} × 3 min. Placement and pose flow`,
+    },
+  };
+}
+
+/** 記憶クロッキー。1分見て2分描く、枚数だけ選ぶ。 */
+export function buildMemoryCroquisMenu(count = 1) {
+  const n = Math.max(1, Number(count) || 1);
+  const mem = DRILLS.memoryCroquis;
+  const look = mem.view?.memorizeSeconds || 60;
+  const draw = mem.view?.drawSeconds || 120;
+  // 見比べは練習時間に含めない
+  const seconds = look + draw;
+  return {
+    id: 'memoryCroquisMode',
+    title: '記憶クロッキー',
+    subtitle: `1分見て2分描く × ${n}枚`,
+    drillId: 'memoryCroquis',
+    steps: [{
+      drill: 'memoryCroquis',
+      count: n,
+      seconds,
+      source: 'composePose',
+      label: '記憶クロッキー',
+      labelEn: 'Memory croquis',
+    }],
+    en: {
+      title: 'Memory croquis',
+      subtitle: `${n} × look 1 min, draw 2 min`,
     },
   };
 }
