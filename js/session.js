@@ -82,7 +82,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     },
     onDone() {
       if (state?.settings.sound) beeper.done();
-      // 記憶クロッキー: 見る → 描く → 見比べ → 次へ
+      // 暗記クロッキー: 見る → 描く → 見比べ → 次へ
       if (state?.memoryPhase === 'look') {
         enterMemoryDrawPhase();
         return;
@@ -329,7 +329,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     requestAnimationFrame(() => pad.resize());
   }
 
-  /** 記憶クロッキー: 見るフェーズ（描けない） */
+  /** 暗記クロッキー: 見るフェーズ（描けない） */
   function beginMemoryLookPhase(drill) {
     const look = Number(drill.view?.memorizeSeconds) || 60;
     state.memoryPhase = 'look';
@@ -355,7 +355,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     requestAnimationFrame(() => pad.resize());
   }
 
-  /** 記憶クロッキー: 描くフェーズ（写真を隠す） */
+  /** 暗記クロッキー: 描くフェーズ（写真を隠す） */
   function enterMemoryDrawPhase() {
     if (!state?.current) return;
     const drill = DRILLS[state.current.drillId] || {};
@@ -391,7 +391,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
     requestAnimationFrame(() => pad.resize());
   }
 
-  /** 記憶クロッキー: 見比べフェーズ（写真と描いた絵を並べて見る） */
+  /** 暗記クロッキー: 見比べフェーズ（写真と描いた絵を並べて見る） */
   function enterMemoryComparePhase() {
     if (!state?.current) return;
     const drill = DRILLS[state.current.drillId] || {};
@@ -512,7 +512,7 @@ export function createSessionRunner({ onFinish, onQuit }) {
   function spentSeconds(item, { skipped = false } = {}) {
     if (!item) return 0;
     if (item.unlimited) return Math.max(0, timer.elapsed);
-    // 記憶クロッキーは見る+描くだけを数える（見比べは練習時間に含めない）
+    // 暗記クロッキーは見る+描くだけを数える（見比べは練習時間に含めない）
     if (item.drillId === 'memoryCroquis') {
       const look = Number(DRILLS.memoryCroquis?.view?.memorizeSeconds) || 60;
       const draw = Number(DRILLS.memoryCroquis?.view?.drawSeconds) || 120;

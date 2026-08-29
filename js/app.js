@@ -414,7 +414,7 @@ function wireComposePoseSheet() {
   });
 }
 
-/* ==================== 記憶クロッキー ==================== */
+/* ==================== 暗記クロッキー ==================== */
 
 let memoryCroquisCount = 1;
 
@@ -1887,7 +1887,7 @@ async function startSession(menu, { tags = null, part = null, skipFreePeriod = f
       : createLibraryQueue([], notice, '『構図』タグの写真がありません。全体から出します', fromAdmin);
   }
 
-  // 記憶クロッキー → 『全身』と『構図』からランダム
+  // 暗記クロッキー → 『全身』と『構図』からランダム
   if (needed.has('memoryCroquis')) {
     const memPhotos = own.filter((p) => p.tags.includes('全身') || p.tags.includes('構図'));
     queues.memoryCroquis = memPhotos.length
@@ -1991,7 +1991,7 @@ function shotModeFrom(shot, sessionMode = null) {
   if (source === 'composePose' || drill === 'composePose'
       || label.includes('構図') || /composition/i.test(label)) return 'ComposePose';
   if (source === 'memoryCroquis' || drill === 'memoryCroquis'
-      || label.includes('記憶') || /memory/i.test(label)) return 'MemoryCroquis';
+      || label.includes('記憶') || label.includes('暗記') || /memory/i.test(label)) return 'MemoryCroquis';
   if (source === 'croquis' || drill === 'croquis') return 'Croquis';
   return sessionMode || 'Practice';
 }
@@ -2012,7 +2012,7 @@ function artworkModeLabel(work) {
     return t('atelier.modeComposePose');
   }
   if (key === 'memorycroquis' || key === 'memorycroquismode'
-      || raw.includes('記憶') || /memory\s*croquis/i.test(raw)) {
+      || raw.includes('記憶') || raw.includes('暗記') || /memory\s*croquis/i.test(raw)) {
     return t('atelier.modeMemoryCroquis');
   }
   if (key === 'croquis' || key === 'croquismode' || raw.includes('クロッキー') || /croquis/i.test(raw)) {
