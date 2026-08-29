@@ -11,7 +11,7 @@ import { createTimer, sfx } from './timer.js';
 import { createPad } from './draw.js';
 import { $, $$, showScreen, toast, fmtClock, confirmDialog, hintList } from './ui.js';
 import { t, tr, fmtDur, getLang } from './i18n.js';
-import { saveSettings, getSettings } from './storage.js';
+import { saveSettings } from './storage.js';
 import { paintIcons } from './icons.js';
 
 export function createSessionRunner({ onFinish, onQuit }) {
