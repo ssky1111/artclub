@@ -172,6 +172,56 @@ export async function downloadEach(blobs, prefix = 'artclub') {
 }
 
 /**
+ * お題写真＋自分の絵を左右に並べた1枚を作る。
+ * prompt が無いときは絵だけ（縦トリミング）を返す。
+ */
+export async function composeWithPrompt(drawingBlob, promptBlob, { crop = true } = {}) {
+  if (!drawingBlob) return null;
+  let drawSrc = drawingBlob;
+  if (crop) {
+    try { drawSrc = (await cropToInkVertical(drawingBlob)) || drawingBlob; } catch { /* keep */ }
+  }
+  if (!promptBlob) return drawSrc;
+
+  const [drawImg, promptImg] = await Promise.all([
+    loadImage(drawSrc),
+    loadImage(promptBlob),
+  ]);
+
+  const gap = 16;
+  const pad = 20;
+  const labelH = 28;
+  const targetH = Math.max(360, Math.min(720, Math.max(drawImg.height, promptImg.height)));
+  const scaleDraw = targetH / drawImg.height;
+  const scalePrompt = targetH / promptImg.height;
+  const drawW = Math.round(drawImg.width * scaleDraw);
+  const promptW = Math.round(promptImg.width * scalePrompt);
+  const cellH = targetH;
+
+  const W = pad * 2 + promptW + gap + drawW;
+  const H = pad * 2 + labelH + cellH;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = PAPER;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = SOFT;
+  ctx.font = '600 14px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  ctx.fillText('PROMPT', pad + promptW / 2, pad + labelH / 2);
+  ctx.fillText('DRAW', pad + promptW + gap + drawW / 2, pad + labelH / 2);
+
+  const y = pad + labelH;
+  ctx.drawImage(promptImg, pad, y, promptW, cellH);
+  ctx.drawImage(drawImg, pad + promptW + gap, y, drawW, cellH);
+
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+}
+
+/**
  * 枚数を上列・下列（必要なら3段）にバランスよく割る。
  * 余りは上の行から順に1枚ずつ足す（例: 5→[3,2], 7→[4,3]）。
  */
