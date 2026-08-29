@@ -11,7 +11,7 @@ import { createTimer, sfx } from './timer.js';
 import { createPad } from './draw.js';
 import { $, $$, showScreen, toast, fmtClock, confirmDialog, hintList } from './ui.js';
 import { t, tr, fmtDur, getLang } from './i18n.js';
-import { saveSettings } from './storage.js';
+import { saveSettings, getSettings } from './storage.js';
 import { paintIcons } from './icons.js';
 
 export function createSessionRunner({ onFinish, onQuit }) {
@@ -406,8 +406,9 @@ export function createSessionRunner({ onFinish, onQuit }) {
     }
     if (dom.padLockMsg) dom.padLockMsg.hidden = true;
     if (dom.padGuide) {
-      dom.padGuide.hidden = false;
-      dom.padGuide.textContent = t('sess.memoryCompareGuide');
+      // 見比べ中はガイド文言なし（お題と絵を見るだけ）
+      dom.padGuide.hidden = true;
+      dom.padGuide.textContent = '';
     }
     if (dom.memoryStartDraw) dom.memoryStartDraw.hidden = true;
     if (dom.cover) {
@@ -442,7 +443,10 @@ export function createSessionRunner({ onFinish, onQuit }) {
   }
 
   function applyRefCornerMode() {
-    const on = !!state?.settings?.showRefCorner;
+    // セッション中に設定が変わっても拾えるよう、都度最新を見る
+    const fresh = getSettings();
+    if (state?.settings) state.settings.showRefCorner = !!fresh.showRefCorner;
+    const on = !!fresh.showRefCorner;
     dom.padWrap?.classList.toggle('show-ref-corner', on);
   }
 

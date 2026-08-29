@@ -33,7 +33,7 @@ import {
   deleteTagEverywhere, filterDuplicatePhotoNames, setPhotosInactive,
 } from './supabase.js';
 import { totalXp, levelProgress, graceStreak, bestGraceStreak, takeLevelUp } from './game.js';
-import { composeSheet, cropToInk, cropToInkVertical, downloadBlob, downloadEach, saveImageBlob, isAppleTouchDevice, shareToX } from './export.js';
+import { composeSheet, cropToInk, cropToInkVertical, composeWithPrompt, downloadBlob, downloadEach, saveImageBlob, isAppleTouchDevice, shareToX } from './export.js';
 import { translateTitle, termsIn } from './glossary.js';
 import { sfx } from './timer.js';
 import { $, $$, el, showScreen, toast, confirmDialog, weekReviewDialog, freePeriodDialog, restorePageScroll, setScreenShownHook } from './ui.js';
@@ -2239,10 +2239,13 @@ async function finishSession(result) {
   showScreen('review');
 
   if (pendingDrawings.length > 0) {
-    const blob = await composeSheet(
-      pendingDrawings.map((s) => s.blob),
-      { date: dateKey(), crop: true },
-    );
+    const sheetBlobs = [];
+    for (const shot of pendingDrawings) {
+      const prompt = await promptBlobForShot(shot);
+      if (prompt) sheetBlobs.push(prompt);
+      sheetBlobs.push(shot.blob);
+    }
+    const blob = await composeSheet(sheetBlobs, { date: dateKey(), crop: true });
     if (blob) {
       sheetBlob = blob;
       $('#sheet-img').src = URL.createObjectURL(blob);
@@ -2383,12 +2386,35 @@ function setShotExcluded(index, excluded) {
   void syncPendingShotArtwork(shot);
 }
 
+async function promptBlobForShot(shot) {
+  if (!shot?.photoId) return null;
+  try {
+    const photos = await everyPhoto();
+    const photo = photos.find((p) => p.id === shot.photoId);
+    if (!photo) return null;
+    const url = photo.blob ? URL.createObjectURL(photo.blob) : photo.url;
+    if (!url) return null;
+    const res = await fetch(url);
+    if (photo.blob) URL.revokeObjectURL(url);
+    if (!res.ok) return null;
+    return await res.blob();
+  } catch {
+    return null;
+  }
+}
+
 async function downloadShot(shot, index) {
   try {
-    const blob = (await cropToInkVertical(shot.blob)) || shot.blob;
+    const prompt = await promptBlobForShot(shot);
+    const blob = (await composeWithPrompt(shot.blob, prompt, { crop: true })) || shot.blob;
     downloadBlob(blob, `artclub-${dateKey()}-${index + 1}.jpg`);
   } catch {
-    downloadBlob(shot.blob, `artclub-${dateKey()}-${index + 1}.jpg`);
+    try {
+      const blob = (await cropToInkVertical(shot.blob)) || shot.blob;
+      downloadBlob(blob, `artclub-${dateKey()}-${index + 1}.jpg`);
+    } catch {
+      downloadBlob(shot.blob, `artclub-${dateKey()}-${index + 1}.jpg`);
+    }
   }
 }
 
@@ -2676,11 +2702,17 @@ function wireReview() {
     if (opt) opt.checked = !!e.target.checked;
   });
 
-  $('#dl-all').addEventListener('click', () => {
-    downloadEach(
-      pendingDrawings.map((s) => s.blob),
-      `artclub-${dateKey()}`,
-    );
+  $('#dl-all').addEventListener('click', async () => {
+    const btn = $('#dl-all');
+    if (btn) btn.disabled = true;
+    try {
+      for (let i = 0; i < pendingDrawings.length; i++) {
+        await downloadShot(pendingDrawings[i], i);
+        await new Promise((r) => setTimeout(r, 350));
+      }
+    } finally {
+      if (btn) btn.disabled = !pendingDrawings.length;
+    }
   });
 
   $('#sheet-dl').addEventListener('click', () => {
