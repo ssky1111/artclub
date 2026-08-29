@@ -172,7 +172,7 @@ export async function downloadEach(blobs, prefix = 'artclub') {
 }
 
 /**
- * お題写真＋自分の絵を左右に並べた1枚を作る。
+ * お題写真を描いた絵の左上に小さく重ねる。
  * prompt が無いときは絵だけ（縦トリミング）を返す。
  */
 export async function composeWithPrompt(drawingBlob, promptBlob, { crop = true } = {}) {
@@ -188,35 +188,29 @@ export async function composeWithPrompt(drawingBlob, promptBlob, { crop = true }
     loadImage(promptBlob),
   ]);
 
-  const gap = 16;
-  const pad = 20;
-  const labelH = 28;
-  const targetH = Math.max(360, Math.min(720, Math.max(drawImg.height, promptImg.height)));
-  const scaleDraw = targetH / drawImg.height;
-  const scalePrompt = targetH / promptImg.height;
-  const drawW = Math.round(drawImg.width * scaleDraw);
-  const promptW = Math.round(promptImg.width * scalePrompt);
-  const cellH = targetH;
-
-  const W = pad * 2 + promptW + gap + drawW;
-  const H = pad * 2 + labelH + cellH;
   const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
+  canvas.width = drawImg.width;
+  canvas.height = drawImg.height;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = PAPER;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(drawImg, 0, 0);
 
-  ctx.fillStyle = SOFT;
-  ctx.font = '600 14px "Special Gothic Expanded One", "Arial Black", system-ui, sans-serif';
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'center';
-  ctx.fillText('PROMPT', pad + promptW / 2, pad + labelH / 2);
-  ctx.fillText('DRAW', pad + promptW + gap + drawW / 2, pad + labelH / 2);
+  // セル短辺の約20%。絵の上に小さく置く
+  const corner = Math.max(48, Math.round(Math.min(canvas.width, canvas.height) * 0.2));
+  const pad = Math.max(8, Math.round(corner * 0.08));
+  const scale = Math.min(corner / promptImg.width, corner / promptImg.height);
+  const pw = Math.round(promptImg.width * scale);
+  const ph = Math.round(promptImg.height * scale);
+  const x = pad;
+  const y = pad;
 
-  const y = pad + labelH;
-  ctx.drawImage(promptImg, pad, y, promptW, cellH);
-  ctx.drawImage(drawImg, pad + promptW + gap, y, drawW, cellH);
+  ctx.fillStyle = PAPER;
+  ctx.fillRect(x - 2, y - 2, pw + 4, ph + 4);
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = Math.max(2, Math.round(corner * 0.03));
+  ctx.strokeRect(x - 1, y - 1, pw + 2, ph + 2);
+  ctx.drawImage(promptImg, x, y, pw, ph);
 
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
 }

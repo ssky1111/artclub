@@ -442,11 +442,8 @@ export function createSessionRunner({ onFinish, onQuit }) {
   }
 
   function applyRefCornerMode() {
-    // セッション中に設定が変わっても拾えるよう、都度最新を見る
-    const fresh = getSettings();
-    if (state?.settings) state.settings.showRefCorner = !!fresh.showRefCorner;
-    const on = !!fresh.showRefCorner;
-    dom.padWrap?.classList.toggle('show-ref-corner', on);
+    // 描画中レイアウトは変えない（設定はまとめ画像／DL専用）
+    dom.padWrap?.classList.remove('show-ref-corner');
   }
 
   function setRefSrc(photo) {
