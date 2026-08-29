@@ -226,13 +226,12 @@ export function createSessionRunner({ onFinish, onQuit }) {
     }
     const memLook = drill.view?.memorizeSeconds;
     const memDraw = drill.view?.drawSeconds;
-    const memCompare = drill.view?.compareSeconds;
     dom.bridgeMeta.textContent = item.unlimited
       ? (getLang() === 'en' ? `${item.countInStep} · no time limit` : `${item.countInStep}枚 · 時間無制限`)
       : isMemoryCroquis && memLook && memDraw
         ? (getLang() === 'en'
-          ? `look ${memLook / 60} min → draw ${memDraw / 60} min → compare ${memCompare || 15}s`
-          : `見る${memLook / 60}分 → 描く${memDraw / 60}分 → 見比べ${memCompare || 15}秒`)
+          ? `look ${memLook / 60} min → draw ${memDraw / 60} min`
+          : `見る${memLook / 60}分 → 描く${memDraw / 60}分`)
         : `${item.countInStep}枚×${item.seconds < 60 ? item.seconds + '秒' : (item.seconds / 60) + '分'}`;
 
     // 復習対象のドリルのときだけ「前回の宿題」を1行出す
