@@ -1,8 +1,8 @@
 const PAPER = '#ffffff';
 const INK = '#2b2a27';
 const SOFT = '#8b8b85';
-/** お題サムネの縁（黒ではなくライトグレー） */
-const PROMPT_FRAME = '#c8c8c8';
+/** お題サムネの縁（黒ではなくミディアムグレー） */
+const PROMPT_FRAME = '#b0b0b0';
 
 export function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -211,9 +211,9 @@ function drawPromptCorner(ctx, promptImg, cellX, cellY, cellW, cellH) {
   const ph = Math.round(promptImg.height * scale);
   const x = cellX + inset;
   const y = cellY + inset;
-  const frame = Math.max(2, Math.round(corner * 0.04));
+  const frame = Math.max(3, Math.round(corner * 0.05));
 
-  // 白パッド → 写真 → グレー枠（枠を最後に描いて黒っぽく見えないように）
+  // 白パッド → 写真 → グレー枠（枠を最後に描く）
   ctx.fillStyle = PAPER;
   ctx.fillRect(x - frame, y - frame, pw + frame * 2, ph + frame * 2);
   ctx.drawImage(promptImg, x, y, pw, ph);
