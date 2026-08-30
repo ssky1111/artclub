@@ -201,7 +201,7 @@ export async function composeWithPrompt(drawingBlob, promptBlob, { crop = true }
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
 }
 
-/** セル／キャンバス左上にお題サムネを描く。縁はライトグレー。 */
+/** セル／キャンバス左上にお題サムネを描く。縁は1pxグレー（控えめ）。 */
 function drawPromptCorner(ctx, promptImg, cellX, cellY, cellW, cellH) {
   if (!promptImg || !cellW || !cellH) return;
   const corner = Math.max(56, Math.round(Math.min(cellW, cellH) * 0.3));
@@ -211,15 +211,14 @@ function drawPromptCorner(ctx, promptImg, cellX, cellY, cellW, cellH) {
   const ph = Math.round(promptImg.height * scale);
   const x = cellX + inset;
   const y = cellY + inset;
-  const frame = Math.max(3, Math.round(corner * 0.05));
+  const frame = 1;
 
-  // 白パッド → 写真 → グレー枠（枠を最後に描く）
   ctx.fillStyle = PAPER;
   ctx.fillRect(x - frame, y - frame, pw + frame * 2, ph + frame * 2);
   ctx.drawImage(promptImg, x, y, pw, ph);
   ctx.strokeStyle = PROMPT_FRAME;
   ctx.lineWidth = frame;
-  ctx.strokeRect(x - frame / 2, y - frame / 2, pw + frame, ph + frame);
+  ctx.strokeRect(x + 0.5, y + 0.5, pw - 1, ph - 1);
 }
 
 /**
