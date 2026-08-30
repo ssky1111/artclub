@@ -1,6 +1,8 @@
 const PAPER = '#ffffff';
 const INK = '#2b2a27';
 const SOFT = '#8b8b85';
+/** お題サムネの縁（黒ではなくライトグレー） */
+const PROMPT_FRAME = '#c8c8c8';
 
 export function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -172,7 +174,7 @@ export async function downloadEach(blobs, prefix = 'artclub') {
 }
 
 /**
- * お題写真を描いた絵の左上に小さく重ねる。
+ * お題写真を描いた絵の左上に重ねる（個別DL用）。
  * prompt が無いときは絵だけ（縦トリミング）を返す。
  */
 export async function composeWithPrompt(drawingBlob, promptBlob, { crop = true } = {}) {
@@ -195,24 +197,29 @@ export async function composeWithPrompt(drawingBlob, promptBlob, { crop = true }
   ctx.fillStyle = PAPER;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(drawImg, 0, 0);
+  drawPromptCorner(ctx, promptImg, 0, 0, canvas.width, canvas.height);
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+}
 
-  // セル短辺の約20%。絵の上に小さく置く
-  const corner = Math.max(48, Math.round(Math.min(canvas.width, canvas.height) * 0.2));
-  const pad = Math.max(8, Math.round(corner * 0.08));
+/** セル／キャンバス左上にお題サムネを描く。縁はライトグレー。 */
+function drawPromptCorner(ctx, promptImg, cellX, cellY, cellW, cellH) {
+  if (!promptImg || !cellW || !cellH) return;
+  const corner = Math.max(56, Math.round(Math.min(cellW, cellH) * 0.3));
+  const inset = Math.max(6, Math.round(corner * 0.08));
   const scale = Math.min(corner / promptImg.width, corner / promptImg.height);
   const pw = Math.round(promptImg.width * scale);
   const ph = Math.round(promptImg.height * scale);
-  const x = pad;
-  const y = pad;
+  const x = cellX + inset;
+  const y = cellY + inset;
+  const frame = Math.max(2, Math.round(corner * 0.04));
 
+  // 白パッド → 写真 → グレー枠（枠を最後に描いて黒っぽく見えないように）
   ctx.fillStyle = PAPER;
-  ctx.fillRect(x - 2, y - 2, pw + 4, ph + 4);
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = Math.max(2, Math.round(corner * 0.03));
-  ctx.strokeRect(x - 1, y - 1, pw + 2, ph + 2);
+  ctx.fillRect(x - frame, y - frame, pw + frame * 2, ph + frame * 2);
   ctx.drawImage(promptImg, x, y, pw, ph);
-
-  return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+  ctx.strokeStyle = PROMPT_FRAME;
+  ctx.lineWidth = frame;
+  ctx.strokeRect(x - frame / 2, y - frame / 2, pw + frame, ph + frame);
 }
 
 /**
@@ -228,7 +235,11 @@ function sheetRowCounts(n) {
   return Array.from({ length: rowCount }, (_, i) => base + (i < rem ? 1 : 0));
 }
 
-export async function composeSheet(blobs, { date = '', crop = true } = {}) {
+/**
+ * まとめ画。
+ * prompts を渡すと、各セル左上に小さなお題を重ねる（セル基準なのでサイズ・位置が揃う）。
+ */
+export async function composeSheet(blobs, { date = '', crop = true, prompts = null } = {}) {
   if (!blobs.length) return null;
 
   const images = [];
@@ -239,6 +250,16 @@ export async function composeSheet(blobs, { date = '', crop = true } = {}) {
     } catch { /* skip broken */ }
   }
   if (!images.length) return null;
+
+  const promptImgs = [];
+  if (Array.isArray(prompts) && prompts.length) {
+    for (let i = 0; i < images.length; i++) {
+      const p = prompts[i];
+      if (!p) { promptImgs.push(null); continue; }
+      try { promptImgs.push(await loadImage(p)); }
+      catch { promptImgs.push(null); }
+    }
+  }
 
   const W = 1200;
   const H = 630;
@@ -285,13 +306,17 @@ export async function composeSheet(blobs, { date = '', crop = true } = {}) {
     const offX = areaX + (areaW - rowW) / 2;
     const cy = offY + row * (cell + gap);
     for (let c = 0; c < cols; c++) {
-      const img = images[index++];
+      const img = images[index];
       if (!img) return;
       const cx = offX + c * (cell + gap);
       const scale = Math.min(cell / img.width, cell / img.height);
       const w = img.width * scale;
       const h = img.height * scale;
       ctx.drawImage(img, cx + (cell - w) / 2, cy + (cell - h) / 2, w, h);
+      if (promptImgs[index]) {
+        drawPromptCorner(ctx, promptImgs[index], cx, cy, cell, cell);
+      }
+      index++;
     }
   });
 

@@ -2239,23 +2239,7 @@ async function finishSession(result) {
   showScreen('review');
 
   if (pendingDrawings.length > 0) {
-    const includePrompt = !!getSettings().showRefCorner;
-    const sheetBlobs = [];
-    for (const shot of pendingDrawings) {
-      if (includePrompt) {
-        const prompt = await promptBlobForShot(shot);
-        const composed = await composeWithPrompt(shot.blob, prompt, { crop: true });
-        sheetBlobs.push(composed || shot.blob);
-      } else {
-        sheetBlobs.push(shot.blob);
-      }
-    }
-    const blob = await composeSheet(sheetBlobs, { date: dateKey(), crop: !includePrompt });
-    if (blob) {
-      sheetBlob = blob;
-      $('#sheet-img').src = URL.createObjectURL(blob);
-      $('#sheet-preview').hidden = false;
-    }
+    await rebuildSheetPreview();
   }
 
   // ふりかえりに入った時点で履歴メタを書き、ログイン中ならクラウド投稿する
@@ -2266,6 +2250,43 @@ async function finishSession(result) {
   }
 
   loadSamePromptGallery();
+}
+
+/** まとめ画を設定（お題左上ON/OFF）に合わせて作り直す */
+async function rebuildSheetPreview() {
+  if (!pendingDrawings.length) {
+    sheetBlob = null;
+    pendingSheetMeta = null;
+    const preview = $('#sheet-preview');
+    if (preview) preview.hidden = true;
+    return;
+  }
+  const includePrompt = !!getSettings().showRefCorner;
+  const sheetBlobs = pendingDrawings.map((s) => s.blob);
+  let prompts = null;
+  if (includePrompt) {
+    prompts = [];
+    for (const shot of pendingDrawings) {
+      prompts.push(await promptBlobForShot(shot));
+    }
+  }
+  const blob = await composeSheet(sheetBlobs, {
+    date: dateKey(),
+    crop: true,
+    prompts,
+  });
+  if (blob) {
+    sheetBlob = blob;
+    // 作り直したら再アップロードが必要
+    if (pendingSheetMeta) pendingSheetMeta.uploaded = false;
+    const img = $('#sheet-img');
+    if (img) {
+      if (img.src?.startsWith('blob:')) URL.revokeObjectURL(img.src);
+      img.src = URL.createObjectURL(blob);
+    }
+    const preview = $('#sheet-preview');
+    if (preview) preview.hidden = false;
+  }
 }
 
 /* ==================== ふりかえり ==================== */
@@ -2707,6 +2728,7 @@ function wireReview() {
     $('#review-ref-corner-row')?.classList.toggle('is-off', !e.target.checked);
     const opt = $('#opt-ref-corner');
     if (opt) opt.checked = !!e.target.checked;
+    void rebuildSheetPreview();
   });
 
   $('#dl-all').addEventListener('click', async () => {
@@ -3581,6 +3603,7 @@ function wireSettings() {
       review.checked = !!e.target.checked;
       $('#review-ref-corner-row')?.classList.toggle('is-off', !e.target.checked);
     }
+    if (pendingDrawings.length) void rebuildSheetPreview();
   });
   bind('#opt-orientation', 'orientation');
 }
